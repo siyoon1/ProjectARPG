@@ -13,5 +13,8 @@ UCLASS()
 class PROJECTARPG_API AC_ARPGGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
+
+public:
+	AC_ARPGGameMode();
 	
 };
