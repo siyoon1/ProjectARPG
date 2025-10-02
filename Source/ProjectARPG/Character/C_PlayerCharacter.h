@@ -24,7 +24,7 @@ class PROJECTARPG_API AC_PlayerCharacter : public AC_CombatCharacter
 	GENERATED_BODY()
 
 private:
-	E_PlayerActionState m_eState;
+	E_PlayerActionState m_eState = E_PlayerActionState::Idle;
 
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USpringArmComponent> m_pSpringArm;

@@ -8,6 +8,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../Animation/C_PlayerAnim.h"
+#include "../Camera/C_PlayerCameraManager.h"
 
 AC_PlayerCharacter::AC_PlayerCharacter()
 {
@@ -74,11 +75,13 @@ void AC_PlayerCharacter::move(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 {
+
 	UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance());
 
 	if (!pAnim)
 		return;
 
+	
 	if (sInst.GetTriggerEvent() != ETriggerEvent::Triggered)
 		return;	
 
@@ -94,6 +97,14 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 		{
 			pAnim->playSprintStartMontage();
 			m_eState = E_PlayerActionState::Sprinting;
+			if (APlayerController* pPlayerCon = Cast<APlayerController>(GetController()))
+			{
+				if (AC_PlayerCameraManager* pCameraMgr = Cast<AC_PlayerCameraManager>(pPlayerCon->PlayerCameraManager))
+				{
+					pCameraMgr->startSprintEffect();
+				}
+			}
+			
 		}	
 		GetCharacterMovement()->MaxWalkSpeed = 1000.f;
 	}
@@ -106,12 +117,23 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = 800.f;
+	
 }
 
 void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
 {
+	if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying() && m_eState == E_PlayerActionState::Sprinting)
+		GetMesh()->GetAnimInstance()->Montage_Stop(0.1f);
+
 	m_eState = E_PlayerActionState::Idle;
 	GetCharacterMovement()->MaxWalkSpeed = 800.f;
+	if (APlayerController* pPlayerCon = Cast<APlayerController>(GetController()))
+	{
+		if (AC_PlayerCameraManager* pCameraMgr = Cast<AC_PlayerCameraManager>(pPlayerCon->PlayerCameraManager))
+		{
+			pCameraMgr->stopSprintEffect();
+		}
+	}
 }
 
 void AC_PlayerCharacter::Tick(float DeltaTime)
