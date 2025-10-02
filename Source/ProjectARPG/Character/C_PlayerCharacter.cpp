@@ -7,28 +7,32 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "../Animation/C_PlayerAnim.h"
 
 AC_PlayerCharacter::AC_PlayerCharacter()
 {
 	m_pSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	m_pSpringArm->SetupAttachment(RootComponent);
-	m_pSpringArm->TargetArmLength = 600.f;
+	m_pSpringArm->TargetArmLength = 500.f;
 	m_pSpringArm->bUsePawnControlRotation = true;
 
 	m_pCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	m_pCamera->SetupAttachment(m_pSpringArm);
 	m_pCamera->bUsePawnControlRotation = false;
 
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
 }
 
 void AC_PlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
+	GetCharacterMovement()->MaxWalkSpeed = 800.f;
+
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 
 	if (APlayerController* pPlayerCon = Cast<APlayerController>(Controller))
 	{
@@ -68,6 +72,48 @@ void AC_PlayerCharacter::move(const FInputActionValue& sValue)
 	}
 }
 
+void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
+{
+	UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance());
+
+	if (!pAnim)
+		return;
+
+	if (sInst.GetTriggerEvent() != ETriggerEvent::Triggered)
+		return;	
+
+	const float fElapsedTime = sInst.GetElapsedTime();
+
+
+	const float fHoldThreshold = 0.3f;
+
+	if (fElapsedTime >= fHoldThreshold)
+	{
+		// 대시 실행
+		if (m_eState != E_PlayerActionState::Sprinting)
+		{
+			pAnim->playSprintStartMontage();
+			m_eState = E_PlayerActionState::Sprinting;
+		}	
+		GetCharacterMovement()->MaxWalkSpeed = 1000.f;
+	}
+	else
+	{
+		// 회피 실행
+
+		pAnim->playDodgeMontage(E_Direction::Backward);
+		
+	}
+
+	GetCharacterMovement()->MaxWalkSpeed = 800.f;
+}
+
+void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
+{
+	m_eState = E_PlayerActionState::Idle;
+	GetCharacterMovement()->MaxWalkSpeed = 800.f;
+}
+
 void AC_PlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -81,5 +127,7 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	{
 		pEinputCom->BindAction(m_pLookAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::look);
 		pEinputCom->BindAction(m_pMoveAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::move);
+		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::sprint);
+		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::sprintReleased);
 	}
 }

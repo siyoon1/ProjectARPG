@@ -6,6 +6,15 @@
 #include "C_CombatCharacter.h"
 #include "C_PlayerCharacter.generated.h"
 
+UENUM(BlueprintType)
+enum class E_PlayerActionState : uint8
+{
+	Idle,
+	Sprinting,
+	Dodging,
+	Attacking,
+};
+
 /**
  * 
  */
@@ -15,6 +24,8 @@ class PROJECTARPG_API AC_PlayerCharacter : public AC_CombatCharacter
 	GENERATED_BODY()
 
 private:
+	E_PlayerActionState m_eState;
+
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USpringArmComponent> m_pSpringArm;
 
@@ -29,6 +40,10 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> m_pLookAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> m_pSprintAction;
+
 
 public:
 	AC_PlayerCharacter();
@@ -47,6 +62,8 @@ protected:
 protected:
 	void look(const struct FInputActionValue& sValue);
 	void move(const FInputActionValue& sValue);
+	void sprint(const struct FInputActionInstance& sInst);
+	void sprintReleased(const struct FInputActionInstance& sInst);
 
 
 
