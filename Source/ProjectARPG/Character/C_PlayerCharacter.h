@@ -44,6 +44,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> m_pSprintAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> m_pComboAttackAction;
+
 
 public:
 	AC_PlayerCharacter();
@@ -62,8 +65,10 @@ protected:
 protected:
 	void look(const struct FInputActionValue& sValue);
 	void move(const FInputActionValue& sValue);
+	void comboAttack(const FInputActionValue& sValue);
 	void sprint(const struct FInputActionInstance& sInst);
 	void sprintReleased(const struct FInputActionInstance& sInst);
+	
 
 
 

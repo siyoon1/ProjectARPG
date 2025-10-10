@@ -23,6 +23,12 @@ class PROJECTARPG_API UC_PlayerAnim : public UAnimInstance
 {
 	GENERATED_BODY()
 
+	UFUNCTION()
+	void AnimNotify_DodgeEnd();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", meta = (AllowPrivateAccess = "true"))
+	bool m_bIsDodging;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pDodgeMontage;
@@ -30,8 +36,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pSprintStartMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> m_pComboAttackMontage;
+
+	
+
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
+	void playAttackMontage();
 	
 };

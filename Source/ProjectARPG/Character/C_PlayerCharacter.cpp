@@ -35,6 +35,8 @@ void AC_PlayerCharacter::BeginPlay()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
+
 	if (APlayerController* pPlayerCon = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* pSubSystem =
@@ -111,8 +113,30 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	else
 	{
 		// 회피 실행
+		FVector vInputDir = GetLastMovementInputVector().GetSafeNormal();
 
-		pAnim->playDodgeMontage(E_Direction::Backward);
+		FVector vForward = GetActorForwardVector();
+		FVector vRight = GetActorRightVector();
+
+		float fForwardDot = FVector::DotProduct(vForward, vInputDir);
+		float fRightDot = FVector::DotProduct(vRight, vInputDir);
+
+		E_Direction eDir = E_Direction::Backward;
+
+		if (!vInputDir.IsNearlyZero())
+		{
+			if (FMath::Abs(fForwardDot) > FMath::Abs(fRightDot))
+			{
+				eDir = (fForwardDot > 0) ? E_Direction::Forward : E_Direction::Backward;
+			}
+			else
+			{
+				eDir = (fRightDot > 0) ? E_Direction::Right : E_Direction::Left;
+			}
+		}
+
+
+		pAnim->playDodgeMontage(eDir);
 		
 	}
 
@@ -136,6 +160,16 @@ void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
 	}
 }
 
+void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
+{
+	UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance());
+
+	if (!pAnim)
+		return;
+
+	pAnim->playAttackMontage();
+}
+
 void AC_PlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -151,5 +185,6 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pMoveAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::move);
 		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::sprint);
 		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::sprintReleased);
+		pEinputCom->BindAction(m_pComboAttackAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::comboAttack);
 	}
 }
