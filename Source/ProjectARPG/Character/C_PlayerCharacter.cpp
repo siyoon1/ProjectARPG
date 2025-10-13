@@ -48,6 +48,8 @@ void AC_PlayerCharacter::BeginPlay()
 
 }
 
+
+
 void AC_PlayerCharacter::look(const FInputActionValue& sValue)
 {
 	const FVector2D vLookAxis = sValue.Get<FVector2D>();
@@ -86,6 +88,9 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	
 	if (sInst.GetTriggerEvent() != ETriggerEvent::Triggered)
 		return;	
+
+	if (m_eState != E_PlayerActionState::Idle)
+		return;
 
 	const float fElapsedTime = sInst.GetElapsedTime();
 
@@ -141,7 +146,6 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = 800.f;
-	
 }
 
 void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
@@ -160,19 +164,79 @@ void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
 	}
 }
 
+void AC_PlayerCharacter::setCanCombo(bool bCanCombo)
+{
+	m_bCanQueueCombo = bCanCombo;
+}
+
 void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
-	UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance());
 
-	if (!pAnim)
-		return;
+	if (m_bCanQueueCombo)
+	{
+		m_bQueuedCombo = true;
+	}
+	else if (m_nCurrentComboIndex == 0)
+	{
+		m_nCurrentComboIndex = 1;
+		playComboSection(1);
+		m_bCanAttackRestart = false;
+	}
 
-	pAnim->playAttackMontage();
+}
+
+void AC_PlayerCharacter::playComboSection(int32 nComboIndex)
+{
+	m_nCurrentComboIndex = nComboIndex;
+
+	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
+	{
+		FName strSectionName = FName(*FString::Printf(TEXT("Attack%d"), nComboIndex));
+		pAnim->playComboMontageSection(strSectionName);
+	}
+
+}
+
+
+void AC_PlayerCharacter::tryContiuneCombo()
+{
+	setCanCombo(false);
+
+	if (m_bQueuedCombo && m_nCurrentComboIndex < m_nMaxComboIndex)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Player] Combo Continue: Index %d"), m_nCurrentComboIndex);
+
+		m_nCurrentComboIndex++;
+		playComboSection(m_nCurrentComboIndex);
+		m_bQueuedCombo = false;
+		
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Player] Combo End"));
+
+		resetComboState();
+	}
+}
+
+void AC_PlayerCharacter::resetComboState()
+{
+	m_nCurrentComboIndex = 0;
+	m_bQueuedCombo = false;
+	setCanCombo(false);
+	m_bCanAttackRestart = false;
+	
+}
+
+void AC_PlayerCharacter::enableComboRestart()
+{
+	m_bCanAttackRestart = true;
 }
 
 void AC_PlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
 }
 
 void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

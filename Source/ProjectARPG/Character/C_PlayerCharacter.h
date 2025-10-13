@@ -47,6 +47,12 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> m_pComboAttackAction;
 
+	int32 m_nCurrentComboIndex = 0;
+	int32 m_nMaxComboIndex = 5;
+	bool m_bCanQueueCombo = false;
+	bool m_bQueuedCombo = false;
+	bool m_bCanAttackRestart = false;
+
 
 public:
 	AC_PlayerCharacter();
@@ -62,6 +68,11 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+private:
+	void playComboSection(int32 nComboIndex);
+	
+	
+
 protected:
 	void look(const struct FInputActionValue& sValue);
 	void move(const FInputActionValue& sValue);
@@ -70,9 +81,11 @@ protected:
 	void sprintReleased(const struct FInputActionInstance& sInst);
 	
 
-
-
-
+public:
+	void setCanCombo(bool bCanCombo);
+	void tryContiuneCombo();
+	void resetComboState();
+	void enableComboRestart();
 
 
 	

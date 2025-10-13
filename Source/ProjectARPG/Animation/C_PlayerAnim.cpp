@@ -2,6 +2,33 @@
 
 
 #include "C_PlayerAnim.h"
+#include "../Character/C_PlayerCharacter.h"
+
+void UC_PlayerAnim::NativeInitializeAnimation()
+{
+    Super::NativeInitializeAnimation();
+
+    OnMontageEnded.AddDynamic(this, &UC_PlayerAnim::onMontageEnded);
+}
+
+void UC_PlayerAnim::NativeUninitializeAnimation()
+{
+    Super::NativeUninitializeAnimation();
+
+    OnMontageEnded.RemoveDynamic(this, &UC_PlayerAnim::onMontageEnded);
+}
+
+void UC_PlayerAnim::onMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Montage != m_pComboAttackMontage)
+		return;
+	if (AC_PlayerCharacter* pPlayer = Cast<AC_PlayerCharacter>(TryGetPawnOwner()))
+	{
+		pPlayer->resetComboState();
+		pPlayer->enableComboRestart();
+	}
+    
+}
 
 void UC_PlayerAnim::AnimNotify_DodgeEnd()
 {
@@ -48,13 +75,29 @@ void UC_PlayerAnim::playSprintStartMontage()
 {
 	if (!IsAnyMontagePlaying())
 		Montage_Play(m_pSprintStartMontage);
-	
 		
 	
 }
 
-void UC_PlayerAnim::playAttackMontage()
+void UC_PlayerAnim::playComboMontageSection(FName strSectionName)
 {
-	if (!IsAnyMontagePlaying())
-		Montage_Play(m_pComboAttackMontage);
+    if (!m_pComboAttackMontage)
+        return;
+
+    UE_LOG(LogTemp, Warning, TEXT("[Anim] Trying to jump to section: %s"), *strSectionName.ToString());
+
+    if (!IsAnyMontagePlaying())
+    {
+        Montage_Play(m_pComboAttackMontage);
+        UE_LOG(LogTemp, Warning, TEXT("[Anim] Montage not playing, so started montage"));
+    }
+
+    if (Montage_GetIsStopped(m_pComboAttackMontage))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[Anim] Montage is stopped!"));
+    }
+		
+
+
+    Montage_JumpToSection(strSectionName, m_pComboAttackMontage);
 }

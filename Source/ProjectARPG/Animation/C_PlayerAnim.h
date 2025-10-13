@@ -26,8 +26,11 @@ class PROJECTARPG_API UC_PlayerAnim : public UAnimInstance
 	UFUNCTION()
 	void AnimNotify_DodgeEnd();
 
+private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", meta = (AllowPrivateAccess = "true"))
 	bool m_bIsDodging;
+
+	FDelegateHandle m_sDelegateHandle;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -39,11 +42,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pComboAttackMontage;
 
-	
+protected:
+	virtual void NativeInitializeAnimation() override;
+	virtual void NativeUninitializeAnimation() override;
+
+	UFUNCTION()
+	void onMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
-	void playAttackMontage();
+	void playComboMontageSection(FName strSectionName);
 	
 };
