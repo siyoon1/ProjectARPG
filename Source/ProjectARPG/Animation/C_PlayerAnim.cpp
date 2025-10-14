@@ -26,6 +26,7 @@ void UC_PlayerAnim::onMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	{
 		pPlayer->resetComboState();
 		pPlayer->enableComboRestart();
+
 	}
     
 }

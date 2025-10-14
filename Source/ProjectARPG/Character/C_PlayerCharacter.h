@@ -70,6 +70,7 @@ protected:
 
 private:
 	void playComboSection(int32 nComboIndex);
+	void stopSprintOrDodge();
 	
 	
 
@@ -86,6 +87,8 @@ public:
 	void tryContiuneCombo();
 	void resetComboState();
 	void enableComboRestart();
+	void setPlayerActionState(E_PlayerActionState eNewState);
+	E_PlayerActionState getPlayerActionState() const;
 
 
 	

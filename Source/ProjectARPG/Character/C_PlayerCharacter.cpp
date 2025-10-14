@@ -89,8 +89,6 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	if (sInst.GetTriggerEvent() != ETriggerEvent::Triggered)
 		return;	
 
-	if (m_eState != E_PlayerActionState::Idle)
-		return;
 
 	const float fElapsedTime = sInst.GetElapsedTime();
 
@@ -117,6 +115,8 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	}
 	else
 	{
+		m_eState = E_PlayerActionState::Dodging;
+
 		// 회피 실행
 		FVector vInputDir = GetLastMovementInputVector().GetSafeNormal();
 
@@ -142,10 +142,12 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 
 
 		pAnim->playDodgeMontage(eDir);
+
+		GetCharacterMovement()->MaxWalkSpeed = 800.f;
 		
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed = 800.f;
+	
 }
 
 void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
@@ -171,6 +173,18 @@ void AC_PlayerCharacter::setCanCombo(bool bCanCombo)
 
 void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
+	if (m_eState == E_PlayerActionState::Dodging || m_eState == E_PlayerActionState::Sprinting)
+	{
+		// 대시 상태 해제
+		stopSprintOrDodge();
+
+		// 공격 상태로 전환
+		m_eState = E_PlayerActionState::Attacking;
+
+		m_nCurrentComboIndex = 1;
+		playComboSection(m_nCurrentComboIndex);
+		m_bCanAttackRestart = false;
+	}
 
 	if (m_bCanQueueCombo)
 	{
@@ -191,10 +205,25 @@ void AC_PlayerCharacter::playComboSection(int32 nComboIndex)
 
 	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
+
 		FName strSectionName = FName(*FString::Printf(TEXT("Attack%d"), nComboIndex));
 		pAnim->playComboMontageSection(strSectionName);
 	}
 
+}
+
+void AC_PlayerCharacter::stopSprintOrDodge()
+{
+	if (m_eState == E_PlayerActionState::Sprinting || m_eState == E_PlayerActionState::Dodging)
+		setPlayerActionState(E_PlayerActionState::Idle);
+
+	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
+	{
+		if (pAnim->IsAnyMontagePlaying())
+		{
+			pAnim->Montage_Stop(0.1f);
+		}
+	}
 }
 
 
@@ -231,6 +260,22 @@ void AC_PlayerCharacter::resetComboState()
 void AC_PlayerCharacter::enableComboRestart()
 {
 	m_bCanAttackRestart = true;
+}
+
+void AC_PlayerCharacter::setPlayerActionState(E_PlayerActionState eNewState)
+{
+	if (m_eState != eNewState)
+		m_eState = eNewState;
+
+	if (m_eState == E_PlayerActionState::Idle)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 800.f;
+	}
+}
+
+E_PlayerActionState AC_PlayerCharacter::getPlayerActionState() const
+{
+	return m_eState;
 }
 
 void AC_PlayerCharacter::Tick(float DeltaTime)
