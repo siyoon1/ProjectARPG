@@ -31,21 +31,10 @@ void UC_PlayerAnim::onMontageEnded(UAnimMontage* Montage, bool bInterrupted)
     
 }
 
-void UC_PlayerAnim::AnimNotify_DodgeEnd()
-{
-    UE_LOG(LogTemp, Log, TEXT("AnimNotify_DodgeEnd called"));
-    m_bIsDodging = false;
-}
-
 void UC_PlayerAnim::playDodgeMontage(E_Direction eDir)
 {
 	if (!m_pDodgeMontage)
 		return;
-
-    if (m_bIsDodging)
-        return;
-
-    m_bIsDodging = true;
 
     FName SectionName;
     switch (eDir)
@@ -77,7 +66,6 @@ void UC_PlayerAnim::playSprintStartMontage()
 	if (!IsAnyMontagePlaying())
 		Montage_Play(m_pSprintStartMontage);
 		
-	
 }
 
 void UC_PlayerAnim::playComboMontageSection(FName strSectionName)
@@ -87,16 +75,12 @@ void UC_PlayerAnim::playComboMontageSection(FName strSectionName)
 
     UE_LOG(LogTemp, Warning, TEXT("[Anim] Trying to jump to section: %s"), *strSectionName.ToString());
 
-    if (!IsAnyMontagePlaying())
+    if (!Montage_IsPlaying(m_pComboAttackMontage))
     {
         Montage_Play(m_pComboAttackMontage);
         UE_LOG(LogTemp, Warning, TEXT("[Anim] Montage not playing, so started montage"));
     }
-
-    if (Montage_GetIsStopped(m_pComboAttackMontage))
-    {
-        UE_LOG(LogTemp, Warning, TEXT("[Anim] Montage is stopped!"));
-    }
+    
 		
 
 

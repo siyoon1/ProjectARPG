@@ -89,19 +89,30 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	if (sInst.GetTriggerEvent() != ETriggerEvent::Triggered)
 		return;	
 
+	if (m_eState != E_PlayerActionState::Idle)
+		return;
+
 
 	const float fElapsedTime = sInst.GetElapsedTime();
 
 
 	const float fHoldThreshold = 0.3f;
 
+
 	if (fElapsedTime >= fHoldThreshold)
 	{
+		if (GetLastMovementInputVector().IsNearlyZero())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Sprint canceled: No movement input."));
+			return;
+		}
+
 		// 대시 실행
 		if (m_eState != E_PlayerActionState::Sprinting)
-		{
+		{			
 			pAnim->playSprintStartMontage();
 			m_eState = E_PlayerActionState::Sprinting;
+
 			if (APlayerController* pPlayerCon = Cast<APlayerController>(GetController()))
 			{
 				if (AC_PlayerCameraManager* pCameraMgr = Cast<AC_PlayerCameraManager>(pPlayerCon->PlayerCameraManager))
@@ -111,11 +122,17 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 			}
 			
 		}	
+		FVector vForwardDir = GetActorForwardVector();
+		FVector vLaunchVelocity = vForwardDir * 800.f; // 숫자 조절해서 속도/거리 조정
+
+		LaunchCharacter(vLaunchVelocity, true, false);
 		GetCharacterMovement()->MaxWalkSpeed = 1000.f;
 	}
 	else
 	{
+
 		m_eState = E_PlayerActionState::Dodging;
+
 
 		// 회피 실행
 		FVector vInputDir = GetLastMovementInputVector().GetSafeNormal();
@@ -145,6 +162,7 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 
 		GetCharacterMovement()->MaxWalkSpeed = 800.f;
 		
+		
 	}
 
 	
@@ -166,6 +184,16 @@ void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
 	}
 }
 
+void AC_PlayerCharacter::jumpStart(const FInputActionValue& sValue)
+{
+	Jump();
+}
+
+void AC_PlayerCharacter::jumpEnd(const FInputActionValue& sValue)
+{
+	StopJumping();
+}
+
 void AC_PlayerCharacter::setCanCombo(bool bCanCombo)
 {
 	m_bCanQueueCombo = bCanCombo;
@@ -173,35 +201,41 @@ void AC_PlayerCharacter::setCanCombo(bool bCanCombo)
 
 void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
-	if (m_eState == E_PlayerActionState::Dodging || m_eState == E_PlayerActionState::Sprinting)
+	UE_LOG(LogTemp, Warning, TEXT("[Player] Combo Attack Called. State: %d, ComboIndex: %d, CanQueue: %d"), (int)m_eState, m_nCurrentComboIndex, m_bCanQueueCombo);
+
+	if (m_eState == E_PlayerActionState::Sprinting || m_eState == E_PlayerActionState::Dodging)
 	{
 		// 대시 상태 해제
 		stopSprintOrDodge();
 
-		// 공격 상태로 전환
-		m_eState = E_PlayerActionState::Attacking;
 
 		m_nCurrentComboIndex = 1;
 		playComboSection(m_nCurrentComboIndex);
 		m_bCanAttackRestart = false;
+		return;
 	}
 
 	if (m_bCanQueueCombo)
 	{
 		m_bQueuedCombo = true;
+		return;
 	}
 	else if (m_nCurrentComboIndex == 0)
 	{
 		m_nCurrentComboIndex = 1;
 		playComboSection(1);
 		m_bCanAttackRestart = false;
+
 	}
+	
 
 }
 
 void AC_PlayerCharacter::playComboSection(int32 nComboIndex)
 {
 	m_nCurrentComboIndex = nComboIndex;
+	// 공격 상태로 전환
+	m_eState = E_PlayerActionState::Attacking;
 
 	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
@@ -214,16 +248,16 @@ void AC_PlayerCharacter::playComboSection(int32 nComboIndex)
 
 void AC_PlayerCharacter::stopSprintOrDodge()
 {
-	if (m_eState == E_PlayerActionState::Sprinting || m_eState == E_PlayerActionState::Dodging)
-		setPlayerActionState(E_PlayerActionState::Idle);
+	
+	setPlayerActionState(E_PlayerActionState::Idle);
 
-	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
+	/*if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
 		if (pAnim->IsAnyMontagePlaying())
 		{
 			pAnim->Montage_Stop(0.1f);
 		}
-	}
+	}*/
 }
 
 
@@ -243,7 +277,7 @@ void AC_PlayerCharacter::tryContiuneCombo()
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Player] Combo End"));
-
+		m_eState = E_PlayerActionState::Idle;
 		resetComboState();
 	}
 }
@@ -281,7 +315,7 @@ E_PlayerActionState AC_PlayerCharacter::getPlayerActionState() const
 void AC_PlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	UE_LOG(LogTemp, Warning, TEXT("%d"), (int32)m_eState);
 }
 
 void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -295,5 +329,7 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::sprint);
 		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::sprintReleased);
 		pEinputCom->BindAction(m_pComboAttackAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::comboAttack);
+		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::jumpStart);
+		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::jumpEnd);
 	}
 }

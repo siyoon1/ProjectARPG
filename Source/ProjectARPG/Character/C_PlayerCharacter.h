@@ -47,6 +47,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> m_pComboAttackAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> m_pJumpAction;
+
 	int32 m_nCurrentComboIndex = 0;
 	int32 m_nMaxComboIndex = 5;
 	bool m_bCanQueueCombo = false;
@@ -80,6 +83,8 @@ protected:
 	void comboAttack(const FInputActionValue& sValue);
 	void sprint(const struct FInputActionInstance& sInst);
 	void sprintReleased(const struct FInputActionInstance& sInst);
+	void jumpStart(const FInputActionValue& sValue);
+	void jumpEnd(const FInputActionValue& sValue);
 	
 
 public:

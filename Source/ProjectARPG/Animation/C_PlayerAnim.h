@@ -23,13 +23,7 @@ class PROJECTARPG_API UC_PlayerAnim : public UAnimInstance
 {
 	GENERATED_BODY()
 
-	UFUNCTION()
-	void AnimNotify_DodgeEnd();
-
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State", meta = (AllowPrivateAccess = "true"))
-	bool m_bIsDodging;
-
 	FDelegateHandle m_sDelegateHandle;
 
 protected:
