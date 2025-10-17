@@ -46,6 +46,7 @@ void AC_PlayerCharacter::BeginPlay()
 		}
 	}
 
+
 }
 
 
@@ -102,11 +103,8 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	if (fElapsedTime >= fHoldThreshold)
 	{
 		if (GetLastMovementInputVector().IsNearlyZero())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Sprint canceled: No movement input."));
 			return;
-		}
-
+		
 		// 대시 실행
 		if (m_eState != E_PlayerActionState::Sprinting)
 		{			
@@ -206,7 +204,7 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 	if (m_eState == E_PlayerActionState::Sprinting || m_eState == E_PlayerActionState::Dodging)
 	{
 		// 대시 상태 해제
-		stopSprintOrDodge();
+		setPlayerActionState(E_PlayerActionState::Idle);
 
 
 		m_nCurrentComboIndex = 1;
@@ -244,20 +242,6 @@ void AC_PlayerCharacter::playComboSection(int32 nComboIndex)
 		pAnim->playComboMontageSection(strSectionName);
 	}
 
-}
-
-void AC_PlayerCharacter::stopSprintOrDodge()
-{
-	
-	setPlayerActionState(E_PlayerActionState::Idle);
-
-	/*if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
-	{
-		if (pAnim->IsAnyMontagePlaying())
-		{
-			pAnim->Montage_Stop(0.1f);
-		}
-	}*/
 }
 
 

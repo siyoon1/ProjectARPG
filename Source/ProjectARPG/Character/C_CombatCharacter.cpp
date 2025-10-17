@@ -6,7 +6,17 @@
 
 AC_CombatCharacter::AC_CombatCharacter()
 {
+	
+}
 
+void AC_CombatCharacter::setHp(float fHp)
+{
+	m_fCurrnetHp = fHp;
+}
+
+float AC_CombatCharacter::getHp() const
+{
+	return m_fCurrnetHp;
 }
 
 void AC_CombatCharacter::BeginPlay()
@@ -26,5 +36,7 @@ void AC_CombatCharacter::BeginPlay()
 			UE_LOG(LogTemp, Warning, TEXT("Posture Stats Row '%s' not found!"), *m_sPostureRowName.ToString());
 		}
 	}
+
+	m_fCurrnetHp = m_fMaxHp;
 	
 }

@@ -20,14 +20,25 @@ protected:
 
 	struct FS_PostureStats* m_sPostureStats;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Posture", meta = (AllowPrivateAccess = "true"))
-	float m_fCurrentPosture;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Posture", meta = (AllowPrivateAccess = "true"))
 	FName m_sPostureRowName;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Posture", meta = (AllowPrivateAccess = "true"))
+	float m_fCurrentPosture = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hp", meta = (AllowPrivateAccess = "true"))
+	float m_fMaxHp = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Hp", meta = (AllowPrivateAccess = "true"))
+	float m_fCurrnetHp = 0.f;
+
 public:
 	AC_CombatCharacter();
+
+	UFUNCTION(BlueprintCallable)
+	void setHp(float fHp);
+	UFUNCTION(BlueprintCallable)
+	float getHp() const;
 
 protected:
 	// Called when the game starts or when spawned

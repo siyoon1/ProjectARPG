@@ -73,7 +73,6 @@ protected:
 
 private:
 	void playComboSection(int32 nComboIndex);
-	void stopSprintOrDodge();
 	
 	
 
