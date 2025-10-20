@@ -32,9 +32,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pSprintStartMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> m_pComboAttackMontage;
+	/// <summary>
+	/// //////////////////
+	/// </summary>
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	TArray<UAnimMontage*> m_pComboAttackMontages;
 
 protected:
 	virtual void NativeInitializeAnimation() override;
@@ -46,6 +48,6 @@ protected:
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
-	void playComboMontageSection(FName strSectionName);
+	void playComboMontage(int32 nComboIndex);
 	
 };

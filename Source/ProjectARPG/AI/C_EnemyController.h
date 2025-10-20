@@ -24,5 +24,9 @@ public:
 	AC_EnemyController();
 
 	virtual void OnPossess(APawn* InPawn) override;
+
+	static const FName TargetActorKey;
+	static const FName StartPosKey;
+	static const FName PatrolPosKey;
 	
 };

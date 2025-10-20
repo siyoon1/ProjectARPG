@@ -6,6 +6,10 @@
 #include "BehaviorTree/BlackboardData.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
+const FName AC_EnemyController::TargetActorKey = TEXT("TargetActor");
+const FName AC_EnemyController::StartPosKey = TEXT("StartPos");
+const FName AC_EnemyController::PatrolPosKey = TEXT("PatrolPos");
+
 AC_EnemyController::AC_EnemyController()
 {
 	static ConstructorHelpers::FObjectFinder<UBehaviorTree> BT(TEXT("/Game/AI/bt-Enemy.bt-Enemy"));

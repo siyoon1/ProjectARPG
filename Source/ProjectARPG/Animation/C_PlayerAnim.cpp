@@ -9,6 +9,8 @@ void UC_PlayerAnim::NativeInitializeAnimation()
     Super::NativeInitializeAnimation();
 
     OnMontageEnded.AddDynamic(this, &UC_PlayerAnim::onMontageEnded);
+
+    
 }
 
 void UC_PlayerAnim::NativeUninitializeAnimation()
@@ -20,8 +22,8 @@ void UC_PlayerAnim::NativeUninitializeAnimation()
 
 void UC_PlayerAnim::onMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (Montage != m_pComboAttackMontage)
-		return;
+	/*if (Montage != m_pComboAttackMontage)
+		return;*/
 	if (AC_PlayerCharacter* pPlayer = Cast<AC_PlayerCharacter>(TryGetPawnOwner()))
 	{
 		pPlayer->resetComboState();
@@ -68,21 +70,24 @@ void UC_PlayerAnim::playSprintStartMontage()
 		
 }
 
-void UC_PlayerAnim::playComboMontageSection(FName strSectionName)
+void UC_PlayerAnim::playComboMontage(int32 nComboIndex)
 {
-    if (!m_pComboAttackMontage)
-        return;
 
-    UE_LOG(LogTemp, Warning, TEXT("[Anim] Trying to jump to section: %s"), *strSectionName.ToString());
-
-    if (!Montage_IsPlaying(m_pComboAttackMontage))
+    if (!m_pComboAttackMontages.IsValidIndex(nComboIndex - 1))
     {
-        Montage_Play(m_pComboAttackMontage);
-        UE_LOG(LogTemp, Warning, TEXT("[Anim] Montage not playing, so started montage"));
+        UE_LOG(LogTemp, Error, TEXT("Invalid Combo Index: %d"), nComboIndex);
+        return;
     }
-    
-		
 
+     
 
-    Montage_JumpToSection(strSectionName, m_pComboAttackMontage);
+    UAnimMontage* pMontageToPlay = m_pComboAttackMontages[nComboIndex - 1];
+
+    if (!pMontageToPlay)
+    {
+        return;
+    }
+        
+    if (!Montage_IsPlaying(pMontageToPlay))
+        Montage_Play(pMontageToPlay);
 }

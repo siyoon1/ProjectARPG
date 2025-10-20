@@ -195,6 +195,7 @@ void AC_PlayerCharacter::jumpEnd(const FInputActionValue& sValue)
 void AC_PlayerCharacter::setCanCombo(bool bCanCombo)
 {
 	m_bCanQueueCombo = bCanCombo;
+	UE_LOG(LogTemp, Warning, TEXT("[Player] CanQueueCombo: %d"), bCanCombo);
 }
 
 void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
@@ -208,7 +209,7 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 
 
 		m_nCurrentComboIndex = 1;
-		playComboSection(m_nCurrentComboIndex);
+		playCombo(m_nCurrentComboIndex);
 		m_bCanAttackRestart = false;
 		return;
 	}
@@ -221,15 +222,17 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 	else if (m_nCurrentComboIndex == 0)
 	{
 		m_nCurrentComboIndex = 1;
-		playComboSection(1);
+		playCombo(1);
 		m_bCanAttackRestart = false;
 
 	}
+
+	
 	
 
 }
 
-void AC_PlayerCharacter::playComboSection(int32 nComboIndex)
+void AC_PlayerCharacter::playCombo(int32 nComboIndex)
 {
 	m_nCurrentComboIndex = nComboIndex;
 	// 공격 상태로 전환
@@ -237,9 +240,8 @@ void AC_PlayerCharacter::playComboSection(int32 nComboIndex)
 
 	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
-
-		FName strSectionName = FName(*FString::Printf(TEXT("Attack%d"), nComboIndex));
-		pAnim->playComboMontageSection(strSectionName);
+		UE_LOG(LogTemp, Warning, TEXT("[Player] AnimInstance cast SUCCESS"));
+		pAnim->playComboMontage(nComboIndex);
 	}
 
 }
@@ -254,7 +256,7 @@ void AC_PlayerCharacter::tryContiuneCombo()
 		UE_LOG(LogTemp, Warning, TEXT("[Player] Combo Continue: Index %d"), m_nCurrentComboIndex);
 
 		m_nCurrentComboIndex++;
-		playComboSection(m_nCurrentComboIndex);
+		playCombo(m_nCurrentComboIndex);
 		m_bQueuedCombo = false;
 		
 	}
@@ -299,7 +301,6 @@ E_PlayerActionState AC_PlayerCharacter::getPlayerActionState() const
 void AC_PlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UE_LOG(LogTemp, Warning, TEXT("%d"), (int32)m_eState);
 }
 
 void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

@@ -72,7 +72,7 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	void playComboSection(int32 nComboIndex);
+	void playCombo(int32 nComboIndex);
 	
 	
 

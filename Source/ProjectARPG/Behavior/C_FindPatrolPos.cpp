@@ -5,7 +5,7 @@
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "DrawDebugHelpers.h"
 #include "BehaviorTree/BlackboardComponent.h"
-
+#include "Engine/OverlapResult.h"
 
 void UC_FindPatrolPos::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
@@ -19,20 +19,31 @@ void UC_FindPatrolPos::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 	FVector vCenter = pEnemy->GetActorLocation();
 	float fDetectRadius = 600.f;
 
-//	TArray<FOverlapResult> listOverlap{};
-//
-//	FCollisionQueryParams Params(NAME_None, false, pEnemy);
-//
-//	bool bHasHit = 
-//	pEnemy->GetWorld()->OverlapMultiByChannel(listOverlap, vCenter, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(fDetectRadius), Params);
-//
+	TArray<FOverlapResult> listOverlap{};
+
+	FCollisionQueryParams Params(NAME_None, false, pEnemy);
+
+	bool bHasHit = 
+	pEnemy->GetWorld()->OverlapMultiByChannel(listOverlap, vCenter, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(fDetectRadius), Params);
+
 //#ifdef DEBUG_DRAW
-//	DrawDebugSphere(pEnemy->GetWorld(), vCenter, fDetectRadius, 20, FColor::Red, false, 1.f);
+	//DrawDebugSphere(pEnemy->GetWorld(), vCenter, fDetectRadius, 20, FColor::Red, false, 1.f);
 //#endif // DEBUG_DRAW
-//
-//	if (bHasHit)
-//	{
-//		AActor* pTarget = nullptr;
-//	}
+
+	if (bHasHit)
+	{
+		ACharacter* pTarget = nullptr;
+
+		for (const FOverlapResult& Object : listOverlap)
+		{
+			AActor* pAct = Object.GetActor();
+			if (ACharacter* pChar = Cast<ACharacter>(pAct))
+			{
+				pTarget = pChar;
+			}
+
+		}
+		OwnerComp.GetBlackboardComponent()->SetValueAsObject(AC_EnemyController::TargetActorKey, pTarget);
+	}
 
 }
