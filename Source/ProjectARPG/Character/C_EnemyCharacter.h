@@ -13,5 +13,12 @@ UCLASS()
 class PROJECTARPG_API AC_EnemyCharacter : public AC_CombatCharacter
 {
 	GENERATED_BODY()
-	
+
+private:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Widget", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UWidgetComponent> m_wHpBarCom;
+
+public:
+	void showHpBar(bool bShow);
+
 };

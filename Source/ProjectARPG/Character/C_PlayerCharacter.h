@@ -52,9 +52,9 @@ private:
 
 	int32 m_nCurrentComboIndex = 0;
 	int32 m_nMaxComboIndex = 5;
-	bool m_bCanQueueCombo = false;
-	bool m_bQueuedCombo = false;
-	bool m_bCanAttackRestart = false;
+	bool m_bNextComboQueued = false;
+	float m_fLastAttackInputTime = 0.f;
+	float m_fInputBuffer = 0.25f;
 
 
 public:
@@ -87,11 +87,9 @@ protected:
 	
 
 public:
-	void setCanCombo(bool bCanCombo);
-	void tryContiuneCombo();
-	void resetComboState();
-	void enableComboRestart();
 	void setPlayerActionState(E_PlayerActionState eNewState);
+	void onComboTransition();
+	void resetCombo();
 	E_PlayerActionState getPlayerActionState() const;
 
 

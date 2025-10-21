@@ -34,5 +34,10 @@ void AC_EnemyController::OnPossess(APawn* InPawn)
 	if (UseBlackboard(m_BB, pBBcom))
 	{
 		RunBehaviorTree(m_BT);
+
+		if (InPawn)
+		{
+			Blackboard->SetValueAsVector(StartPosKey, InPawn->GetActorLocation());
+		}
 	}
 }

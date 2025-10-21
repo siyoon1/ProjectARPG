@@ -38,13 +38,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
 	TArray<UAnimMontage*> m_pComboAttackMontages;
 
-protected:
-	virtual void NativeInitializeAnimation() override;
-	virtual void NativeUninitializeAnimation() override;
-
-	UFUNCTION()
-	void onMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();

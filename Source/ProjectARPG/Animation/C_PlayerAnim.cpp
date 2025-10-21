@@ -4,35 +4,6 @@
 #include "C_PlayerAnim.h"
 #include "../Character/C_PlayerCharacter.h"
 
-void UC_PlayerAnim::NativeInitializeAnimation()
-{
-    Super::NativeInitializeAnimation();
-
-    OnMontageEnded.AddDynamic(this, &UC_PlayerAnim::onMontageEnded);
-
-    
-}
-
-void UC_PlayerAnim::NativeUninitializeAnimation()
-{
-    Super::NativeUninitializeAnimation();
-
-    OnMontageEnded.RemoveDynamic(this, &UC_PlayerAnim::onMontageEnded);
-}
-
-void UC_PlayerAnim::onMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	/*if (Montage != m_pComboAttackMontage)
-		return;*/
-	if (AC_PlayerCharacter* pPlayer = Cast<AC_PlayerCharacter>(TryGetPawnOwner()))
-	{
-		pPlayer->resetComboState();
-		pPlayer->enableComboRestart();
-
-	}
-    
-}
-
 void UC_PlayerAnim::playDodgeMontage(E_Direction eDir)
 {
 	if (!m_pDodgeMontage)
@@ -88,6 +59,5 @@ void UC_PlayerAnim::playComboMontage(int32 nComboIndex)
         return;
     }
         
-    if (!Montage_IsPlaying(pMontageToPlay))
-        Montage_Play(pMontageToPlay);
+    Montage_Play(pMontageToPlay);
 }

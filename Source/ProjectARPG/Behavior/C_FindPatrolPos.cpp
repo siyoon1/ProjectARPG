@@ -3,6 +3,7 @@
 
 #include "C_FindPatrolPos.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
+#include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "DrawDebugHelpers.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Engine/OverlapResult.h"
@@ -43,7 +44,22 @@ void UC_FindPatrolPos::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 			}
 
 		}
-		OwnerComp.GetBlackboardComponent()->SetValueAsObject(AC_EnemyController::TargetActorKey, pTarget);
+
+		AActor* pTargetActor = Cast<AActor>(pTarget);
+		OwnerComp.GetBlackboardComponent()->SetValueAsObject(AC_EnemyController::TargetActorKey, pTargetActor);
+
+		if (OwnerComp.GetBlackboardComponent()->GetValueAsObject(AC_EnemyController::TargetActorKey))
+		{
+			AC_EnemyCharacter* Enemy = Cast<AC_EnemyCharacter>(pEnemy);
+			if (Enemy)
+				Enemy->showHpBar(true);
+		}
+		else
+		{
+			AC_EnemyCharacter* Enemy = Cast<AC_EnemyCharacter>(pEnemy);
+			if (Enemy)
+				Enemy->showHpBar(false);
+		}
 	}
 
 }

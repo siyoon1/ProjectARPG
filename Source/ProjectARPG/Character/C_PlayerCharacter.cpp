@@ -35,7 +35,7 @@ void AC_PlayerCharacter::BeginPlay()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 800.f, 0.f);
 
 	if (APlayerController* pPlayerCon = Cast<APlayerController>(Controller))
 	{
@@ -192,52 +192,45 @@ void AC_PlayerCharacter::jumpEnd(const FInputActionValue& sValue)
 	StopJumping();
 }
 
-void AC_PlayerCharacter::setCanCombo(bool bCanCombo)
-{
-	m_bCanQueueCombo = bCanCombo;
-	UE_LOG(LogTemp, Warning, TEXT("[Player] CanQueueCombo: %d"), bCanCombo);
-}
-
 void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[Player] Combo Attack Called. State: %d, ComboIndex: %d, CanQueue: %d"), (int)m_eState, m_nCurrentComboIndex, m_bCanQueueCombo);
+	m_fLastAttackInputTime = GetWorld()->GetTimeSeconds();
 
 	if (m_eState == E_PlayerActionState::Sprinting || m_eState == E_PlayerActionState::Dodging)
 	{
 		// 대시 상태 해제
-		setPlayerActionState(E_PlayerActionState::Idle);
+		setPlayerActionState(E_PlayerActionState::Attacking);
 
 
 		m_nCurrentComboIndex = 1;
+		m_bNextComboQueued = false;
 		playCombo(m_nCurrentComboIndex);
-		m_bCanAttackRestart = false;
 		return;
 	}
 
-	if (m_bCanQueueCombo)
+	if (m_eState != E_PlayerActionState::Attacking)
 	{
-		m_bQueuedCombo = true;
-		return;
-	}
-	else if (m_nCurrentComboIndex == 0)
-	{
+		m_eState = E_PlayerActionState::Attacking;
 		m_nCurrentComboIndex = 1;
-		playCombo(1);
-		m_bCanAttackRestart = false;
-
+		m_bNextComboQueued = false;
+		playCombo(m_nCurrentComboIndex);
 	}
 
-	
-	
+	else if (m_eState == E_PlayerActionState::Attacking && !m_bNextComboQueued)
+	{
+		if (m_nCurrentComboIndex < m_nMaxComboIndex)
+			m_bNextComboQueued = true;
+	}
+
+
 
 }
+
 
 void AC_PlayerCharacter::playCombo(int32 nComboIndex)
 {
 	m_nCurrentComboIndex = nComboIndex;
-	// 공격 상태로 전환
-	m_eState = E_PlayerActionState::Attacking;
-
+	
 	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Player] AnimInstance cast SUCCESS"));
@@ -246,40 +239,25 @@ void AC_PlayerCharacter::playCombo(int32 nComboIndex)
 
 }
 
-
-void AC_PlayerCharacter::tryContiuneCombo()
+void AC_PlayerCharacter::onComboTransition()
 {
-	setCanCombo(false);
-
-	if (m_bQueuedCombo && m_nCurrentComboIndex < m_nMaxComboIndex)
+	if (m_bNextComboQueued && GetWorld()->GetTimeSeconds() - m_fLastAttackInputTime <= m_fInputBuffer)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Player] Combo Continue: Index %d"), m_nCurrentComboIndex);
-
+		m_bNextComboQueued = false;
 		m_nCurrentComboIndex++;
+
+		if (m_nCurrentComboIndex > m_nMaxComboIndex)
+		{
+			resetCombo();
+			return;
+		}
+
 		playCombo(m_nCurrentComboIndex);
-		m_bQueuedCombo = false;
-		
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Player] Combo End"));
-		m_eState = E_PlayerActionState::Idle;
-		resetComboState();
+		resetCombo();
 	}
-}
-
-void AC_PlayerCharacter::resetComboState()
-{
-	m_nCurrentComboIndex = 0;
-	m_bQueuedCombo = false;
-	setCanCombo(false);
-	m_bCanAttackRestart = false;
-	
-}
-
-void AC_PlayerCharacter::enableComboRestart()
-{
-	m_bCanAttackRestart = true;
 }
 
 void AC_PlayerCharacter::setPlayerActionState(E_PlayerActionState eNewState)
@@ -291,6 +269,16 @@ void AC_PlayerCharacter::setPlayerActionState(E_PlayerActionState eNewState)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = 800.f;
 	}
+}
+
+
+
+
+void AC_PlayerCharacter::resetCombo()
+{
+	m_eState = E_PlayerActionState::Idle;
+	m_nCurrentComboIndex = 0;
+	m_bNextComboQueued = false;
 }
 
 E_PlayerActionState AC_PlayerCharacter::getPlayerActionState() const
@@ -313,7 +301,7 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pMoveAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::move);
 		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::sprint);
 		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::sprintReleased);
-		pEinputCom->BindAction(m_pComboAttackAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::comboAttack);
+		pEinputCom->BindAction(m_pComboAttackAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::comboAttack);
 		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::jumpStart);
 		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::jumpEnd);
 	}

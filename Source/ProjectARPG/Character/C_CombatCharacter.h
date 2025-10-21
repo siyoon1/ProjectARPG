@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "C_BaseCharacter.h"
+#include "ProjectARPG/Interface/C_CombatInterface.h"
 #include "C_CombatCharacter.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTARPG_API AC_CombatCharacter : public AC_BaseCharacter
+class PROJECTARPG_API AC_CombatCharacter : public AC_BaseCharacter, public IC_CombatInterface
 {
 	GENERATED_BODY()
 

@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
-#include "C_ComboCheck.generated.h"
+#include "C_OnComboTransition.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTARPG_API UC_ComboCheck : public UAnimNotify
+class PROJECTARPG_API UC_OnComboTransition : public UAnimNotify
 {
 	GENERATED_BODY()
 
