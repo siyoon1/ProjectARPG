@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class PROJECTARPG_API AC_EnemyCharacter : public AC_CombatCharacter
 {
 	GENERATED_BODY()

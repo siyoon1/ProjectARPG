@@ -18,7 +18,7 @@ enum class E_PlayerActionState : uint8
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class PROJECTARPG_API AC_PlayerCharacter : public AC_CombatCharacter
 {
 	GENERATED_BODY()

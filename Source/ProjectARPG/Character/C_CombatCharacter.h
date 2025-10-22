@@ -10,16 +10,16 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class PROJECTARPG_API AC_CombatCharacter : public AC_BaseCharacter, public IC_CombatInterface
 {
 	GENERATED_BODY()
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
-	UDataTable* m_pPostureStatsTable;
+	UDataTable* m_pPostureStatsTable{};
 
-	struct FS_PostureStats* m_sPostureStats;
+	struct FS_PostureStats* m_sPostureStats{};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Posture", meta = (AllowPrivateAccess = "true"))
 	FName m_sPostureRowName;
@@ -33,6 +33,33 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Hp", meta = (AllowPrivateAccess = "true"))
 	float m_fCurrnetHp = 0.f;
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "trace", meta = (AllowPrivateAccess = "true"))
+	float m_fTraceRadius = 20.f;
+
+	bool m_bIsTracing = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "trace", meta = (AllowPrivateAccess = "true"))
+	float m_fAttackDamage = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "trace", meta = (AllowPrivateAccess = "true"))
+	float m_fPostureDamage = 0.f;
+
+	FVector m_vLastTraceStart{};
+	FVector m_vLastTraceEnd{};
+	TArray<AActor*> m_HitActors{};
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
+	TObjectPtr<USceneComponent> m_pTraceStart;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
+	TObjectPtr<USceneComponent> m_pTraceEnd;
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
 public:
 	AC_CombatCharacter();
 
@@ -40,9 +67,16 @@ public:
 	void setHp(float fHp);
 	UFUNCTION(BlueprintCallable)
 	float getHp() const;
+	UFUNCTION(BlueprintCallable)
+	float getPosture() const;
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-	
+	UFUNCTION()
+	void startAttackTrace();
+	UFUNCTION()
+	void stopAttackTrace();
+	UFUNCTION()
+	void performAttackTrace();
+
+	UFUNCTION()
+	void takeDamage_Implementation(float fDamage, float fPostureDamage);
 };
