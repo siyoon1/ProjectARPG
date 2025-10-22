@@ -7,6 +7,8 @@
 #include "ProjectARPG/Interface/C_CombatInterface.h"
 #include "C_CombatCharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, fCurrentHp, float, fMaxHp);
+
 /**
  * 
  */
@@ -35,7 +37,7 @@ protected:
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "trace", meta = (AllowPrivateAccess = "true"))
-	float m_fTraceRadius = 20.f;
+	float m_fTraceRadius = 40.f;
 
 	bool m_bIsTracing = false;
 
@@ -55,6 +57,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
 	TObjectPtr<USceneComponent> m_pTraceEnd;
+
+	UPROPERTY(BlueprintAssignable, Category = "Status")
+	FOnHpChanged m_OnHpChanged;
 
 protected:
 	// Called when the game starts or when spawned

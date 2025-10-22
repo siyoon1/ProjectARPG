@@ -92,21 +92,23 @@ void AC_CombatCharacter::performAttackTrace()
 		for (const FHitResult& Hit : HitRes)
 		{
 			AActor* pHitActor = Hit.GetActor();
-			APawn* pHitPawn = Cast<APawn>(pHitActor);
-			if (!pHitPawn)
+
+			if (!pHitActor)
 				continue;
-			if (pHitPawn == this)
+
+			if (pHitActor == this)
 				continue;
-			if (m_HitActors.Contains(pHitPawn))
+
+			if (m_HitActors.Contains(pHitActor))
 				continue;
 
 
-			if (pHitPawn->GetClass()->ImplementsInterface(UC_CombatInterface::StaticClass()))
+			if (pHitActor->GetClass()->ImplementsInterface(UC_CombatInterface::StaticClass()))
 			{
-				IC_CombatInterface::Execute_takeDamage(pHitPawn, m_fAttackDamage, m_fPostureDamage);
+				IC_CombatInterface::Execute_takeDamage(pHitActor, m_fAttackDamage, m_fPostureDamage);
 			}
 
-			m_HitActors.Add(pHitPawn);
+			m_HitActors.Add(pHitActor);
 		}
 	}
 
@@ -114,9 +116,15 @@ void AC_CombatCharacter::performAttackTrace()
 
 void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage)
 {
-	if (m_fCurrnetHp > 0 )
-		m_fCurrnetHp -= fDamage;
+	if (m_fCurrnetHp > 0)
+		m_fCurrnetHp = FMath::Clamp(m_fCurrnetHp - fDamage, 0.f, m_fMaxHp);
+
 	m_fCurrentPosture -= fPostureDamage;
+
+	m_OnHpChanged.Broadcast(m_fCurrnetHp, m_fMaxHp);
+	UE_LOG(LogTemp, Warning, TEXT("TakeDamage: HP %.1f / %.1f"), m_fCurrnetHp, m_fMaxHp);
+
+
 }
 
 void AC_CombatCharacter::BeginPlay()
