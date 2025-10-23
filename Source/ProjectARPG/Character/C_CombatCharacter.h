@@ -8,7 +8,16 @@
 #include "C_CombatCharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, fCurrentHp, float, fMaxHp);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPostureChanged, float, fCurrentPosture, float, fMaxPosture);
 
+
+UENUM(BlueprintType)
+enum class E_AttackType : uint8
+{
+	Normal,
+	Air,
+	Charge
+};
 /**
  * 
  */
@@ -28,6 +37,8 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Posture", meta = (AllowPrivateAccess = "true"))
 	float m_fCurrentPosture = 0.f;
+
+	float m_fMaxPosture = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hp", meta = (AllowPrivateAccess = "true"))
 	float m_fMaxHp = 0.f;
@@ -51,6 +62,8 @@ protected:
 	FVector m_vLastTraceEnd{};
 	TArray<AActor*> m_HitActors{};
 
+	E_AttackType m_eAttackType = E_AttackType::Normal;
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
 	TObjectPtr<USceneComponent> m_pTraceStart;
@@ -60,6 +73,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Status")
 	FOnHpChanged m_OnHpChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Status")
+	FOnPostureChanged m_OnPostureChanged;
 
 protected:
 	// Called when the game starts or when spawned
@@ -73,7 +89,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	float getHp() const;
 	UFUNCTION(BlueprintCallable)
+	float getMaxHp() const;
+	UFUNCTION(BlueprintCallable)
 	float getPosture() const;
+	UFUNCTION(BlueprintCallable)
+	float getMaxPosture() const;
 
 	UFUNCTION()
 	void startAttackTrace();

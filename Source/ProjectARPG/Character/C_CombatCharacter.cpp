@@ -23,9 +23,20 @@ float AC_CombatCharacter::getHp() const
 	return m_fCurrnetHp;
 }
 
+float AC_CombatCharacter::getMaxHp() const
+{
+	return m_fMaxHp;
+}
+
 float AC_CombatCharacter::getPosture() const
 {
 	return m_fCurrentPosture;
+}
+
+float AC_CombatCharacter::getMaxPosture() const
+{
+
+	return m_fMaxPosture;
 }
 
 void AC_CombatCharacter::startAttackTrace()
@@ -105,7 +116,21 @@ void AC_CombatCharacter::performAttackTrace()
 
 			if (pHitActor->GetClass()->ImplementsInterface(UC_CombatInterface::StaticClass()))
 			{
-				IC_CombatInterface::Execute_takeDamage(pHitActor, m_fAttackDamage, m_fPostureDamage);
+				float fFinalDamage = m_fAttackDamage;
+				float fFinalPostureDamage = m_fPostureDamage;
+
+				switch (m_eAttackType)
+				{
+				case E_AttackType::Normal:
+					// 기본값 그대로
+					break;
+
+				case E_AttackType::Air:
+					fFinalDamage *= 0.8f;
+					fFinalPostureDamage *= 1.0f;
+					break;
+				}
+				IC_CombatInterface::Execute_takeDamage(pHitActor, fFinalDamage, fFinalPostureDamage);
 			}
 
 			m_HitActors.Add(pHitActor);
@@ -119,10 +144,14 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 	if (m_fCurrnetHp > 0)
 		m_fCurrnetHp = FMath::Clamp(m_fCurrnetHp - fDamage, 0.f, m_fMaxHp);
 
-	m_fCurrentPosture -= fPostureDamage;
+	if (m_fCurrentPosture > 0)
+		m_fCurrentPosture = FMath::Clamp(m_fCurrentPosture - fPostureDamage, 0.f, m_fMaxPosture);
 
 	m_OnHpChanged.Broadcast(m_fCurrnetHp, m_fMaxHp);
 	UE_LOG(LogTemp, Warning, TEXT("TakeDamage: HP %.1f / %.1f"), m_fCurrnetHp, m_fMaxHp);
+
+	if (m_sPostureStats)
+		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
 
 
 }
@@ -137,7 +166,9 @@ void AC_CombatCharacter::BeginPlay()
 		if (pLoadedStats)
 		{
 			m_sPostureStats = pLoadedStats;
-			m_fCurrentPosture = m_sPostureStats->fMaxPosture;
+			m_fMaxPosture = m_sPostureStats->fMaxPosture;
+			m_fCurrentPosture = m_fMaxPosture;
+			
 		}
 		else
 		{

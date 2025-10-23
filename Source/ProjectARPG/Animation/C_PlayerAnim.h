@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "ProjectARPG/Character/C_CombatCharacter.h"
 #include "C_PlayerAnim.generated.h"
 
 UENUM(BlueprintType)
@@ -41,6 +42,6 @@ protected:
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
-	void playComboMontage(int32 nComboIndex);
+	void playComboMontage(E_AttackType eType, int32 nComboIndex);
 	
 };

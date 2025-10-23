@@ -234,7 +234,8 @@ void AC_PlayerCharacter::playCombo(int32 nComboIndex)
 	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Player] AnimInstance cast SUCCESS"));
-		pAnim->playComboMontage(nComboIndex);
+		m_eAttackType = E_AttackType::Normal;
+		pAnim->playComboMontage(m_eAttackType,nComboIndex);
 	}
 
 }

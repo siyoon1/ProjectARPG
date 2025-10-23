@@ -18,7 +18,11 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Widget", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UWidgetComponent> m_wHpBarCom;
 
+	bool m_bCanbeExcuted = false;
+
 public:
 	void showHpBar(bool bShow);
+
+	void takeDamage_Implementation(float fDamage, float fPostureDamage) override;
 
 };
