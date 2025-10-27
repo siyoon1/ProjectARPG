@@ -15,16 +15,22 @@ void AC_EnemyCharacter::showHpBar(bool bShow)
 
 void AC_EnemyCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Enemy::takeDamage_Implementation CALLED"));
 	Super::takeDamage_Implementation(fDamage, fPostureDamage);
 
-	if (m_fCurrentPosture >= m_fMaxPosture && !m_bCanbeExcuted)
+	UE_LOG(LogTemp, Warning, TEXT("Posture: %.1f / %.1f (CanBeExecuted: %s)"),
+		m_fCurrentPosture, m_fMaxPosture,
+		m_bCanbeExcuted ? TEXT("TRUE") : TEXT("FALSE"));
+
+	if (m_fCurrentPosture <= 0.f && !m_bCanbeExcuted)
 	{
-		m_fCurrentPosture = m_fMaxPosture;
+		m_fCurrentPosture = 0.f;
 		m_bCanbeExcuted = true;
 
 		if (UC_ExecutionComponent* pExcutionCom = FindComponentByClass<UC_ExecutionComponent>())
 		{
 			pExcutionCom->onBecomeExcutable(this);
+			UE_LOG(LogTemp, Error, TEXT("ONBECOMEEXCUTABLE!!!!"));
 		}
 
 

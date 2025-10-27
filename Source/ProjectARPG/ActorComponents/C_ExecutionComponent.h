@@ -12,6 +12,10 @@ class PROJECTARPG_API UC_ExecutionComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+private:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UNiagaraComponent> m_ExecutionVFX;
+
 public:	
 	// Sets default values for this component's properties
 	UC_ExecutionComponent();
