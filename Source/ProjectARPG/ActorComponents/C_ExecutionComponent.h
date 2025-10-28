@@ -13,8 +13,11 @@ class PROJECTARPG_API UC_ExecutionComponent : public UActorComponent
 	GENERATED_BODY()
 
 private:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UNiagaraComponent> m_ExecutionVFX;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAnimMontage> m_pAttackerMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAnimMontage> m_pEnemyMontage;
 
 public:	
 	// Sets default values for this component's properties
@@ -24,14 +27,14 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	void performExcution(APawn* pInstigator, APawn* pVictim);
+	void performExecution(APawn* pInstigator, APawn* pVictim);
 
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void onBecomeExcutable(APawn* pVictim);
-	void tirggerExcution(APawn* pVictim);
+	void onBecomeExecutable(APawn* pVictim);
+	void triggerExecution(APawn* pVictim);
 
 		
 };

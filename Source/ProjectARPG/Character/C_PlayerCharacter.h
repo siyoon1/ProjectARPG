@@ -13,6 +13,7 @@ enum class E_PlayerActionState : uint8
 	Sprinting,
 	Dodging,
 	Attacking,
+	Executing
 };
 
 /**
@@ -49,6 +50,10 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> m_pJumpAction;
+
+	UPROPERTY()
+	class USphereComponent* m_pExecutionDetectSphere;
+
 
 	int32 m_nCurrentComboIndex = 0;
 	int32 m_nMaxComboIndex = 5;
@@ -91,6 +96,7 @@ public:
 	void onComboTransition();
 	void resetCombo();
 	E_PlayerActionState getPlayerActionState() const;
+	bool tryExcuteEnemy();
 
 
 	

@@ -20,8 +20,20 @@ private:
 
 	bool m_bCanbeExcuted = false;
 
+	UPROPERTY()
+	TObjectPtr<class UNiagaraComponent> m_ExecutionVFX;
+
+protected:
+	void BeginPlay() override;
+
 public:
 	void showHpBar(bool bShow);
+
+	void showExecutionVFX(bool bShow);
+
+	void setCanBeExecuted(bool bCan);
+
+	bool canBeExecuted() const;
 
 	void takeDamage_Implementation(float fDamage, float fPostureDamage) override;
 

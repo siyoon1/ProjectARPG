@@ -46,6 +46,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Hp", meta = (AllowPrivateAccess = "true"))
 	float m_fCurrnetHp = 0.f;
 
+	float m_fRecoveryRate = 0.f;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "trace", meta = (AllowPrivateAccess = "true"))
 	float m_fTraceRadius = 40.f;
@@ -63,6 +65,9 @@ protected:
 	TArray<AActor*> m_HitActors{};
 
 	E_AttackType m_eAttackType = E_AttackType::Normal;
+
+	UPROPERTY()
+	TObjectPtr<class UC_ExecutionComponent> m_pExecutionCom;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
@@ -83,6 +88,8 @@ protected:
 
 public:
 	AC_CombatCharacter();
+
+	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable)
 	void setHp(float fHp);

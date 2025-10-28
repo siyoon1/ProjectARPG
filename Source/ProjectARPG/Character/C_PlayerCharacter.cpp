@@ -9,6 +9,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../Animation/C_PlayerAnim.h"
 #include "../Camera/C_PlayerCameraManager.h"
+#include "ProjectARPG/Character/C_EnemyCharacter.h"
+#include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
+#include "Components/SphereComponent.h"
 
 AC_PlayerCharacter::AC_PlayerCharacter()
 {
@@ -20,6 +23,7 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 	m_pCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	m_pCamera->SetupAttachment(m_pSpringArm);
 	m_pCamera->bUsePawnControlRotation = false;
+
 
 }
 
@@ -46,6 +50,7 @@ void AC_PlayerCharacter::BeginPlay()
 		}
 	}
 
+	m_pExecutionDetectSphere = GetComponentByClass<USphereComponent>();
 
 }
 
@@ -196,6 +201,9 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
 	m_fLastAttackInputTime = GetWorld()->GetTimeSeconds();
 
+	if (tryExcuteEnemy())
+		return;
+
 	if (m_eState == E_PlayerActionState::Sprinting || m_eState == E_PlayerActionState::Dodging)
 	{
 		// 대시 상태 해제
@@ -286,6 +294,38 @@ E_PlayerActionState AC_PlayerCharacter::getPlayerActionState() const
 {
 	return m_eState;
 }
+
+bool AC_PlayerCharacter::tryExcuteEnemy()
+{
+	TArray<AActor*> Overlaps{};
+
+	if (m_pExecutionDetectSphere)
+		m_pExecutionDetectSphere->GetOverlappingActors(Overlaps, AC_EnemyCharacter::StaticClass());
+
+	UE_LOG(LogTemp, Warning, TEXT("Overlapping Count: %d"), Overlaps.Num());
+
+	for (AActor* pAct : Overlaps)
+	{
+		if (AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(pAct))
+		{
+			if (pEnemy->canBeExecuted())
+			{
+				if (m_pExecutionCom)
+				{
+					m_pExecutionCom->triggerExecution(pEnemy);
+					UE_LOG(LogTemp, Error, TEXT("TriggerExecution!!!"));
+					return true;
+				}
+			}
+
+		}
+
+	}
+	return false;
+}
+
+	
+
 
 void AC_PlayerCharacter::Tick(float DeltaTime)
 {

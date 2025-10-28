@@ -2,8 +2,12 @@
 
 
 #include "C_ExecutionComponent.h"
-#include "NiagaraComponent.h"
 #include "ProjectARPG/Character/C_CombatCharacter.h"
+#include "ProjectARPG/Character/C_PlayerCharacter.h"
+#include "ProjectARPG/Character/C_EnemyCharacter.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "../Camera/C_PlayerCameraManager.h"
+#include "Components/CapsuleComponent.h"
 
 // Sets default values for this component's properties
 UC_ExecutionComponent::UC_ExecutionComponent()
@@ -23,31 +27,50 @@ void UC_ExecutionComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
+	AC_EnemyCharacter* pChar = Cast<AC_EnemyCharacter>(GetOwner());
 
-	if (ACharacter* OwnerChar = Cast<ACharacter>(GetOwner()))
-	{
-		if (m_ExecutionVFX)
-		{
-			m_ExecutionVFX->AttachToComponent(
-				OwnerChar->GetMesh(),
-				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-				FName("spine_03") // 또는 pelvis, chest 등 이펙트 위치에 맞는 소켓
-			);
-		}
-	}
-
-	if (m_ExecutionVFX)
-	{
-		m_ExecutionVFX->SetVisibility(false);
-		m_ExecutionVFX->Deactivate();
-
-	}
+	if (pChar)
+		pChar->showExecutionVFX(false);
 	
 }
 
-void UC_ExecutionComponent::performExcution(APawn* pInstigator, APawn* pVictim)
+void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim)
 {
+	if (!pInstigator || !pVictim)
+		return;
 
+	AC_PlayerCharacter* pAttacker = Cast<AC_PlayerCharacter>(pInstigator);
+	AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(pVictim);
+
+	if (!pAttacker || !pEnemy)
+		return;
+
+	pAttacker->setPlayerActionState(E_PlayerActionState::Executing);
+	pAttacker->DisableInput(nullptr);
+	pAttacker->GetCharacterMovement()->StopMovementImmediately();
+
+	pEnemy->setCanBeExecuted(false);
+	pEnemy->GetCharacterMovement()->DisableMovement();
+
+	FVector vDir = (pEnemy->GetActorLocation() - pAttacker->GetActorLocation()).GetSafeNormal();
+	FVector vTarget = pEnemy->GetActorLocation() - vDir * 100.f;
+
+	pAttacker->SetActorLocation(vTarget);
+	pAttacker->SetActorRotation(vDir.Rotation());
+
+	if (m_pAttackerMontage && m_pEnemyMontage)
+	{
+		UAnimInstance* pAttackerAnim = pAttacker->GetMesh()->GetAnimInstance();
+		UAnimInstance* pEnemyAnim = pEnemy->GetMesh()->GetAnimInstance();
+		if (pAttackerAnim && pEnemyAnim)
+		{
+			pAttackerAnim->Montage_Play(m_pAttackerMontage);
+			pEnemyAnim->Montage_Play(m_pEnemyMontage);
+
+			UE_LOG(LogTemp, Error, TEXT("Execution Montage!!!!!!"));
+		}
+
+	}
 }
 
 
@@ -59,19 +82,25 @@ void UC_ExecutionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	// ...
 }
 
-void UC_ExecutionComponent::onBecomeExcutable(APawn* pVictim)
+void UC_ExecutionComponent::onBecomeExecutable(APawn* pVictim)
 {
-	if (m_ExecutionVFX)
-	{
-		m_ExecutionVFX->SetVisibility(true);
-		m_ExecutionVFX->Activate(true);
-	
-	}
+	AC_EnemyCharacter* pChar = Cast<AC_EnemyCharacter>(GetOwner());
+
+	if (pChar)
+		pChar->showExecutionVFX(true);
 		
 }
 
-void UC_ExecutionComponent::tirggerExcution(APawn* pVictim)
+void UC_ExecutionComponent::triggerExecution(APawn* pVictim)
 {
+	if (!pVictim)
+		return;
 
+	AC_CombatCharacter* pOwner = Cast<AC_CombatCharacter>(GetOwner());
+
+	if (!pOwner)
+		return;
+
+	performExecution(pOwner, pVictim);
 }
 

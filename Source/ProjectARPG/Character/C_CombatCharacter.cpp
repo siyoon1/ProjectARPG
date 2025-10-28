@@ -13,6 +13,13 @@ AC_CombatCharacter::AC_CombatCharacter()
 
 }
 
+void AC_CombatCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+
+}
+
 void AC_CombatCharacter::setHp(float fHp)
 {
 	m_fCurrnetHp = fHp;
@@ -168,6 +175,7 @@ void AC_CombatCharacter::BeginPlay()
 			m_sPostureStats = pLoadedStats;
 			m_fMaxPosture = m_sPostureStats->fMaxPosture;
 			m_fCurrentPosture = m_fMaxPosture;
+			m_fRecoveryRate = m_sPostureStats->fRecoveryRate;
 			
 		}
 		else
@@ -196,6 +204,8 @@ void AC_CombatCharacter::BeginPlay()
 		m_vLastTraceEnd = m_pTraceEnd->GetComponentLocation();
 	
 	}
+
+	m_pExecutionCom = GetComponentByClass<UC_ExecutionComponent>();
 	
 	
 }
