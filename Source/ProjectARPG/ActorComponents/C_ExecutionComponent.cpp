@@ -53,7 +53,7 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim)
 	pEnemy->GetCharacterMovement()->DisableMovement();
 
 	FVector vDir = (pEnemy->GetActorLocation() - pAttacker->GetActorLocation()).GetSafeNormal();
-	FVector vTarget = pEnemy->GetActorLocation() - vDir * 100.f;
+	FVector vTarget = pEnemy->GetActorLocation() - vDir * 150.f;
 
 	pAttacker->SetActorLocation(vTarget);
 	pAttacker->SetActorRotation(vDir.Rotation());
