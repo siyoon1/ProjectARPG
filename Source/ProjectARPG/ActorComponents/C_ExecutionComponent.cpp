@@ -45,29 +45,53 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim)
 	if (!pAttacker || !pEnemy)
 		return;
 
-	pAttacker->setPlayerActionState(E_PlayerActionState::Executing);
+	
+
+
+	pAttacker->setCombatState(E_CombatState::Executing);
 	pAttacker->DisableInput(nullptr);
 	pAttacker->GetCharacterMovement()->StopMovementImmediately();
 
 	pEnemy->setCanBeExecuted(false);
 	pEnemy->GetCharacterMovement()->DisableMovement();
 
-	FVector vDir = (pEnemy->GetActorLocation() - pAttacker->GetActorLocation()).GetSafeNormal();
-	FVector vTarget = pEnemy->GetActorLocation() - vDir * 150.f;
+	FVector vDirToEnemy = (pEnemy->GetActorLocation() - pAttacker->GetActorLocation()).GetSafeNormal();
+	FVector vTarget = pEnemy->GetActorLocation() - vDirToEnemy * 150.f;
 
 	pAttacker->SetActorLocation(vTarget);
-	pAttacker->SetActorRotation(vDir.Rotation());
 
-	if (m_pAttackerMontage && m_pEnemyMontage)
+	FRotator rPlayerRot = vDirToEnemy.Rotation();
+	pAttacker->SetActorRotation(rPlayerRot);
+
+	FRotator rEnemyRot = (-vDirToEnemy).Rotation();
+	pEnemy->SetActorRotation(rEnemyRot);
+
+	if (m_ExecutionMontages.Num() > 0)
 	{
+		int32 nIndex = FMath::RandRange(0, m_ExecutionMontages.Num() - 1);
+		const FS_ExecutionMontagePair& sExecutionPair = m_ExecutionMontages[nIndex];
+
 		UAnimInstance* pAttackerAnim = pAttacker->GetMesh()->GetAnimInstance();
 		UAnimInstance* pEnemyAnim = pEnemy->GetMesh()->GetAnimInstance();
+
 		if (pAttackerAnim && pEnemyAnim)
 		{
-			pAttackerAnim->Montage_Play(m_pAttackerMontage);
-			pEnemyAnim->Montage_Play(m_pEnemyMontage);
+			pAttackerAnim->Montage_Play(sExecutionPair.sAttackerMontage);
+			pEnemyAnim->Montage_Play(sExecutionPair.sEnemyMontage);
+
+			if (APlayerController* PC = Cast<APlayerController>(pAttacker->GetController()))
+			{
+				if (AC_PlayerCameraManager* PCM = Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager))
+				{
+					PCM->executionEffect(sExecutionPair.sAttackerMontage->GetPlayLength());
+				}
+			}
 
 			UE_LOG(LogTemp, Error, TEXT("Execution Montage!!!!!!"));
+
+			FOnMontageEnded onMontageEnd;
+			onMontageEnd.BindUObject(this, &UC_ExecutionComponent::onExecutionFinished, pEnemy);
+			pAttackerAnim->Montage_SetEndDelegate(onMontageEnd, sExecutionPair.sAttackerMontage);
 		}
 
 	}
@@ -102,5 +126,22 @@ void UC_ExecutionComponent::triggerExecution(APawn* pVictim)
 		return;
 
 	performExecution(pOwner, pVictim);
+}
+
+void UC_ExecutionComponent::onExecutionFinished(UAnimMontage* Montage, bool bInterrupted, AC_EnemyCharacter* pVictim)
+{
+	if (!pVictim)
+		return;
+
+	AC_PlayerCharacter* pOwner = Cast<AC_PlayerCharacter>(GetOwner());
+	if (!pOwner)
+		return;
+
+	pVictim->setCombatState(E_CombatState::Die);
+
+	pOwner->EnableInput(nullptr);
+	pOwner->setCombatState(E_CombatState::Idle);
+
+
 }
 

@@ -6,15 +6,6 @@
 #include "C_CombatCharacter.h"
 #include "C_PlayerCharacter.generated.h"
 
-UENUM(BlueprintType)
-enum class E_PlayerActionState : uint8
-{
-	Idle,
-	Sprinting,
-	Dodging,
-	Attacking,
-	Executing
-};
 
 /**
  * 
@@ -25,8 +16,6 @@ class PROJECTARPG_API AC_PlayerCharacter : public AC_CombatCharacter
 	GENERATED_BODY()
 
 private:
-	E_PlayerActionState m_eState = E_PlayerActionState::Idle;
-
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USpringArmComponent> m_pSpringArm;
 
@@ -92,12 +81,10 @@ protected:
 	
 
 public:
-	void setPlayerActionState(E_PlayerActionState eNewState);
+	void setCombatState(E_CombatState eNewState) override;
 	void onComboTransition();
 	void resetCombo();
-	E_PlayerActionState getPlayerActionState() const;
 	bool tryExcuteEnemy();
-
 
 	
 };

@@ -10,6 +10,16 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, fCurrentHp, float, fMaxHp);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPostureChanged, float, fCurrentPosture, float, fMaxPosture);
 
+UENUM(BlueprintType)
+enum class E_CombatState : uint8
+{
+	Idle,
+	Sprinting,
+	Dodging,
+	Attacking,
+	Executing,
+	Die
+};
 
 UENUM(BlueprintType)
 enum class E_AttackType : uint8
@@ -27,6 +37,8 @@ class PROJECTARPG_API AC_CombatCharacter : public AC_BaseCharacter, public IC_Co
 	GENERATED_BODY()
 
 protected:
+	E_CombatState m_eState = E_CombatState::Idle;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
 	UDataTable* m_pPostureStatsTable{};
 
@@ -90,6 +102,9 @@ public:
 	AC_CombatCharacter();
 
 	virtual void Tick(float DeltaTime) override;
+
+	virtual void setCombatState(E_CombatState eNewState);
+	E_CombatState getCombatState() const;
 
 	UFUNCTION(BlueprintCallable)
 	void setHp(float fHp);

@@ -12,6 +12,6 @@ void UC_SprintEnd::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* A
 
 	if (AC_PlayerCharacter* pPlayer = Cast<AC_PlayerCharacter>(pCharacter))
 	{
-		pPlayer->setPlayerActionState(E_PlayerActionState::Idle);
+		pPlayer->setCombatState(E_CombatState::Idle);
 	}
 }

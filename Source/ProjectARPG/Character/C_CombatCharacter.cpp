@@ -20,6 +20,17 @@ void AC_CombatCharacter::Tick(float DeltaTime)
 
 }
 
+void AC_CombatCharacter::setCombatState(E_CombatState eNewState)
+{
+	if (m_eState != eNewState)
+		m_eState = eNewState;
+}
+
+E_CombatState AC_CombatCharacter::getCombatState() const
+{
+	return m_eState;
+}
+
 void AC_CombatCharacter::setHp(float fHp)
 {
 	m_fCurrnetHp = fHp;

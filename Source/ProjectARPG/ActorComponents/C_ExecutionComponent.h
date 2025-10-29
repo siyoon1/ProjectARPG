@@ -6,6 +6,18 @@
 #include "Components/ActorComponent.h"
 #include "C_ExecutionComponent.generated.h"
 
+USTRUCT(BlueprintType)
+struct FS_ExecutionMontagePair
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage")
+	TObjectPtr<UAnimMontage> sAttackerMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage")
+	TObjectPtr<UAnimMontage> sEnemyMontage;
+};
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTARPG_API UC_ExecutionComponent : public UActorComponent
@@ -13,11 +25,8 @@ class PROJECTARPG_API UC_ExecutionComponent : public UActorComponent
 	GENERATED_BODY()
 
 private:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UAnimMontage> m_pAttackerMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UAnimMontage> m_pEnemyMontage;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Execution", meta = (AllowPrivateAccess = "true"))
+	TArray<FS_ExecutionMontagePair> m_ExecutionMontages;
 
 public:	
 	// Sets default values for this component's properties
@@ -35,6 +44,9 @@ public:
 
 	void onBecomeExecutable(APawn* pVictim);
 	void triggerExecution(APawn* pVictim);
+
+	UFUNCTION()
+	void onExecutionFinished(UAnimMontage* Montage, bool bInterrupted, class AC_EnemyCharacter* pVictim);
 
 		
 };

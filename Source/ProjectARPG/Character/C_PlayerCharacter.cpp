@@ -95,7 +95,7 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	if (sInst.GetTriggerEvent() != ETriggerEvent::Triggered)
 		return;	
 
-	if (m_eState != E_PlayerActionState::Idle)
+	if (m_eState != E_CombatState::Idle)
 		return;
 
 
@@ -111,10 +111,10 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 			return;
 		
 		// 대시 실행
-		if (m_eState != E_PlayerActionState::Sprinting)
+		if (m_eState != E_CombatState::Sprinting)
 		{			
 			pAnim->playSprintStartMontage();
-			m_eState = E_PlayerActionState::Sprinting;
+			m_eState = E_CombatState::Sprinting;
 
 			if (APlayerController* pPlayerCon = Cast<APlayerController>(GetController()))
 			{
@@ -134,7 +134,7 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	else
 	{
 
-		m_eState = E_PlayerActionState::Dodging;
+		m_eState = E_CombatState::Dodging;
 
 
 		// 회피 실행
@@ -173,10 +173,10 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 
 void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
 {
-	if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying() && m_eState == E_PlayerActionState::Sprinting)
+	if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying() && m_eState == E_CombatState::Sprinting)
 		GetMesh()->GetAnimInstance()->Montage_Stop(0.1f);
 
-	m_eState = E_PlayerActionState::Idle;
+	m_eState = E_CombatState::Idle;
 	GetCharacterMovement()->MaxWalkSpeed = 800.f;
 	if (APlayerController* pPlayerCon = Cast<APlayerController>(GetController()))
 	{
@@ -204,10 +204,10 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 	if (tryExcuteEnemy())
 		return;
 
-	if (m_eState == E_PlayerActionState::Sprinting || m_eState == E_PlayerActionState::Dodging)
+	if (m_eState == E_CombatState::Sprinting || m_eState == E_CombatState::Dodging)
 	{
 		// 대시 상태 해제
-		setPlayerActionState(E_PlayerActionState::Attacking);
+		setCombatState(E_CombatState::Attacking);
 
 
 		m_nCurrentComboIndex = 1;
@@ -216,15 +216,15 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 		return;
 	}
 
-	if (m_eState != E_PlayerActionState::Attacking)
+	if (m_eState != E_CombatState::Attacking)
 	{
-		m_eState = E_PlayerActionState::Attacking;
+		m_eState = E_CombatState::Attacking;
 		m_nCurrentComboIndex = 1;
 		m_bNextComboQueued = false;
 		playCombo(m_nCurrentComboIndex);
 	}
 
-	else if (m_eState == E_PlayerActionState::Attacking && !m_bNextComboQueued)
+	else if (m_eState == E_CombatState::Attacking && !m_bNextComboQueued)
 	{
 		if (m_nCurrentComboIndex < m_nMaxComboIndex)
 			m_bNextComboQueued = true;
@@ -248,6 +248,16 @@ void AC_PlayerCharacter::playCombo(int32 nComboIndex)
 
 }
 
+void AC_PlayerCharacter::setCombatState(E_CombatState eNewState)
+{
+	Super::setCombatState(eNewState);
+
+	if (m_eState == E_CombatState::Idle)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 800.f;
+	}
+}
+
 void AC_PlayerCharacter::onComboTransition()
 {
 	if (m_bNextComboQueued && GetWorld()->GetTimeSeconds() - m_fLastAttackInputTime <= m_fInputBuffer)
@@ -269,30 +279,11 @@ void AC_PlayerCharacter::onComboTransition()
 	}
 }
 
-void AC_PlayerCharacter::setPlayerActionState(E_PlayerActionState eNewState)
-{
-	if (m_eState != eNewState)
-		m_eState = eNewState;
-
-	if (m_eState == E_PlayerActionState::Idle)
-	{
-		GetCharacterMovement()->MaxWalkSpeed = 800.f;
-	}
-}
-
-
-
-
 void AC_PlayerCharacter::resetCombo()
 {
-	m_eState = E_PlayerActionState::Idle;
+	m_eState = E_CombatState::Idle;
 	m_nCurrentComboIndex = 0;
 	m_bNextComboQueued = false;
-}
-
-E_PlayerActionState AC_PlayerCharacter::getPlayerActionState() const
-{
-	return m_eState;
 }
 
 bool AC_PlayerCharacter::tryExcuteEnemy()
@@ -323,8 +314,6 @@ bool AC_PlayerCharacter::tryExcuteEnemy()
 	}
 	return false;
 }
-
-	
 
 
 void AC_PlayerCharacter::Tick(float DeltaTime)
