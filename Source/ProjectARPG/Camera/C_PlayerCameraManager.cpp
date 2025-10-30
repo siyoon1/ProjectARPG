@@ -19,7 +19,10 @@ void AC_PlayerCameraManager::Tick(float DeltaSeconds)
 	{
 		fTargetFOV = DefaultFOV - 20.f;
 		
-
+	}
+	else if (m_bIsSprinting)
+	{
+		fTargetFOV = DefaultFOV + 10.f;
 	}
 	else if (m_bIsReturningFOV)
 	{
@@ -43,8 +46,8 @@ void AC_PlayerCameraManager::startSprintEffect()
 	m_PostProcessSettings.bOverride_MotionBlurAmount = true;
 	m_PostProcessSettings.MotionBlurAmount = 0.7f;
 
-	SetFOV(DefaultFOV + 10.f);
 
+	m_bIsSprinting = true;
 
 }
 
@@ -55,7 +58,7 @@ void AC_PlayerCameraManager::stopSprintEffect()
 
 	m_PostProcessSettings.bOverride_MotionBlurAmount = false;
 
-	SetFOV(DefaultFOV);
+	m_bIsSprinting = false;
 }
 
 void AC_PlayerCameraManager::executionEffect(float fLength)

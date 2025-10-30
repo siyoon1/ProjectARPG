@@ -17,6 +17,7 @@ class PROJECTARPG_API AC_PlayerCameraManager : public APlayerCameraManager
 private:
 	bool m_bIsExecuting = false;
 	bool m_bIsReturningFOV = false;
+	bool m_bIsSprinting = false;
 	FTimerHandle m_TimerHandle_Reset;
 
 public:

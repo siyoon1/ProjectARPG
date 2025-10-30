@@ -24,7 +24,7 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 	m_pCamera->SetupAttachment(m_pSpringArm);
 	m_pCamera->bUsePawnControlRotation = false;
 
-
+	m_pExecutionDetectSphere = nullptr;
 }
 
 void AC_PlayerCharacter::BeginPlay()
@@ -111,10 +111,11 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 			return;
 		
 		// 대시 실행
-		if (m_eState != E_CombatState::Sprinting)
+		if (m_eState == E_CombatState::Idle)
 		{			
-			pAnim->playSprintStartMontage();
 			m_eState = E_CombatState::Sprinting;
+
+			pAnim->playSprintStartMontage();
 
 			if (APlayerController* pPlayerCon = Cast<APlayerController>(GetController()))
 			{
@@ -123,13 +124,13 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 					pCameraMgr->startSprintEffect();
 				}
 			}
-			
-		}	
-		FVector vForwardDir = GetActorForwardVector();
-		FVector vLaunchVelocity = vForwardDir * 800.f; // 숫자 조절해서 속도/거리 조정
+			FVector vForwardDir = GetActorForwardVector();
+			FVector vLaunchVelocity = vForwardDir * 1000.f; // 숫자 조절해서 속도/거리 조정
 
-		LaunchCharacter(vLaunchVelocity, true, false);
-		GetCharacterMovement()->MaxWalkSpeed = 1000.f;
+			LaunchCharacter(vLaunchVelocity, true, false);
+			GetCharacterMovement()->MaxWalkSpeed = 1000.f;
+		}	
+		
 	}
 	else
 	{
@@ -173,6 +174,9 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 
 void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
 {
+	if (m_eState != E_CombatState::Sprinting)
+		return;
+
 	if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying() && m_eState == E_CombatState::Sprinting)
 		GetMesh()->GetAnimInstance()->Montage_Stop(0.1f);
 
