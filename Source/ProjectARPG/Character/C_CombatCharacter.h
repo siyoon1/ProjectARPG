@@ -18,6 +18,7 @@ enum class E_CombatState : uint8
 	Dodging,
 	Attacking,
 	Executing,
+	Guard,
 	Die
 };
 
@@ -126,4 +127,7 @@ public:
 
 	UFUNCTION()
 	void takeDamage_Implementation(float fDamage, float fPostureDamage);
+
+	UFUNCTION()
+	FVector getLocation_Implementation();
 };

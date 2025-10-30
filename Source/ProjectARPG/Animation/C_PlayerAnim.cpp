@@ -66,3 +66,13 @@ void UC_PlayerAnim::playComboMontage(E_AttackType eType, int32 nComboIndex)
     
     
 }
+
+void UC_PlayerAnim::setIsGuarding(bool bNewGuard)
+{
+    m_bIsGuarding = bNewGuard;
+}
+
+bool UC_PlayerAnim::getIsGuarding() const
+{
+    return m_bIsGuarding;
+}

@@ -99,59 +99,70 @@ void AC_CombatCharacter::performAttackTrace()
 	FCollisionQueryParams Params{};
 	Params.AddIgnoredActor(this);
 
-	bool bHit = GetWorld()->SweepMultiByChannel(
-		HitRes,
-		vPrevStart,
-		vCurEnd,
-		FQuat::Identity,
-		ECC_Pawn,
-		FCollisionShape::MakeSphere(m_fTraceRadius),
-		Params
-	);
+	const int32 nNumSubSteps = 3;
+	for (int32 i = 0; i < nNumSubSteps; ++i)
+	{
+		float t = (float)i / (float)nNumSubSteps;
+		FVector InterpStart = FMath::Lerp(vPrevStart, vCurStart, t);
+		FVector InterpEnd = FMath::Lerp(vPrevEnd, vCurEnd, t);
+
+
+		bool bHit = GetWorld()->SweepMultiByChannel(
+			HitRes,
+			InterpStart,
+			InterpEnd,
+			FQuat::Identity,
+			ECC_Pawn,
+			FCollisionShape::MakeSphere(m_fTraceRadius),
+			Params
+		);
+
 
 
 #if WITH_EDITOR
+
+		DrawDebugCapsule(GetWorld(), (vPrevStart + vCurEnd) * 0.5f, FVector::Distance(vPrevStart, vCurEnd) * 0.5f,
+			m_fTraceRadius, FQuat::Identity, bHit ? FColor::Green : FColor::Red, false, 0.05f);
 	
-	DrawDebugCapsule(GetWorld(), (vPrevStart + vCurEnd) * 0.5f, FVector::Distance(vPrevStart, vCurEnd) * 0.5f,
-		m_fTraceRadius, FQuat::Identity, bHit ? FColor::Green : FColor::Red, false, 0.05f);
 #endif 
 
-	if (bHit)
-	{
-		for (const FHitResult& Hit : HitRes)
+		if (bHit)
 		{
-			AActor* pHitActor = Hit.GetActor();
-
-			if (!pHitActor)
-				continue;
-
-			if (pHitActor == this)
-				continue;
-
-			if (m_HitActors.Contains(pHitActor))
-				continue;
-
-
-			if (pHitActor->GetClass()->ImplementsInterface(UC_CombatInterface::StaticClass()))
+			for (const FHitResult& Hit : HitRes)
 			{
-				float fFinalDamage = m_fAttackDamage;
-				float fFinalPostureDamage = m_fPostureDamage;
+				AActor* pHitActor = Hit.GetActor();
 
-				switch (m_eAttackType)
+				if (!pHitActor)
+					continue;
+
+				if (pHitActor == this)
+					continue;
+
+				if (m_HitActors.Contains(pHitActor))
+					continue;
+
+
+				if (pHitActor->GetClass()->ImplementsInterface(UC_CombatInterface::StaticClass()))
 				{
-				case E_AttackType::Normal:
-					// 기본값 그대로
-					break;
+					float fFinalDamage = m_fAttackDamage;
+					float fFinalPostureDamage = m_fPostureDamage;
 
-				case E_AttackType::Air:
-					fFinalDamage *= 0.8f;
-					fFinalPostureDamage *= 1.0f;
-					break;
+					switch (m_eAttackType)
+					{
+					case E_AttackType::Normal:
+						// 기본값 그대로
+						break;
+
+					case E_AttackType::Air:
+						fFinalDamage *= 0.8f;
+						fFinalPostureDamage *= 1.0f;
+						break;
+					}
+					IC_CombatInterface::Execute_takeDamage(pHitActor, fFinalDamage, fFinalPostureDamage);
 				}
-				IC_CombatInterface::Execute_takeDamage(pHitActor, fFinalDamage, fFinalPostureDamage);
-			}
 
-			m_HitActors.Add(pHitActor);
+				m_HitActors.Add(pHitActor);
+			}
 		}
 	}
 
@@ -172,6 +183,11 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
 
 
+}
+
+FVector AC_CombatCharacter::getLocation_Implementation()
+{
+	return GetActorLocation();
 }
 
 void AC_CombatCharacter::BeginPlay()

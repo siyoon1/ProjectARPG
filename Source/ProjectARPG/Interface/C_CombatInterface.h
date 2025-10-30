@@ -24,4 +24,7 @@ class PROJECTARPG_API IC_CombatInterface
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")
 	void takeDamage(float fDamage, float fPostureDamage);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")
+	FVector getLocation();
 };

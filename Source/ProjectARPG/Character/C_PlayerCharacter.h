@@ -40,6 +40,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> m_pJumpAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> m_pGuardAction;
+
 	UPROPERTY()
 	class USphereComponent* m_pExecutionDetectSphere;
 
@@ -49,6 +52,7 @@ private:
 	bool m_bNextComboQueued = false;
 	float m_fLastAttackInputTime = 0.f;
 	float m_fInputBuffer = 0.25f;
+	float m_fDefaultSpeed = 800.f;
 
 
 public:
@@ -78,6 +82,8 @@ protected:
 	void sprintReleased(const struct FInputActionInstance& sInst);
 	void jumpStart(const FInputActionValue& sValue);
 	void jumpEnd(const FInputActionValue& sValue);
+	void guard(const FInputActionInstance& sInst);
+	void guardEnd(const FInputActionValue& sValue);
 	
 
 public:

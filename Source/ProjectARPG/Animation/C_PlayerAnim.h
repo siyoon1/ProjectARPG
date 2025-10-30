@@ -26,6 +26,7 @@ class PROJECTARPG_API UC_PlayerAnim : public UAnimInstance
 
 private:
 	FDelegateHandle m_sDelegateHandle;
+	bool m_bIsGuarding;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -39,9 +40,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
 	TArray<UAnimMontage*> m_pComboAttackMontages;
 
+
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
 	void playComboMontage(E_AttackType eType, int32 nComboIndex);
-	
+
+	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
+	void setIsGuarding(bool bNewGuard);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
+	bool getIsGuarding() const;
 };

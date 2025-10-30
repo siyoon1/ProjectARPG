@@ -31,7 +31,7 @@ void AC_PlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetCharacterMovement()->MaxWalkSpeed = 800.f;
+	GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -163,7 +163,7 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 
 		pAnim->playDodgeMontage(eDir);
 
-		GetCharacterMovement()->MaxWalkSpeed = 800.f;
+		GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
 		
 		
 	}
@@ -196,6 +196,45 @@ void AC_PlayerCharacter::jumpEnd(const FInputActionValue& sValue)
 {
 	StopJumping();
 }
+
+void AC_PlayerCharacter::guard(const FInputActionInstance& sInst)
+{
+	UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance());
+
+	if (!pAnim)
+		return;
+
+	FVector vInputDir = GetLastMovementInputVector().GetSafeNormal();
+
+	const float fElapsedTime = sInst.GetElapsedTime();
+
+	const float fHoldThreshold = 0.3f;
+
+	if (fElapsedTime >= fHoldThreshold && GetLastMovementInputVector().IsNearlyZero())
+	{
+		if (m_eState != E_CombatState::Guard)
+		{
+			m_eState = E_CombatState::Guard;
+			pAnim->setIsGuarding(true);
+			GetCharacterMovement()->MaxWalkSpeed = 400.f;
+		}
+	}
+	
+}
+
+void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
+{
+	if (m_eState == E_CombatState::Guard)
+	{
+		m_eState = E_CombatState::Idle;
+		if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
+		{
+			pAnim->setIsGuarding(false);
+			GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
+		}
+	}
+}
+
 
 void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
@@ -334,5 +373,7 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pComboAttackAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::comboAttack);
 		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::jumpStart);
 		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::jumpEnd);
+		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::guard);
+		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::guardEnd);
 	}
 }

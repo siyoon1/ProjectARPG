@@ -28,5 +28,6 @@ public:
 	static const FName TargetActorKey;
 	static const FName StartPosKey;
 	static const FName PatrolPosKey;
+	static const FName DistKey;
 	
 };

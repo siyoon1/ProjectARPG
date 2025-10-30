@@ -9,6 +9,7 @@
 const FName AC_EnemyController::TargetActorKey = TEXT("TargetActor");
 const FName AC_EnemyController::StartPosKey = TEXT("StartPos");
 const FName AC_EnemyController::PatrolPosKey = TEXT("PatrolPos");
+const FName AC_EnemyController::DistKey = TEXT("Dist");
 
 AC_EnemyController::AC_EnemyController()
 {
