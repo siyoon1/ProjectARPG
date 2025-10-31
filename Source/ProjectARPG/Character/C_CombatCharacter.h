@@ -60,6 +60,8 @@ protected:
 	float m_fCurrnetHp = 0.f;
 
 	float m_fRecoveryRate = 0.f;
+	float m_fRecoveryDelayTimer = 0.f;
+	float m_fBrokenDuration = 0.f;
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "trace", meta = (AllowPrivateAccess = "true"))
@@ -78,6 +80,12 @@ protected:
 	TArray<AActor*> m_HitActors{};
 
 	E_AttackType m_eAttackType = E_AttackType::Normal;
+
+protected:
+	bool m_bIsPostureBroken = false;
+	bool m_bIsRecoveryDelay = false;
+	
+	FTimerHandle m_timerHandle_PostureBroken;
 
 	UPROPERTY()
 	TObjectPtr<class UC_ExecutionComponent> m_pExecutionCom;
@@ -98,6 +106,8 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	virtual void onPostureBroken();
 
 public:
 	AC_CombatCharacter();

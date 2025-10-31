@@ -35,6 +35,6 @@ public:
 
 	bool canBeExecuted() const;
 
-	void takeDamage_Implementation(float fDamage, float fPostureDamage) override;
+	void onPostureBroken() override;
 
 };

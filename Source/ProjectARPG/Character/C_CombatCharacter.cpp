@@ -7,6 +7,7 @@
 #include "DrawDebugHelpers.h"
 #include "Engine/World.h"
 #include "CollisionQueryParams.h"
+#include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 
 AC_CombatCharacter::AC_CombatCharacter()
 {
@@ -17,7 +18,29 @@ void AC_CombatCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (m_bIsPostureBroken)
+		return;
 
+	if (m_bIsRecoveryDelay)
+	{
+		m_fRecoveryDelayTimer -= DeltaTime;
+		if (m_fRecoveryDelayTimer <= 0.f)
+		{
+			m_bIsRecoveryDelay = false;
+			
+		}
+		else
+			return;
+	}
+
+	
+	if (!m_bIsRecoveryDelay && m_fCurrentPosture < m_fMaxPosture)
+	{
+		m_fCurrentPosture = FMath::Min(m_fMaxPosture, m_fCurrentPosture + m_fRecoveryRate * DeltaTime);
+
+		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
+			
+	}
 }
 
 void AC_CombatCharacter::setCombatState(E_CombatState eNewState)
@@ -173,16 +196,44 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 	if (m_fCurrnetHp > 0)
 		m_fCurrnetHp = FMath::Clamp(m_fCurrnetHp - fDamage, 0.f, m_fMaxHp);
 
-	if (m_fCurrentPosture > 0)
-		m_fCurrentPosture = FMath::Clamp(m_fCurrentPosture - fPostureDamage, 0.f, m_fMaxPosture);
-
 	m_OnHpChanged.Broadcast(m_fCurrnetHp, m_fMaxHp);
 	UE_LOG(LogTemp, Warning, TEXT("TakeDamage: HP %.1f / %.1f"), m_fCurrnetHp, m_fMaxHp);
 
-	if (m_sPostureStats)
+	if (m_fCurrentPosture > 0)
+	{
+		m_fCurrentPosture = FMath::Clamp(m_fCurrentPosture - fPostureDamage, 0.f, m_fMaxPosture);
+
+	}
+		
+
+
+	if (m_fCurrentPosture <= 0.f && !m_bIsPostureBroken)
+	{
+		m_fCurrentPosture = 0.f;
+
 		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
 
+		onPostureBroken();
+	}
+}
 
+void AC_CombatCharacter::onPostureBroken()
+{
+	if (m_bIsPostureBroken)
+		return;
+
+	m_bIsPostureBroken = true;
+
+	m_bIsRecoveryDelay = true;
+
+	if (m_pExecutionCom)
+		m_pExecutionCom->playStunMontage();
+
+	GetWorldTimerManager().SetTimer(m_timerHandle_PostureBroken, [this]() 
+		{
+			m_bIsPostureBroken = false;
+
+		}, m_fBrokenDuration, false);
 }
 
 FVector AC_CombatCharacter::getLocation_Implementation()
@@ -203,6 +254,8 @@ void AC_CombatCharacter::BeginPlay()
 			m_fMaxPosture = m_sPostureStats->fMaxPosture;
 			m_fCurrentPosture = m_fMaxPosture;
 			m_fRecoveryRate = m_sPostureStats->fRecoveryRate;
+			m_fRecoveryDelayTimer = m_sPostureStats->fRecoveryDelay;
+			m_fBrokenDuration = m_sPostureStats->fBrokenDuration;
 			
 		}
 		else
@@ -236,3 +289,5 @@ void AC_CombatCharacter::BeginPlay()
 	
 	
 }
+
+

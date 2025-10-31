@@ -37,13 +37,12 @@ bool AC_EnemyCharacter::canBeExecuted() const
 	return m_bCanbeExcuted;
 }
 
-void AC_EnemyCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage)
+void AC_EnemyCharacter::onPostureBroken()
 {
-	Super::takeDamage_Implementation(fDamage, fPostureDamage);
+	Super::onPostureBroken();
 
-	if (m_fCurrentPosture <= 0.f && !m_bCanbeExcuted)
+	if (!m_bCanbeExcuted)
 	{
-		m_fCurrentPosture = 0.f;
 		m_bCanbeExcuted = true;
 
 		if (m_pExecutionCom)

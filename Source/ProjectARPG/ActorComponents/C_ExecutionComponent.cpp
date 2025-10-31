@@ -128,6 +128,19 @@ void UC_ExecutionComponent::triggerExecution(APawn* pVictim)
 	performExecution(pOwner, pVictim);
 }
 
+void UC_ExecutionComponent::playStunMontage()
+{
+	AC_CombatCharacter* pOwner = Cast<AC_CombatCharacter>(GetOwner());
+
+	if (!pOwner)
+		return;
+
+	if (UAnimInstance* pAnim = Cast<UAnimInstance>(pOwner->GetMesh()->GetAnimInstance()))
+	{
+		pAnim->Montage_Play(m_pStunMontage);
+	}
+}
+
 void UC_ExecutionComponent::onExecutionFinished(UAnimMontage* Montage, bool bInterrupted, AC_EnemyCharacter* pVictim)
 {
 	if (!pVictim)

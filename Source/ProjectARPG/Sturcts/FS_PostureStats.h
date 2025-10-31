@@ -22,4 +22,10 @@ public:
 	// 회복 속도 (초당)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Posture")
 	float fRecoveryRate = 10.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Posture")
+	float fRecoveryDelay = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Posture")
+	float fBrokenDuration = 0.f;
 };

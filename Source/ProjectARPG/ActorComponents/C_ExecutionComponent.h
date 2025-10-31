@@ -28,6 +28,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Execution", meta = (AllowPrivateAccess = "true"))
 	TArray<FS_ExecutionMontagePair> m_ExecutionMontages;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stun", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAnimMontage> m_pStunMontage;
+
 public:	
 	// Sets default values for this component's properties
 	UC_ExecutionComponent();
@@ -44,6 +47,8 @@ public:
 
 	void onBecomeExecutable(APawn* pVictim);
 	void triggerExecution(APawn* pVictim);
+
+	void playStunMontage();
 
 	UFUNCTION()
 	void onExecutionFinished(UAnimMontage* Montage, bool bInterrupted, class AC_EnemyCharacter* pVictim);
