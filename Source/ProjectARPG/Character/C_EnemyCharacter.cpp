@@ -5,6 +5,7 @@
 #include "Components/WidgetComponent.h"
 #include "NiagaraComponent.h"
 #include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
+#include "ProjectARPG/Animation/C_EnemyAnim.h"
 
 void AC_EnemyCharacter::BeginPlay()
 {
@@ -55,4 +56,15 @@ void AC_EnemyCharacter::onPostureBroken()
 	}
 
 
+}
+
+void AC_EnemyCharacter::attack()
+{
+	if (UAnimInstance* pAnim = GetMesh()->GetAnimInstance())
+	{
+		if (UC_EnemyAnim* pEnemyAnim = Cast<UC_EnemyAnim>(pAnim))
+		{
+			pEnemyAnim->playAttackMontage();
+		}
+	}
 }

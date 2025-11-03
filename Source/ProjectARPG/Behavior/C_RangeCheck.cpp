@@ -9,26 +9,26 @@
 
 bool UC_RangeCheck::CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const
 {
-	bool res = Super::CalculateRawConditionValue(OwnerComp, NodeMemory);
+	OwnerComp.GetBlackboardComponent()->SetValueAsFloat(AC_EnemyController::DistKey, 150.f);
 
-	OwnerComp.GetBlackboardComponent()->SetValueAsFloat(AC_EnemyController::DistKey, 200.f);
-	float fAttackDist = OwnerComp.GetBlackboardComponent()->GetValueAsFloat(AC_EnemyController::DistKey);
+	const UBlackboardComponent* pBB = OwnerComp.GetBlackboardComponent();
+	if (!pBB)
+		return false;
 
-	APawn* pOwner = OwnerComp.GetAIOwner()->GetPawn();
+	const APawn* pOwner = OwnerComp.GetAIOwner()->GetPawn();
 	if (!pOwner)
 		return false;
 
-	APawn* pTarget = Cast<APawn>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AC_EnemyController::TargetActorKey));
+	float fAttackDist = OwnerComp.GetBlackboardComponent()->GetValueAsFloat(AC_EnemyController::DistKey);
+
+
+	AActor* pTarget = Cast<AActor>(pBB->GetValueAsObject(AC_EnemyController::TargetActorKey));
 	if (!pTarget)
 		return false;
 
-	if (pTarget->GetClass()->ImplementsInterface(UC_CombatInterface::StaticClass()))
-	{
-		float fDist = FVector::Dist(pOwner->GetActorLocation(), IC_CombatInterface::Execute_getLocation(pTarget));
-		return fDist <= fAttackDist;
-	}
+	
 
+	float fDist = FVector::Dist(pOwner->GetActorLocation(), pTarget->GetActorLocation());
 
-
-	return false;
+	return fDist <= fAttackDist;
 }

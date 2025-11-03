@@ -37,4 +37,5 @@ public:
 
 	void onPostureBroken() override;
 
+	void attack();
 };
