@@ -6,6 +6,7 @@
 #include "NiagaraComponent.h"
 #include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 #include "ProjectARPG/Animation/C_EnemyAnim.h"
+#include "ProjectARPG/AI/C_EnemyController.h"
 
 void AC_EnemyCharacter::BeginPlay()
 {
@@ -60,6 +61,20 @@ void AC_EnemyCharacter::onPostureBroken()
 
 void AC_EnemyCharacter::attack()
 {
+	if (auto* AICon = Cast<AAIController>(GetController()))
+	{
+		AICon->StopMovement();
+	}
+
+	APawn* target = Cast<APawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
+	if (target)
+	{
+		FVector toTarget = (target->GetActorLocation() - GetActorLocation());
+		toTarget.Z = 0.f; // 상하 무시
+		FRotator lookRot = toTarget.Rotation();
+		SetActorRotation(lookRot);
+	}
+
 	if (UAnimInstance* pAnim = GetMesh()->GetAnimInstance())
 	{
 		if (UC_EnemyAnim* pEnemyAnim = Cast<UC_EnemyAnim>(pAnim))

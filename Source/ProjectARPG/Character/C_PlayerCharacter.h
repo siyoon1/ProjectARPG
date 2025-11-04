@@ -71,6 +71,7 @@ protected:
 
 private:
 	void playCombo(int32 nComboIndex);
+	AActor* getCurrentEnemy();
 	
 	
 
@@ -84,6 +85,7 @@ protected:
 	void jumpEnd(const FInputActionValue& sValue);
 	void guard(const FInputActionInstance& sInst);
 	void guardEnd(const FInputActionValue& sValue);
+	void parry(const FInputActionValue& sValue);
 	
 
 public:

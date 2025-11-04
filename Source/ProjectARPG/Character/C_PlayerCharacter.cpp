@@ -11,6 +11,7 @@
 #include "../Camera/C_PlayerCameraManager.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
+#include "ProjectARPG/ActorComponents/C_ParryComponent.h"
 #include "Components/SphereComponent.h"
 
 AC_PlayerCharacter::AC_PlayerCharacter()
@@ -239,6 +240,25 @@ void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
 	}
 }
 
+void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
+{
+	UE_LOG(LogTemp, Warning, TEXT(">>> [Player] Parry Input Function CALLED!"));
+
+	AActor* Attacker = getCurrentEnemy();
+	if (m_pParryCom)
+	{
+		if (m_pParryCom->tryParry(Attacker))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Parry SUCCESS on %s"), *Attacker->GetName());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Parry Failed"));
+		}
+	}
+	
+}
+
 
 void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
@@ -289,6 +309,40 @@ void AC_PlayerCharacter::playCombo(int32 nComboIndex)
 		pAnim->playComboMontage(m_eAttackType,nComboIndex);
 	}
 
+}
+
+AActor* AC_PlayerCharacter::getCurrentEnemy()
+{
+	FVector vStart = GetActorLocation();
+	FVector vForward = GetActorForwardVector();
+	FVector vEnd = vStart + vForward * 400.f;
+
+	FHitResult HitResult{};
+
+	FCollisionQueryParams Params{};
+
+	Params.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		vStart,
+		vEnd,
+		ECC_Pawn,
+		Params
+	);
+
+	if (bHit)
+	{
+		AActor* pHitActor = HitResult.GetActor();
+		if (pHitActor) // 태그로 적 판정
+		{
+			return pHitActor;
+		}
+	}
+
+	DrawDebugLine(GetWorld(), vStart, vEnd, FColor::Red, false, 1.f, 0, 2.f);
+
+	return nullptr;
 }
 
 void AC_PlayerCharacter::setCombatState(E_CombatState eNewState)
@@ -378,6 +432,7 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::jumpStart);
 		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::jumpEnd);
 		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::guard);
+		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::parry);
 		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::guardEnd);
 	}
 }

@@ -8,6 +8,7 @@
 #include "Engine/World.h"
 #include "CollisionQueryParams.h"
 #include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
+#include "ProjectARPG/ActorComponents/C_ParryComponent.h"
 
 AC_CombatCharacter::AC_CombatCharacter()
 {
@@ -236,6 +237,26 @@ void AC_CombatCharacter::onPostureBroken()
 		}, m_fBrokenDuration, false);
 }
 
+void AC_CombatCharacter::onParrySuccess(AActor* pParryOwner, AActor* pParriedTarget)
+{
+	if (UAnimInstance* pAnim = GetMesh()->GetAnimInstance())
+	{
+		if (m_pParryCom)
+		{ 
+			if (this == pParryOwner)
+			{
+				pAnim->Montage_Play(m_pParryCom->m_ParryOwnerMontage);
+			}
+			else if (this == pParriedTarget)
+			{
+				pAnim->Montage_Play(m_pParryCom->m_ParriedTargetMontage);
+			}
+		}
+		
+	}
+	UE_LOG(LogTemp, Error, TEXT("ParrySuccess!!!!"))
+}
+
 FVector AC_CombatCharacter::getLocation_Implementation()
 {
 	return GetActorLocation();
@@ -286,6 +307,11 @@ void AC_CombatCharacter::BeginPlay()
 	}
 
 	m_pExecutionCom = GetComponentByClass<UC_ExecutionComponent>();
+
+	m_pParryCom = GetComponentByClass<UC_ParryComponent>();
+
+	if (m_pParryCom)
+		m_pParryCom->m_OnSuccessParry.AddDynamic(this, &AC_CombatCharacter::onParrySuccess);
 	
 	
 }

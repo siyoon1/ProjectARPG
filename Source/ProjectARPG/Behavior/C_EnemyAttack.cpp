@@ -22,9 +22,12 @@ EBTNodeResult::Type UC_EnemyAttack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	if (pEnemy->getCombatState() == E_CombatState::Attacking)
 		return EBTNodeResult::Failed;
 
-	pEnemy->setCombatState(E_CombatState::Attacking);
+	if (pEnemy->getCombatState() != E_CombatState::Attacking)
+	{
+		pEnemy->attack(); // 공격 시도
+		
+		return EBTNodeResult::Succeeded;
+	}
 
-	pEnemy->attack();
-
-	return EBTNodeResult::Succeeded;
+	return EBTNodeResult::Failed;
 }

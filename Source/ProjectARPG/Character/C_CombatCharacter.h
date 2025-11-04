@@ -90,6 +90,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<class UC_ExecutionComponent> m_pExecutionCom;
 
+	UPROPERTY()
+	TObjectPtr<class UC_ParryComponent> m_pParryCom;
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
 	TObjectPtr<USceneComponent> m_pTraceStart;
@@ -108,6 +111,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void onPostureBroken();
+
+	void onParrySuccess(AActor* pParryOwner, AActor* pParriedTarget);
 
 public:
 	AC_CombatCharacter();
