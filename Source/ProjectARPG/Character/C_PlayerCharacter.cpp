@@ -53,6 +53,7 @@ void AC_PlayerCharacter::BeginPlay()
 
 	m_pExecutionDetectSphere = GetComponentByClass<USphereComponent>();
 
+
 }
 
 
@@ -245,17 +246,31 @@ void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 	UE_LOG(LogTemp, Warning, TEXT(">>> [Player] Parry Input Function CALLED!"));
 
 	AActor* Attacker = getCurrentEnemy();
-	if (m_pParryCom)
+	if (Attacker)
 	{
-		if (m_pParryCom->tryParry(Attacker))
+		if (UC_ParryComponent* pParryCom = Cast<UC_ParryComponent>(Attacker->GetComponentByClass(UC_ParryComponent::StaticClass())))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Parry SUCCESS on %s"), *Attacker->GetName());
+			UE_LOG(LogTemp, Warning, TEXT("Found ParryComponent on %s"), *Attacker->GetName());
+			if (pParryCom)
+			{
+				//여기서 this (Player)를 넘긴다!
+				if (pParryCom->tryParry(this))
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Parry SUCCESS on %s"), *Attacker->GetName());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Parry Failed"));
+				}
+			}
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Parry Failed"));
+			UE_LOG(LogTemp, Warning, TEXT("No ParryComponent on %s"), *Attacker->GetName());
 		}
 	}
+	
+	
 	
 }
 
@@ -333,10 +348,9 @@ AActor* AC_PlayerCharacter::getCurrentEnemy()
 
 	if (bHit)
 	{
-		AActor* pHitActor = HitResult.GetActor();
-		if (pHitActor) // 태그로 적 판정
+		if (AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(HitResult.GetActor()))
 		{
-			return pHitActor;
+			return pEnemy;
 		}
 	}
 

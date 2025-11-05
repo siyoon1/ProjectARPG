@@ -14,7 +14,7 @@ void UC_ParryWindow::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase*
 	if (UC_ParryComponent* pParryCom = MeshComp->GetOwner()->GetComponentByClass<UC_ParryComponent>())
 	{
 		pParryCom->startParryWindow(m_fCanTime);
-		UE_LOG(LogTemp, Warning, TEXT("ParryWindow Notify Triggered on % s"), *MeshComp->GetOwner()->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("ParryWindow Notify Triggered on %s"), *MeshComp->GetOwner()->GetName());
 	}
 
 

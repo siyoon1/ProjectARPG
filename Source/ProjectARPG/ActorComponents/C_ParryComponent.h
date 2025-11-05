@@ -20,6 +20,7 @@ private:
 	FTimerHandle m_ParryTimerHandle;
 
 public:
+	UPROPERTY(BlueprintAssignable)
 	FOnSuccessParry m_OnSuccessParry;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage")

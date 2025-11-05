@@ -87,11 +87,7 @@ protected:
 	
 	FTimerHandle m_timerHandle_PostureBroken;
 
-	UPROPERTY()
-	TObjectPtr<class UC_ExecutionComponent> m_pExecutionCom;
-
-	UPROPERTY()
-	TObjectPtr<class UC_ParryComponent> m_pParryCom;
+	
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
@@ -106,12 +102,19 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Status")
 	FOnPostureChanged m_OnPostureChanged;
 
+	UPROPERTY()
+	TObjectPtr<class UC_ExecutionComponent> m_pExecutionCom;
+
+	UPROPERTY()
+	TObjectPtr<class UC_ParryComponent> m_pParryCom;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void onPostureBroken();
 
+	UFUNCTION()
 	void onParrySuccess(AActor* pParryOwner, AActor* pParriedTarget);
 
 public:

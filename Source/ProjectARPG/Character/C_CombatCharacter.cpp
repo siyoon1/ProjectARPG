@@ -239,6 +239,11 @@ void AC_CombatCharacter::onPostureBroken()
 
 void AC_CombatCharacter::onParrySuccess(AActor* pParryOwner, AActor* pParriedTarget)
 {
+	UE_LOG(LogTemp, Warning, TEXT("OnParrySuccess | This=%s | Owner=%s | Target=%s"),
+		*GetName(),
+		*pParryOwner->GetName(),
+		*pParriedTarget->GetName());
+
 	if (UAnimInstance* pAnim = GetMesh()->GetAnimInstance())
 	{
 		if (m_pParryCom)
@@ -246,6 +251,7 @@ void AC_CombatCharacter::onParrySuccess(AActor* pParryOwner, AActor* pParriedTar
 			if (this == pParryOwner)
 			{
 				pAnim->Montage_Play(m_pParryCom->m_ParryOwnerMontage);
+				UE_LOG(LogTemp, Warning, TEXT("[%s] I'm Parry Owner! Try playing ParrySuccess montage"), *GetName());
 			}
 			else if (this == pParriedTarget)
 			{

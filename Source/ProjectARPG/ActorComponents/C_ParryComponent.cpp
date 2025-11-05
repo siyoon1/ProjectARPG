@@ -2,6 +2,7 @@
 
 
 #include "C_ParryComponent.h"
+#include "ProjectARPG/Character/C_CombatCharacter.h"
 
 // Sets default values for this component's properties
 UC_ParryComponent::UC_ParryComponent()
@@ -34,21 +35,38 @@ void UC_ParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 
 bool UC_ParryComponent::tryParry(AActor* pAttacker)
 {
-	UE_LOG(LogTemp, Warning, TEXT("TryParry on %s | CanParry = %s"),
-		*GetOwner()->GetName(),
-		m_bCanParry ? TEXT("TRUE") : TEXT("FALSE"));
-
 	if (!m_bCanParry)
 		return false;
 
-	if (m_bCanParry)
+	m_bCanParry = false;
+
+	AActor* pParryOwner = GetOwner(); // 이 컴포넌트가 붙어있는 쪽 (패리 당한 or 시도 받은 쪽)
+	AActor* pParriedTarget = pAttacker; // 공격자 (패리 시도한 캐릭터)
+
+	if (pParryOwner && pParriedTarget)
 	{
-		m_OnSuccessParry.Broadcast(GetOwner(), pAttacker);
+		// 기존: 자기 자신(Enemy)의 델리게이트만 호출됨
+		m_OnSuccessParry.Broadcast(pParriedTarget, pParryOwner);
+
+		// 추가: 패리 성공자(Player) 쪽도 강제로 onParrySuccess 실행
+		if (AC_CombatCharacter* pParryOwnerChar = Cast<AC_CombatCharacter>(pParryOwner))
+		{
+			// 상대가 Player라면 그의 델리게이트도 울리게 한다
+			if (AC_CombatCharacter* pAttackerChar = Cast<AC_CombatCharacter>(pParriedTarget))
+			{
+				if (pAttackerChar->m_pParryCom)
+				{
+					pAttackerChar->m_pParryCom->m_OnSuccessParry.Broadcast(pParriedTarget, pParryOwner);
+				}
+			}
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("TryParry | Owner=%s | Attacker=%s"),
+			*pParryOwner->GetName(),
+			pParriedTarget ? *pParriedTarget->GetName() : TEXT("NULL"));
+
 		return true;
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("Parry Success! Owner: %s, Attacker: %s"),
-		*GetOwner()->GetName(), *pAttacker->GetName());
 
 	return false;
 }
