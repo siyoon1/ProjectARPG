@@ -56,7 +56,7 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim)
 	pEnemy->GetCharacterMovement()->DisableMovement();
 
 	FVector vDirToEnemy = (pEnemy->GetActorLocation() - pAttacker->GetActorLocation()).GetSafeNormal();
-	FVector vTarget = pEnemy->GetActorLocation() - vDirToEnemy * 150.f;
+	FVector vTarget = pEnemy->GetActorLocation() - vDirToEnemy * 180.f;
 
 	pAttacker->SetActorLocation(vTarget);
 
@@ -154,7 +154,6 @@ void UC_ExecutionComponent::onExecutionFinished(UAnimMontage* Montage, bool bInt
 
 	pOwner->EnableInput(nullptr);
 	pOwner->setCombatState(E_CombatState::Idle);
-
 
 }
 

@@ -27,4 +27,7 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")
 	FVector getLocation();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Parry")
+	void tryReceiveParry(AActor* pParryOwner);
 };

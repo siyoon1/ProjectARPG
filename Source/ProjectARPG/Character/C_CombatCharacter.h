@@ -117,6 +117,9 @@ protected:
 	UFUNCTION()
 	void onParrySuccess(AActor* pParryOwner, AActor* pParriedTarget);
 
+	UFUNCTION()
+	void tryReceiveParry_Implementation(AActor* pParryOwner);
+
 public:
 	AC_CombatCharacter();
 

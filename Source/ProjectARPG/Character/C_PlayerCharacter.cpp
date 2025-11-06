@@ -243,34 +243,25 @@ void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 {
-	UE_LOG(LogTemp, Warning, TEXT(">>> [Player] Parry Input Function CALLED!"));
+	if (!m_pParryCom)
+		return;
 
-	AActor* Attacker = getCurrentEnemy();
-	if (Attacker)
+
+	m_pParryCom->startParryWindow(0.3f);  // 0.3초 동안 패링 가능
+
+	AActor* pEnemy = getCurrentEnemy();
+	if (!pEnemy)
+		return;
+
+	bool bSuccess = m_pParryCom->tryParry(pEnemy);
+	if (bSuccess)
 	{
-		if (UC_ParryComponent* pParryCom = Cast<UC_ParryComponent>(Attacker->GetComponentByClass(UC_ParryComponent::StaticClass())))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Found ParryComponent on %s"), *Attacker->GetName());
-			if (pParryCom)
-			{
-				//여기서 this (Player)를 넘긴다!
-				if (pParryCom->tryParry(this))
-				{
-					UE_LOG(LogTemp, Warning, TEXT("Parry SUCCESS on %s"), *Attacker->GetName());
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("Parry Failed"));
-				}
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("No ParryComponent on %s"), *Attacker->GetName());
-		}
+		UE_LOG(LogTemp, Warning, TEXT("Player successfully parried %s!"), *pEnemy->GetName());
 	}
-	
-	
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Player failed to parry."));
+	}
 	
 }
 
@@ -342,7 +333,7 @@ AActor* AC_PlayerCharacter::getCurrentEnemy()
 		HitResult,
 		vStart,
 		vEnd,
-		ECC_Pawn,
+		ECC_GameTraceChannel3,
 		Params
 	);
 
