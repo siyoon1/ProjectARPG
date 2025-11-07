@@ -33,25 +33,6 @@ void UC_ParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	// ...
 }
 
-bool UC_ParryComponent::tryParry(AActor* pAttacker)
-{
-	if (!m_bCanParry)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Parry failed: not in window"));
-		return false;
-	}
-
-	AActor* pOwner = GetOwner(); // 패링 주체
-
-	m_OnSuccessParry.Broadcast(pOwner, pAttacker);
-
-	UE_LOG(LogTemp, Warning, TEXT("Parry SUCCESS: %s (ParryOwner) vs %s (Attacker)"),
-		*pOwner->GetName(),
-		*pAttacker->GetName());
-
-	return true;
-}
-
 void UC_ParryComponent::startParryWindow(float fCanTime)
 {
 	m_bCanParry = true;
@@ -67,5 +48,10 @@ void UC_ParryComponent::endParryWindow()
 {
 	m_bCanParry = false;
 	UE_LOG(LogTemp, Warning, TEXT("%s ParryWindow End"), *GetOwner()->GetName());
+}
+
+bool UC_ParryComponent::isCanParry() const
+{
+	return m_bCanParry;
 }
 

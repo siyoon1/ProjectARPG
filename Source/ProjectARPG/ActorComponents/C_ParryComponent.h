@@ -6,8 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "C_ParryComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSuccessParry, AActor*, ParryOwner, AActor*, ParriedTarget);
-
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTARPG_API UC_ParryComponent : public UActorComponent
@@ -20,9 +18,6 @@ private:
 	FTimerHandle m_ParryTimerHandle;
 
 public:
-	UPROPERTY(BlueprintAssignable)
-	FOnSuccessParry m_OnSuccessParry;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage")
 	TObjectPtr<UAnimMontage> m_ParryOwnerMontage;
 
@@ -41,10 +36,10 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	bool tryParry(AActor* pAttacker);
-
 	void startParryWindow(float fCanTime);
 
 	void endParryWindow();
+
+	bool isCanParry() const;
 
 };

@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "C_CombatCharacter.h"
 #include "ProjectARPG/Sturcts/FS_PostureStats.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -9,6 +8,7 @@
 #include "CollisionQueryParams.h"
 #include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 #include "ProjectARPG/ActorComponents/C_ParryComponent.h"
+#include "../Camera/C_PlayerCameraManager.h"
 
 AC_CombatCharacter::AC_CombatCharacter()
 {
@@ -58,12 +58,12 @@ E_CombatState AC_CombatCharacter::getCombatState() const
 
 void AC_CombatCharacter::setHp(float fHp)
 {
-	m_fCurrnetHp = fHp;
+	m_fCurrentHp = fHp;
 }
 
 float AC_CombatCharacter::getHp() const
 {
-	return m_fCurrnetHp;
+	return m_fCurrentHp;
 }
 
 float AC_CombatCharacter::getMaxHp() const
@@ -197,11 +197,11 @@ void AC_CombatCharacter::performAttackTrace()
 
 void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage)
 {
-	if (m_fCurrnetHp > 0)
-		m_fCurrnetHp = FMath::Clamp(m_fCurrnetHp - fDamage, 0.f, m_fMaxHp);
+	if (m_fCurrentHp > 0)
+		m_fCurrentHp = FMath::Clamp(m_fCurrentHp - fDamage, 0.f, m_fMaxHp);
 
-	m_OnHpChanged.Broadcast(m_fCurrnetHp, m_fMaxHp);
-	UE_LOG(LogTemp, Warning, TEXT("TakeDamage: HP %.1f / %.1f"), m_fCurrnetHp, m_fMaxHp);
+	m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
+	UE_LOG(LogTemp, Warning, TEXT("TakeDamage: HP %.1f / %.1f"), m_fCurrentHp, m_fMaxHp);
 
 	if (m_fCurrentPosture > 0)
 	{
@@ -209,7 +209,6 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 
 	}
 		
-
 
 	if (m_fCurrentPosture <= 0.f && !m_bIsPostureBroken)
 	{
@@ -240,53 +239,75 @@ void AC_CombatCharacter::onPostureBroken()
 		}, m_fBrokenDuration, false);
 }
 
-void AC_CombatCharacter::onParrySuccess(AActor* pParryOwner, AActor* pParriedTarget)
-{
-	if (!GetMesh() || !GetMesh()->GetAnimInstance())
-		return;
-
-	// 내가 패링 성공한 쪽일 때만 처리
-	if (this == pParryOwner)
-	{
-		if (m_pParryCom && m_pParryCom->m_ParryOwnerMontage)
-		{
-			GetMesh()->GetAnimInstance()->Montage_Play(m_pParryCom->m_ParryOwnerMontage);
-			UE_LOG(LogTemp, Warning, TEXT("[%s] Playing ParryOwner Montage"), *GetName());
-		}
-
-		// 패링당한 쪽(피격자)에게 tryReceiveParry 호출
-		if (pParriedTarget && pParriedTarget->GetClass()->ImplementsInterface(UC_CombatInterface::StaticClass()))
-		{
-			IC_CombatInterface::Execute_tryReceiveParry(pParriedTarget, this);
-			UE_LOG(LogTemp, Warning, TEXT("[%s] -> Notifying %s of Parry"), *GetName(), *pParriedTarget->GetName());
-		}
-	}
-}
-
-void AC_CombatCharacter::tryReceiveParry_Implementation(AActor* pParryOwner)
-{
-	if (!GetMesh() || !GetMesh()->GetAnimInstance())
-		return;
-
-	if (!pParryOwner)
-		return;
-
-	// 상대방(패링 성공자)의 ParryComponent로부터 피격자용 몽타주 재생
-	if (m_pParryCom)
-	{
-		if (m_pParryCom->m_ParriedTargetMontage)
-		{
-			GetMesh()->GetAnimInstance()->Montage_Play(m_pParryCom->m_ParriedTargetMontage);
-			UE_LOG(LogTemp, Warning, TEXT("[%s] plays ParriedTargetMontage (from %s)"),
-				*GetName(), *pParryOwner->GetName());
-			setCombatState(E_CombatState::Idle);
-		}
-	}
-}
 
 FVector AC_CombatCharacter::getLocation_Implementation()
 {
 	return GetActorLocation();
+}
+
+void AC_CombatCharacter::tryParry_Implementation(AActor* ParryOwner)
+{
+	if (!m_pParryCom) return;
+
+	if (m_pParryCom->isCanParry())
+	{
+		// 플레이어에게 알림
+		IC_CombatInterface::Execute_onParrySuccess(ParryOwner, this);
+
+		UAnimInstance* pAnim = GetMesh()->GetAnimInstance();
+		if (!pAnim) return;
+
+		// 현재 공격 중단
+		if (pAnim->IsAnyMontagePlaying())
+			pAnim->Montage_Stop(0.1f);
+
+		// 패링 피격 모션
+		if (m_pParryCom->m_ParriedTargetMontage)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[%s] Playing ParriedTargetMontage"), *GetName());
+			pAnim->Montage_Play(m_pParryCom->m_ParriedTargetMontage, 1.0f);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[%s] ParriedTargetMontage is NULL!"), *GetName());
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("[%s] Got Parried by %s"), *GetName(), *ParryOwner->GetName());
+	}
+}
+
+void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
+{
+	UE_LOG(LogTemp, Warning, TEXT("[%s] Successfully parried %s!"), *GetName(), *ParryTarget->GetName());
+
+	if (!m_pParryCom) return;
+
+	UAnimInstance* pAnim = GetMesh()->GetAnimInstance();
+	if (!pAnim) return;
+
+	// 현재 재생 중단
+	if (pAnim->IsAnyMontagePlaying())
+		pAnim->Montage_Stop(0.1f);
+
+	// 패링 성공 모션
+	if (m_pParryCom->m_ParryOwnerMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] Playing ParryOwnerMontage"), *GetName());
+		pAnim->Montage_Play(m_pParryCom->m_ParryOwnerMontage, 1.0f);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] ParryOwnerMontage is NULL!"), *GetName());
+	}
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (AC_PlayerCameraManager* PCM = Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager))
+		{
+			PCM->executionEffect(1.f);
+		}
+	}
+
 }
 
 void AC_CombatCharacter::BeginPlay()
@@ -312,7 +333,7 @@ void AC_CombatCharacter::BeginPlay()
 		}
 	}
 
-	m_fCurrnetHp = m_fMaxHp;
+	m_fCurrentHp = m_fMaxHp;
 
 	if (!m_pTraceStart)
 	{
@@ -336,9 +357,6 @@ void AC_CombatCharacter::BeginPlay()
 	m_pExecutionCom = GetComponentByClass<UC_ExecutionComponent>();
 
 	m_pParryCom = GetComponentByClass<UC_ParryComponent>();
-
-	if (m_pParryCom)
-		m_pParryCom->m_OnSuccessParry.AddDynamic(this, &AC_CombatCharacter::onParrySuccess);
 	
 	
 }

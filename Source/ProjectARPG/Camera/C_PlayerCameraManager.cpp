@@ -20,6 +20,10 @@ void AC_PlayerCameraManager::Tick(float DeltaSeconds)
 		fTargetFOV = DefaultFOV - 20.f;
 		
 	}
+	if (m_bIsParrying)
+	{
+		fTargetFOV = DefaultFOV - 10.f;
+	}
 	else if (m_bIsSprinting)
 	{
 		fTargetFOV = DefaultFOV + 10.f;
@@ -98,5 +102,38 @@ void AC_PlayerCameraManager::executionEffect(float fLength)
 
 	
 	
+}
+
+void AC_PlayerCameraManager::parryEffect(float fLength)
+{
+	m_bIsParrying = true;
+	PrimaryActorTick.bCanEverTick = true;
+
+	m_PostProcessSettings.bOverride_MotionBlurAmount = true;
+	m_PostProcessSettings.MotionBlurAmount = 0.9f;
+
+
+	if (UWorld* pWorld = GetWorld())
+	{
+		pWorld->GetWorldSettings()->SetTimeDilation(0.8f);
+
+		pWorld->GetTimerManager().SetTimer(m_TimerHandle_Reset, [this]()
+			{
+				m_bIsReturningFOV = true;
+
+				m_PostProcessSettings.MotionBlurAmount = 0.f;
+				m_PostProcessSettings.bOverride_MotionBlurAmount = false;
+
+				m_PostProcessSettings.bOverride_ColorSaturation = false;
+				m_PostProcessSettings.bOverride_BloomIntensity = false;
+
+				if (UWorld* pWorldInner = GetWorld())
+				{
+					pWorldInner->GetWorldSettings()->SetTimeDilation(1.0f);
+				}
+
+				m_bIsExecuting = false;
+
+			}, fLength, false);
 }
 

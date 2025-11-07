@@ -18,6 +18,7 @@ private:
 	bool m_bIsExecuting = false;
 	bool m_bIsReturningFOV = false;
 	bool m_bIsSprinting = false;
+	bool m_bIsParrying = false;
 	FTimerHandle m_TimerHandle_Reset;
 
 public:
@@ -32,5 +33,6 @@ public:
 	void startSprintEffect();
 	void stopSprintEffect();
 	void executionEffect(float fLength);
+	void parryEffect(float fLength);
 	
 };

@@ -243,25 +243,22 @@ void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 {
-	if (!m_pParryCom)
-		return;
+	UE_LOG(LogTemp, Warning, TEXT(">>> [Player] Parry Input Triggered"));
 
-
-	m_pParryCom->startParryWindow(0.3f);  // 0.3초 동안 패링 가능
-
-	AActor* pEnemy = getCurrentEnemy();
-	if (!pEnemy)
-		return;
-
-	bool bSuccess = m_pParryCom->tryParry(pEnemy);
-	if (bSuccess)
+	if (AActor* pEnemy = getCurrentEnemy())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Player successfully parried %s!"), *pEnemy->GetName());
+		if (UC_ParryComponent* ParryComp = pEnemy->GetComponentByClass<UC_ParryComponent>())
+		{
+			if (ParryComp->isCanParry())
+			{
+				IC_CombatInterface::Execute_tryParry(pEnemy, this);
+				UE_LOG(LogTemp, Warning, TEXT("[Player] Parry SUCCESS on %s"), *pEnemy->GetName());
+				return;
+			}
+		}
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Player failed to parry."));
-	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[Player] Parry Failed ? No parryable enemy"));
 	
 }
 

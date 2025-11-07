@@ -57,7 +57,7 @@ protected:
 	float m_fMaxHp = 0.f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Hp", meta = (AllowPrivateAccess = "true"))
-	float m_fCurrnetHp = 0.f;
+	float m_fCurrentHp = 0.f;
 
 	float m_fRecoveryRate = 0.f;
 	float m_fRecoveryDelayTimer = 0.f;
@@ -87,8 +87,6 @@ protected:
 	
 	FTimerHandle m_timerHandle_PostureBroken;
 
-	
-
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
 	TObjectPtr<USceneComponent> m_pTraceStart;
@@ -113,12 +111,6 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void onPostureBroken();
-
-	UFUNCTION()
-	void onParrySuccess(AActor* pParryOwner, AActor* pParriedTarget);
-
-	UFUNCTION()
-	void tryReceiveParry_Implementation(AActor* pParryOwner);
 
 public:
 	AC_CombatCharacter();
@@ -151,4 +143,11 @@ public:
 
 	UFUNCTION()
 	FVector getLocation_Implementation();
+
+	UFUNCTION()
+	void tryParry_Implementation(AActor* ParryOwner);
+
+	UFUNCTION()
+	void onParrySuccess_Implementation(AActor* ParryTarget);
+	
 };

@@ -28,6 +28,10 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")
 	FVector getLocation();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Parry")
-	void tryReceiveParry(AActor* pParryOwner);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")
+	void tryParry(AActor* ParryOwner);	// 공격자가 피격자에게 패링 시도할 때 호출
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")
+	void onParrySuccess(AActor* ParryTarget);
 };
+
