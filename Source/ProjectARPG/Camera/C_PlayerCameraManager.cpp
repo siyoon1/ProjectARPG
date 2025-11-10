@@ -135,5 +135,6 @@ void AC_PlayerCameraManager::parryEffect(float fLength)
 				m_bIsExecuting = false;
 
 			}, fLength, false);
+	}
 }
 

@@ -43,16 +43,27 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> m_pGuardAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> m_pLockOnAction;
+
 	UPROPERTY()
-	class USphereComponent* m_pExecutionDetectSphere;
+	class USphereComponent* m_pExecutionDetectSphere{};
 
 
+	//플레이어 연속 공격 관련 변수
 	int32 m_nCurrentComboIndex = 0;
 	int32 m_nMaxComboIndex = 5;
 	bool m_bNextComboQueued = false;
 	float m_fLastAttackInputTime = 0.f;
 	float m_fInputBuffer = 0.25f;
+
+	//플레이어 기본 이동속도
 	float m_fDefaultSpeed = 800.f;
+
+	//플레이어 락온 관련 변수
+	AC_CombatCharacter* m_pCurrentLockOnTarget{};
+	bool m_bIsLockOn = false;
+
 
 
 public:
@@ -72,6 +83,7 @@ protected:
 private:
 	void playCombo(int32 nComboIndex);
 	AActor* getCurrentEnemy();
+	AC_CombatCharacter* findLockOnTarget();
 	
 	
 
@@ -79,20 +91,23 @@ protected:
 	void look(const struct FInputActionValue& sValue);
 	void move(const FInputActionValue& sValue);
 	void comboAttack(const FInputActionValue& sValue);
-	void sprint(const struct FInputActionInstance& sInst);
-	void sprintReleased(const struct FInputActionInstance& sInst);
 	void jumpStart(const FInputActionValue& sValue);
 	void jumpEnd(const FInputActionValue& sValue);
-	void guard(const FInputActionInstance& sInst);
 	void guardEnd(const FInputActionValue& sValue);
 	void parry(const FInputActionValue& sValue);
-	
+	void lockOn(const FInputActionValue& sValue);
+	void sprint(const struct FInputActionInstance& sInst);
+	void sprintReleased(const FInputActionInstance& sInst);
+	void guard(const FInputActionInstance& sInst);
 
 public:
 	void setCombatState(E_CombatState eNewState) override;
 	void onComboTransition();
 	void resetCombo();
-	bool tryExcuteEnemy();
+	bool tryExcuteEnemy() const;
+
+	UFUNCTION(BlueprintCallable)
+	bool isLockOn() const;
 
 	
 };

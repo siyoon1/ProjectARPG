@@ -13,6 +13,7 @@
 #include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 #include "ProjectARPG/ActorComponents/C_ParryComponent.h"
 #include "Components/SphereComponent.h"
+#include "Engine/OverlapResult.h"
 
 AC_PlayerCharacter::AC_PlayerCharacter()
 {
@@ -262,6 +263,22 @@ void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 	
 }
 
+void AC_PlayerCharacter::lockOn(const FInputActionValue& sValue)
+{
+	if (m_pCurrentLockOnTarget)
+	{
+		m_pCurrentLockOnTarget = nullptr;
+		return;
+	}
+
+	AC_CombatCharacter* pTarget = findLockOnTarget();
+
+	if (pTarget)
+	{
+		m_pCurrentLockOnTarget = pTarget;
+	}
+}
+
 
 void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
@@ -347,6 +364,52 @@ AActor* AC_PlayerCharacter::getCurrentEnemy()
 	return nullptr;
 }
 
+AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()
+{
+	const float fDetectRadius = 500.f;
+
+	FVector vCenter = GetActorLocation();
+
+	TArray<FOverlapResult> listResult{};
+
+	FCollisionQueryParams Params{};
+	Params.AddIgnoredActor(this);
+
+	bool bHasHit = GetWorld()->OverlapMultiByChannel(
+		listResult,
+		vCenter,
+		FQuat::Identity,
+		ECC_GameTraceChannel3,
+		FCollisionShape::MakeSphere(fDetectRadius),
+		Params
+		);
+
+	DrawDebugSphere(GetWorld(), vCenter, fDetectRadius, 16, FColor::Red, false, 1.0f);
+
+	AC_CombatCharacter* pTarget = nullptr;
+
+	if (bHasHit)
+	{
+		
+		for (const FOverlapResult& object : listResult)
+		{
+			pTarget = Cast<AC_CombatCharacter>(object.GetActor());
+			
+			if (!pTarget || pTarget == this)
+				continue;
+
+		}
+
+	}
+	else
+		return nullptr;
+
+	if (pTarget)
+		UE_LOG(LogTemp, Warning, TEXT("LockOn Target: %s"), *pTarget->GetName());
+
+	return pTarget;
+}
+
 void AC_PlayerCharacter::setCombatState(E_CombatState eNewState)
 {
 	Super::setCombatState(eNewState);
@@ -385,7 +448,12 @@ void AC_PlayerCharacter::resetCombo()
 	m_bNextComboQueued = false;
 }
 
-bool AC_PlayerCharacter::tryExcuteEnemy()
+bool AC_PlayerCharacter::isLockOn() const
+{
+	return m_bIsLockOn;
+}
+
+bool AC_PlayerCharacter::tryExcuteEnemy() const
 {
 	TArray<AActor*> Overlaps{};
 
@@ -418,6 +486,31 @@ bool AC_PlayerCharacter::tryExcuteEnemy()
 void AC_PlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (!m_pCurrentLockOnTarget)
+	{
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+		bUseControllerRotationYaw = false;
+		bUseControllerRotationRoll = false;
+		bUseControllerRotationPitch = false;
+		m_bIsLockOn = false;
+		return;
+	}
+		
+	m_bIsLockOn = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	bUseControllerRotationYaw = true;
+	bUseControllerRotationRoll = true;
+	bUseControllerRotationPitch = true;
+
+	FVector vTargetLoc = m_pCurrentLockOnTarget->GetActorLocation();
+	FVector vCameraLoc = m_pSpringArm->GetComponentLocation();
+	FVector vDir = (vTargetLoc - vCameraLoc).GetSafeNormal();
+
+	FRotator rTargetRot = vDir.Rotation();
+	FRotator rNewRot = FMath::RInterpTo(m_pSpringArm->GetComponentRotation(), rTargetRot, DeltaTime, 3.f);
+
+	Controller->SetControlRotation(rNewRot);
 }
 
 void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -436,5 +529,6 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::guard);
 		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::parry);
 		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::guardEnd);
+		pEinputCom->BindAction(m_pLockOnAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::lockOn);
 	}
 }
