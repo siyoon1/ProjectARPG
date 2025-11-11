@@ -56,6 +56,20 @@ E_CombatState AC_CombatCharacter::getCombatState() const
 	return m_eState;
 }
 
+bool AC_CombatCharacter::isGuardingFront(AActor* pAttacker) const
+{
+	if (!pAttacker)
+		return false;
+
+	FVector vAttacker = (pAttacker->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	FVector vFront = GetActorForwardVector();
+
+
+	float fDot = FVector::DotProduct(vFront, vAttacker);
+
+	return (fDot > -0.3f);
+}
+
 void AC_CombatCharacter::setHp(float fHp)
 {
 	m_fCurrentHp = fHp;
@@ -106,6 +120,7 @@ void AC_CombatCharacter::performAttackTrace()
 {
 	if (!m_bIsTracing)
 		return;
+
 
 	if (!m_pTraceStart || !m_pTraceEnd)
 		return;
@@ -184,6 +199,20 @@ void AC_CombatCharacter::performAttackTrace()
 						fFinalPostureDamage *= 1.0f;
 						break;
 					}
+					if (AC_CombatCharacter* pTarget = Cast<AC_CombatCharacter>(pHitActor))
+					{
+						if (pTarget->getCombatState() == E_CombatState::Guard)
+						{
+							bool bFront = pTarget->isGuardingFront(this);
+
+							if (bFront)
+							{
+								fFinalDamage *= 0.1f;
+								fFinalPostureDamage *= 0.5f;
+							}
+							
+						}
+					}
 					UE_LOG(LogTemp, Warning, TEXT("[%s] Hit %s!"), *GetName(), *pHitActor->GetName());
 					IC_CombatInterface::Execute_takeDamage(pHitActor, fFinalDamage, fFinalPostureDamage);
 				}
@@ -253,6 +282,8 @@ void AC_CombatCharacter::tryParry_Implementation(AActor* ParryOwner)
 	{
 		// 플레이어에게 알림
 		IC_CombatInterface::Execute_onParrySuccess(ParryOwner, this);
+
+		m_bWasParried = true;
 
 		UAnimInstance* pAnim = GetMesh()->GetAnimInstance();
 		if (!pAnim) return;

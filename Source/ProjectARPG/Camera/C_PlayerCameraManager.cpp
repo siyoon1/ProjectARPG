@@ -76,7 +76,7 @@ void AC_PlayerCameraManager::executionEffect(float fLength)
 	
 	if (UWorld* pWorld = GetWorld())
 	{
-		pWorld->GetWorldSettings()->SetTimeDilation(0.9f);
+		pWorld->GetWorldSettings()->SetTimeDilation(0.8f);
 
 		pWorld->GetTimerManager().SetTimer(m_TimerHandle_Reset, [this]()
 			{

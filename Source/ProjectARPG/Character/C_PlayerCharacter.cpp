@@ -508,6 +508,9 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 	FVector vDir = (vTargetLoc - vCameraLoc).GetSafeNormal();
 
 	FRotator rTargetRot = vDir.Rotation();
+
+	rTargetRot.Pitch -= 15.f;
+
 	FRotator rNewRot = FMath::RInterpTo(m_pSpringArm->GetComponentRotation(), rTargetRot, DeltaTime, 3.f);
 
 	Controller->SetControlRotation(rNewRot);

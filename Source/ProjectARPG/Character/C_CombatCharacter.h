@@ -84,6 +84,7 @@ protected:
 protected:
 	bool m_bIsPostureBroken = false;
 	bool m_bIsRecoveryDelay = false;
+	bool m_bWasParried = false;
 	
 	FTimerHandle m_timerHandle_PostureBroken;
 
@@ -119,6 +120,8 @@ public:
 
 	virtual void setCombatState(E_CombatState eNewState);
 	E_CombatState getCombatState() const;
+
+	bool isGuardingFront(AActor* pAttacker) const;
 
 	UFUNCTION(BlueprintCallable)
 	void setHp(float fHp);
