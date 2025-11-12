@@ -248,6 +248,9 @@ void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 
 	if (AActor* pEnemy = getCurrentEnemy())
 	{
+		if (m_bIsLockOn)
+			pEnemy = m_pCurrentLockOnTarget;
+
 		if (UC_ParryComponent* ParryComp = pEnemy->GetComponentByClass<UC_ParryComponent>())
 		{
 			if (ParryComp->isCanParry())
@@ -410,6 +413,194 @@ AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()
 	return pTarget;
 }
 
+void AC_PlayerCharacter::setLockOn(float fDelta)
+{
+	if (!m_pCurrentLockOnTarget)
+	{
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+		bUseControllerRotationYaw = false;
+		bUseControllerRotationRoll = false;
+		bUseControllerRotationPitch = false;
+		m_bIsLockOn = false;
+		return;
+	}
+
+	m_bIsLockOn = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	bUseControllerRotationYaw = true;
+	bUseControllerRotationRoll = true;
+	bUseControllerRotationPitch = true;
+
+	FVector vTargetLoc = m_pCurrentLockOnTarget->GetActorLocation();
+	FVector vCameraLoc = m_pSpringArm->GetComponentLocation();
+	FVector vDir = (vTargetLoc - vCameraLoc).GetSafeNormal();
+
+	FRotator rTargetRot = vDir.Rotation();
+
+	rTargetRot.Pitch -= 15.f;
+
+	FRotator rNewRot = FMath::RInterpTo(m_pSpringArm->GetComponentRotation(), rTargetRot, fDelta, 3.f);
+
+	Controller->SetControlRotation(rNewRot);
+}
+
+void AC_PlayerCharacter::checkWallTrace()
+{
+	FVector vStart = GetActorLocation();
+	FVector vForward = GetActorForwardVector();
+	FVector vEnd = vStart + vForward * 100.f;
+
+	FHitResult HitResult{};
+	FCollisionQueryParams Params{};
+	Params.AddIgnoredActor(this);
+
+	bool bHit =
+		GetWorld()->LineTraceSingleByChannel
+		(
+			HitResult,
+			vStart,
+			vEnd,
+			ECC_Visibility,
+			Params
+		);
+
+	if (bHit && HitResult.Normal.Z < 0.3f)
+	{
+		m_bCanWallGrab = true;
+		m_vWallNormal = HitResult.Normal;
+	}
+	else
+	{
+		m_bCanWallGrab = false;
+	}
+}
+
+void AC_PlayerCharacter::setWallGrab(bool bEnable)
+{
+	if (bEnable)
+	{
+		m_bIsWallGrabbing = true;
+
+		// 중력 제거
+		GetCharacterMovement()->GravityScale = 0.f;
+
+		// 속도 제거
+		GetCharacterMovement()->StopMovementImmediately();
+
+		// 공중제어 금지
+		GetCharacterMovement()->AirControl = 0.f;
+
+		FVector Push = -m_vWallNormal * 15.f;
+		SetActorLocation(GetActorLocation() + Push);
+
+
+	}
+	else
+	{
+		m_bIsWallGrabbing = false;
+
+		GetCharacterMovement()->GravityScale = 1.f;
+		GetCharacterMovement()->AirControl = 0.5f;
+	}
+}
+
+bool AC_PlayerCharacter::checkClimbableSurface()
+{
+	if (!m_bIsWallGrabbing)
+		return false;
+
+	FVector vWallTraceStart = GetActorLocation();
+	FVector vWallTraceEnd = vWallTraceStart + (-m_vWallNormal * 50.f) + FVector(0.f, 0.f, 200.f);
+	FHitResult WallHit{};
+	FCollisionQueryParams Params{};
+	Params.AddIgnoredActor(this);
+
+	bool bWallHit =
+		GetWorld()->LineTraceSingleByChannel
+		(
+			WallHit,
+			vWallTraceStart,
+			vWallTraceEnd,
+			ECC_Visibility,
+			Params
+		);
+
+	if (!bWallHit)
+		return false;
+
+	float fWallHeight = WallHit.Location.Z - GetActorLocation().Z;
+
+	FVector vLedgeStart = WallHit.Location + (-m_vWallNormal * 10.f);
+	FVector vLedgeEnd = vLedgeStart + FVector(0.f, 0.f, 120.f);
+	
+	const float fCapsuleRadius = 25.f;
+	const float fCapsuleHalfHeight = 25.f;
+
+	FHitResult bLedgeHit{};
+
+	bool bHit =
+		GetWorld()->SweepSingleByChannel
+		(
+			bLedgeHit,
+			vLedgeStart,
+			vLedgeEnd,
+			FQuat::Identity,
+			ECC_Visibility,
+			FCollisionShape::MakeCapsule(fCapsuleRadius, fCapsuleHalfHeight),
+			Params
+		);
+
+	DrawDebugCapsule(GetWorld(), (vLedgeStart + vLedgeEnd) * 0.5f, fCapsuleHalfHeight, fCapsuleRadius, FQuat::Identity, FColor::Green, false, 0.f, 0, 1.f);
+
+	if (!bHit)
+		return false;
+
+
+
+	if (bLedgeHit.Normal.Z > 0.7f)
+	{
+		m_vClimbLocation = bLedgeHit.Location;
+
+
+		if (fWallHeight < 50.f)
+			m_bUseDirectClimb = true;
+		else
+			m_bUseDirectClimb = false;
+
+
+		return true;
+	}
+
+
+	return false;
+	
+}
+
+void AC_PlayerCharacter::startClimbUp()
+{
+	if (!checkClimbableSurface())
+		return;
+
+	UE_LOG(LogTemp, Warning, TEXT(">>> startClimbUp CALLED!"));
+
+
+	m_bIsWallGrabbing = false;
+	GetCharacterMovement()->GravityScale = 1.f;
+
+	if (m_bUseDirectClimb)
+	{
+		SetActorLocation(m_vClimbLocation);
+	}
+	else
+	{
+		if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
+		{
+			pAnim->playUpToClimb();
+		}
+	}
+	
+}
+
 void AC_PlayerCharacter::setCombatState(E_CombatState eNewState)
 {
 	Super::setCombatState(eNewState);
@@ -453,6 +644,11 @@ bool AC_PlayerCharacter::isLockOn() const
 	return m_bIsLockOn;
 }
 
+bool AC_PlayerCharacter::isWallGrab() const
+{
+	return m_bIsWallGrabbing;
+}
+
 bool AC_PlayerCharacter::tryExcuteEnemy() const
 {
 	TArray<AActor*> Overlaps{};
@@ -487,33 +683,45 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (!m_pCurrentLockOnTarget)
+	// 락온 기능
+	setLockOn(DeltaTime);
+
+	if (GetCharacterMovement()->IsFalling())
 	{
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-		bUseControllerRotationYaw = false;
-		bUseControllerRotationRoll = false;
-		bUseControllerRotationPitch = false;
-		m_bIsLockOn = false;
-		return;
+		checkWallTrace();
 	}
-		
-	m_bIsLockOn = true;
-	GetCharacterMovement()->bOrientRotationToMovement = false;
-	bUseControllerRotationYaw = true;
-	bUseControllerRotationRoll = true;
-	bUseControllerRotationPitch = true;
+	else
+	{
+		m_bCanWallGrab = false;
+	}
 
-	FVector vTargetLoc = m_pCurrentLockOnTarget->GetActorLocation();
-	FVector vCameraLoc = m_pSpringArm->GetComponentLocation();
-	FVector vDir = (vTargetLoc - vCameraLoc).GetSafeNormal();
+	// 벽 짚기 토글
+	if (m_bCanWallGrab && !m_bIsWallGrabbing)
+	{
+		setWallGrab(true);
+	}
+	else if (m_bIsWallGrabbing && !m_bCanWallGrab)
+	{
+		setWallGrab(false);
+	}
 
-	FRotator rTargetRot = vDir.Rotation();
+	// 벽 짚은 상태 로직
+	if (m_bIsWallGrabbing)
+	{
+		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+		GetCharacterMovement()->GravityScale = 0.f;
 
-	rTargetRot.Pitch -= 15.f;
+		bool bClimbable = checkClimbableSurface();
 
-	FRotator rNewRot = FMath::RInterpTo(m_pSpringArm->GetComponentRotation(), rTargetRot, DeltaTime, 3.f);
+		if (bClimbable && !m_bCanClimbUp)
+		{
+			m_bCanClimbUp = true;
+			startClimbUp();
+		}
+	}
 
-	Controller->SetControlRotation(rNewRot);
+
+	
 }
 
 void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

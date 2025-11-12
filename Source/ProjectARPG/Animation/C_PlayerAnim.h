@@ -40,11 +40,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
 	TArray<UAnimMontage*> m_pComboAttackMontages;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Climb")
+	TObjectPtr<UAnimMontage> m_pUpToClimbMontage;
 
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
 	void playComboMontage(E_AttackType eType, int32 nComboIndex);
+	void playUpToClimb();
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
 	void setIsGuarding(bool bNewGuard);

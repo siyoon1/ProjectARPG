@@ -64,6 +64,13 @@ private:
 	AC_CombatCharacter* m_pCurrentLockOnTarget{};
 	bool m_bIsLockOn = false;
 
+	//플레이어 클라이밍
+	FVector m_vWallNormal{};
+	FVector m_vClimbLocation{};
+	bool m_bCanWallGrab = false;
+	bool m_bIsWallGrabbing = false;
+	bool m_bCanClimbUp = false;
+	bool m_bUseDirectClimb = false;
 
 
 public:
@@ -82,10 +89,27 @@ protected:
 
 private:
 	void playCombo(int32 nComboIndex);
+
+	//전방에 적 찾기
 	AActor* getCurrentEnemy();
+
+	//락온 대상 찾기
 	AC_CombatCharacter* findLockOnTarget();
+
+	//락온 지정
+	void setLockOn(float fDelta);
 	
-	
+	//벽 짚기 가능한지 확인하기
+	void checkWallTrace();
+
+	//벽 짚기
+	void setWallGrab(bool bEnable);
+
+	//위쪽 지면 감지하기
+	bool checkClimbableSurface();
+
+	//벽 올라가기
+	void startClimbUp();
 
 protected:
 	void look(const struct FInputActionValue& sValue);
@@ -104,10 +128,16 @@ public:
 	void setCombatState(E_CombatState eNewState) override;
 	void onComboTransition();
 	void resetCombo();
+
+	//인살 시도 함수
 	bool tryExcuteEnemy() const;
 
+
+	//락온 함수
 	UFUNCTION(BlueprintCallable)
 	bool isLockOn() const;
 
-	
+	//클라이밍 함수
+	UFUNCTION(BlueprintCallable)
+	bool isWallGrab() const;
 };
