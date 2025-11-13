@@ -196,11 +196,14 @@ void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
 
 void AC_PlayerCharacter::jumpStart(const FInputActionValue& sValue)
 {
-	Jump();
+	m_bJumpPressed = true;
+	if (!m_bIsWallGrabbing)
+		Jump();
 }
 
 void AC_PlayerCharacter::jumpEnd(const FInputActionValue& sValue)
 {
+	m_bJumpPressed = false;
 	StopJumping();
 }
 
@@ -460,11 +463,15 @@ void AC_PlayerCharacter::checkWallTrace()
 			HitResult,
 			vStart,
 			vEnd,
-			ECC_Visibility,
+			ECC_GameTraceChannel4,
 			Params
 		);
 
-	if (bHit && HitResult.Normal.Z < 0.3f)
+
+	float fDistance = (HitResult.Location - GetActorLocation()).Size();
+	const float fMinWallGrabDistance = 50.f;
+
+	if (bHit && HitResult.Normal.Z < 0.3f && fDistance <= fMinWallGrabDistance && m_bJumpPressed)
 	{
 		m_bCanWallGrab = true;
 		m_vWallNormal = HitResult.Normal;
@@ -490,7 +497,7 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 		// 공중제어 금지
 		GetCharacterMovement()->AirControl = 0.f;
 
-		FVector Push = -m_vWallNormal * 15.f;
+		FVector Push = -m_vWallNormal * 10.f;
 		SetActorLocation(GetActorLocation() + Push);
 
 
@@ -521,20 +528,22 @@ bool AC_PlayerCharacter::checkClimbableSurface()
 			WallHit,
 			vWallTraceStart,
 			vWallTraceEnd,
-			ECC_Visibility,
+			ECC_GameTraceChannel4,
 			Params
 		);
 
 	if (!bWallHit)
 		return false;
 
+	const float fCapsuleRadius = 34.f;
+	const float fCapsuleHalfHeight = 88.f;
+
 	float fWallHeight = WallHit.Location.Z - GetActorLocation().Z;
 
-	FVector vLedgeStart = WallHit.Location + (-m_vWallNormal * 10.f);
-	FVector vLedgeEnd = vLedgeStart + FVector(0.f, 0.f, 120.f);
+	FVector vLedgeStart = WallHit.Location + (-m_vWallNormal * 50.f) + FVector(0.f, 0.f, 50.f);
+	FVector vLedgeEnd = vLedgeStart + FVector(0.f, 0.f, fCapsuleHalfHeight * 2.f);
 	
-	const float fCapsuleRadius = 25.f;
-	const float fCapsuleHalfHeight = 25.f;
+	
 
 	FHitResult bLedgeHit{};
 
@@ -550,23 +559,20 @@ bool AC_PlayerCharacter::checkClimbableSurface()
 			Params
 		);
 
-	DrawDebugCapsule(GetWorld(), (vLedgeStart + vLedgeEnd) * 0.5f, fCapsuleHalfHeight, fCapsuleRadius, FQuat::Identity, FColor::Green, false, 0.f, 0, 1.f);
+	DrawDebugCapsule(GetWorld(), (vLedgeStart + vLedgeEnd) * 0.5f,
+		fCapsuleHalfHeight, fCapsuleRadius,
+		FQuat::Identity, FColor::Green, false, 0.1f, 0, 1.f);
 
 	if (!bHit)
 		return false;
 
 
 
-	if (bLedgeHit.Normal.Z > 0.7f)
+	if (bLedgeHit.Normal.Z >= 0.1f)
 	{
 		m_vClimbLocation = bLedgeHit.Location;
 
-
-		if (fWallHeight < 50.f)
-			m_bUseDirectClimb = true;
-		else
-			m_bUseDirectClimb = false;
-
+		m_bUseDirectClimb = fWallHeight < 50.f;
 
 		return true;
 	}
@@ -578,14 +584,14 @@ bool AC_PlayerCharacter::checkClimbableSurface()
 
 void AC_PlayerCharacter::startClimbUp()
 {
-	if (!checkClimbableSurface())
+	if (!m_bCanClimbUp)
 		return;
 
-	UE_LOG(LogTemp, Warning, TEXT(">>> startClimbUp CALLED!"));
-
-
+	
+	m_bCanClimbUp = false;
 	m_bIsWallGrabbing = false;
 	GetCharacterMovement()->GravityScale = 1.f;
+	GetCharacterMovement()->AirControl = 0.5f;
 
 	if (m_bUseDirectClimb)
 	{
@@ -593,6 +599,8 @@ void AC_PlayerCharacter::startClimbUp()
 	}
 	else
 	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+
 		if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 		{
 			pAnim->playUpToClimb();
@@ -688,6 +696,7 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 
 	if (GetCharacterMovement()->IsFalling())
 	{
+		// 벽 근처인지 체크만
 		checkWallTrace();
 	}
 	else
@@ -703,6 +712,7 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 	else if (m_bIsWallGrabbing && !m_bCanWallGrab)
 	{
 		setWallGrab(false);
+		StopJumping();
 	}
 
 	// 벽 짚은 상태 로직
@@ -711,9 +721,7 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 		GetCharacterMovement()->Velocity = FVector::ZeroVector;
 		GetCharacterMovement()->GravityScale = 0.f;
 
-		bool bClimbable = checkClimbableSurface();
-
-		if (bClimbable && !m_bCanClimbUp)
+		if (checkClimbableSurface())
 		{
 			m_bCanClimbUp = true;
 			startClimbUp();

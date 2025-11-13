@@ -3,6 +3,7 @@
 
 #include "C_PlayerAnim.h"
 #include "../Character/C_PlayerCharacter.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 void UC_PlayerAnim::playDodgeMontage(E_Direction eDir)
 {
@@ -81,4 +82,11 @@ void UC_PlayerAnim::setIsGuarding(bool bNewGuard)
 bool UC_PlayerAnim::getIsGuarding() const
 {
     return m_bIsGuarding;
+}
+
+void UC_PlayerAnim::AnimNotify_onClimbFinished()
+{
+    AC_PlayerCharacter* pOwner = Cast<AC_PlayerCharacter>(TryGetPawnOwner());
+
+    pOwner->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 }

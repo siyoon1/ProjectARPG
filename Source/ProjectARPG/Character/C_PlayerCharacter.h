@@ -67,6 +67,7 @@ private:
 	//플레이어 클라이밍
 	FVector m_vWallNormal{};
 	FVector m_vClimbLocation{};
+	bool m_bJumpPressed = false;
 	bool m_bCanWallGrab = false;
 	bool m_bIsWallGrabbing = false;
 	bool m_bCanClimbUp = false;

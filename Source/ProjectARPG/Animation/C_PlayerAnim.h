@@ -53,4 +53,7 @@ public:
 	void setIsGuarding(bool bNewGuard);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
 	bool getIsGuarding() const;
+
+	UFUNCTION()
+	void AnimNotify_onClimbFinished();
 };
