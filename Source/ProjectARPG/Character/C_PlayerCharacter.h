@@ -67,11 +67,12 @@ private:
 	//플레이어 클라이밍
 	FVector m_vWallNormal{};
 	FVector m_vClimbLocation{};
-	bool m_bJumpPressed = false;
-	bool m_bCanWallGrab = false;
-	bool m_bIsWallGrabbing = false;
-	bool m_bCanClimbUp = false;
-	bool m_bUseDirectClimb = false;
+	bool m_bJumpPressed = false; // 점프가 눌리고 있는지
+	bool m_bCanWallGrab = false; // 벽을 짚을수 있는지
+	bool m_bIsWallGrabbing = false; // 벽을 짚고 있는지
+	bool m_bCanClimbUp = false; // 벽을 올라갈수 있는지
+	bool m_bUseDirectClimb = false; //몽타주를 실행않고 다이렉트로 올라갈수있는지
+	bool m_bCanWallJump = false; //벽점프가 가능한지
 
 
 public:
@@ -89,7 +90,11 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	//콤보 공격 실행
 	void playCombo(int32 nComboIndex);
+
+	//공격이 가능한지 체크
+	bool canAttack() const;
 
 	//전방에 적 찾기
 	AActor* getCurrentEnemy();

@@ -22,25 +22,25 @@ void AC_CombatCharacter::Tick(float DeltaTime)
 	if (m_bIsPostureBroken)
 		return;
 
+	// 회복 지연 처리
 	if (m_bIsRecoveryDelay)
 	{
 		m_fRecoveryDelayTimer -= DeltaTime;
 		if (m_fRecoveryDelayTimer <= 0.f)
 		{
 			m_bIsRecoveryDelay = false;
-			
 		}
 		else
-			return;
+		{
+			return; // 지연 중에는 체간 회복 안 함
+		}
 	}
 
-	
-	if (!m_bIsRecoveryDelay && m_fCurrentPosture < m_fMaxPosture)
+	// 체간 회복
+	if (m_fCurrentPosture < m_fMaxPosture)
 	{
 		m_fCurrentPosture = FMath::Min(m_fMaxPosture, m_fCurrentPosture + m_fRecoveryRate * DeltaTime);
-
 		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
-			
 	}
 
 }
@@ -232,17 +232,24 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 	m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
 	UE_LOG(LogTemp, Warning, TEXT("TakeDamage: HP %.1f / %.1f"), m_fCurrentHp, m_fMaxHp);
 
-	if (m_fCurrentPosture > 0)
+
+
+	// Posture 처리
+	if (m_fCurrentPosture > 0.f)
 	{
 		m_fCurrentPosture = FMath::Clamp(m_fCurrentPosture - fPostureDamage, 0.f, m_fMaxPosture);
 
-	}
-		
+		// 체간 회복 지연 초기화
+		m_bIsRecoveryDelay = true;
+		m_fRecoveryDelayTimer = m_sPostureStats->fRecoveryDelay;
 
+		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
+	}
+
+	// 체간 붕괴 처리
 	if (m_fCurrentPosture <= 0.f && !m_bIsPostureBroken)
 	{
 		m_fCurrentPosture = 0.f;
-
 		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
 
 		onPostureBroken();

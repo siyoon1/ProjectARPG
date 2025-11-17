@@ -14,6 +14,7 @@
 #include "ProjectARPG/ActorComponents/C_ParryComponent.h"
 #include "Components/SphereComponent.h"
 #include "Engine/OverlapResult.h"
+#include "Components/CapsuleComponent.h"
 
 AC_PlayerCharacter::AC_PlayerCharacter()
 {
@@ -55,6 +56,16 @@ void AC_PlayerCharacter::BeginPlay()
 	m_pExecutionDetectSphere = GetComponentByClass<USphereComponent>();
 
 
+}
+
+void AC_PlayerCharacter::setCombatState(E_CombatState eNewState)
+{
+	Super::setCombatState(eNewState);
+
+	if (m_eState == E_CombatState::Idle)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 800.f;
+	}
 }
 
 
@@ -290,6 +301,9 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
 	m_fLastAttackInputTime = GetWorld()->GetTimeSeconds();
 
+	if (!canAttack())
+		return;
+
 	if (tryExcuteEnemy())
 		return;
 
@@ -337,6 +351,22 @@ void AC_PlayerCharacter::playCombo(int32 nComboIndex)
 
 }
 
+bool AC_PlayerCharacter::canAttack() const
+{
+	switch (m_eState)
+	{
+	case E_CombatState::Sprinting:
+	case E_CombatState::Dodging:
+	case E_CombatState::Executing:
+	case E_CombatState::Guard:
+	case E_CombatState::Climb:
+	case E_CombatState::Die:
+		return false;
+	default:
+		return true;
+	}
+}
+
 AActor* AC_PlayerCharacter::getCurrentEnemy()
 {
 	FVector vStart = GetActorLocation();
@@ -368,6 +398,34 @@ AActor* AC_PlayerCharacter::getCurrentEnemy()
 	DrawDebugLine(GetWorld(), vStart, vEnd, FColor::Red, false, 1.f, 0, 2.f);
 
 	return nullptr;
+}
+
+void AC_PlayerCharacter::onComboTransition()
+{
+	if (m_bNextComboQueued && GetWorld()->GetTimeSeconds() - m_fLastAttackInputTime <= m_fInputBuffer)
+	{
+		m_bNextComboQueued = false;
+		m_nCurrentComboIndex++;
+
+		if (m_nCurrentComboIndex > m_nMaxComboIndex)
+		{
+			resetCombo();
+			return;
+		}
+
+		playCombo(m_nCurrentComboIndex);
+	}
+	else
+	{
+		resetCombo();
+	}
+}
+
+void AC_PlayerCharacter::resetCombo()
+{
+	m_eState = E_CombatState::Idle;
+	m_nCurrentComboIndex = 0;
+	m_bNextComboQueued = false;
 }
 
 AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()
@@ -447,6 +505,12 @@ void AC_PlayerCharacter::setLockOn(float fDelta)
 	Controller->SetControlRotation(rNewRot);
 }
 
+
+bool AC_PlayerCharacter::isLockOn() const
+{
+	return m_bIsLockOn;
+}
+
 void AC_PlayerCharacter::checkWallTrace()
 {
 	FVector vStart = GetActorLocation();
@@ -469,16 +533,19 @@ void AC_PlayerCharacter::checkWallTrace()
 
 
 	float fDistance = (HitResult.Location - GetActorLocation()).Size();
-	const float fMinWallGrabDistance = 50.f;
+	const float fMinWallGrabDistance = 80.f;
 
-	if (bHit && HitResult.Normal.Z < 0.3f && fDistance <= fMinWallGrabDistance && m_bJumpPressed)
+	if (bHit && HitResult.Normal.Z < 0.5f && fDistance <= fMinWallGrabDistance)
 	{
 		m_bCanWallGrab = true;
+		m_bCanWallJump = true;
+		setWallGrab(true);
 		m_vWallNormal = HitResult.Normal;
 	}
 	else
 	{
 		m_bCanWallGrab = false;
+		setWallGrab(false);
 	}
 }
 
@@ -488,17 +555,17 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 	{
 		m_bIsWallGrabbing = true;
 
-		// 중력 제거
-		GetCharacterMovement()->GravityScale = 0.f;
+		//// 중력 제거
+		//GetCharacterMovement()->GravityScale = 0.f;
 
-		// 속도 제거
-		GetCharacterMovement()->StopMovementImmediately();
+		////// 속도 제거
+		//GetCharacterMovement()->StopMovementImmediately();
 
-		// 공중제어 금지
-		GetCharacterMovement()->AirControl = 0.f;
+		////// 공중제어 금지
+		//GetCharacterMovement()->AirControl = 0.f;
 
-		FVector Push = -m_vWallNormal * 10.f;
-		SetActorLocation(GetActorLocation() + Push);
+		//FVector Push = -m_vWallNormal * 10.f;
+		//SetActorLocation(GetActorLocation() + Push);
 
 
 	}
@@ -506,18 +573,15 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 	{
 		m_bIsWallGrabbing = false;
 
-		GetCharacterMovement()->GravityScale = 1.f;
-		GetCharacterMovement()->AirControl = 0.5f;
+		/*GetCharacterMovement()->GravityScale = 1.f;
+		GetCharacterMovement()->AirControl = 0.5f;*/
 	}
 }
 
 bool AC_PlayerCharacter::checkClimbableSurface()
 {
-	if (!m_bIsWallGrabbing)
-		return false;
-
-	FVector vWallTraceStart = GetActorLocation();
-	FVector vWallTraceEnd = vWallTraceStart + (-m_vWallNormal * 50.f) + FVector(0.f, 0.f, 200.f);
+	FVector vWallTraceStart = GetActorLocation() + FVector(0.f, 0.f, 50.f);;
+	FVector vWallTraceEnd = vWallTraceStart + (-m_vWallNormal * 80.f) + FVector(0.f, 0.f, 100.f);
 	FHitResult WallHit{};
 	FCollisionQueryParams Params{};
 	Params.AddIgnoredActor(this);
@@ -538,7 +602,7 @@ bool AC_PlayerCharacter::checkClimbableSurface()
 	const float fCapsuleRadius = 34.f;
 	const float fCapsuleHalfHeight = 88.f;
 
-	float fWallHeight = WallHit.Location.Z - GetActorLocation().Z;
+	float fWallHeight = WallHit.Location.Z - GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 
 	FVector vLedgeStart = WallHit.Location + (-m_vWallNormal * 50.f) + FVector(0.f, 0.f, 50.f);
 	FVector vLedgeEnd = vLedgeStart + FVector(0.f, 0.f, fCapsuleHalfHeight * 2.f);
@@ -554,7 +618,7 @@ bool AC_PlayerCharacter::checkClimbableSurface()
 			vLedgeStart,
 			vLedgeEnd,
 			FQuat::Identity,
-			ECC_Visibility,
+			ECC_GameTraceChannel4,
 			FCollisionShape::MakeCapsule(fCapsuleRadius, fCapsuleHalfHeight),
 			Params
 		);
@@ -565,6 +629,15 @@ bool AC_PlayerCharacter::checkClimbableSurface()
 
 	if (!bHit)
 		return false;
+
+	UE_LOG(LogTemp, Warning, TEXT("=== ClimbableSurface Trace ==="));
+
+	DrawDebugLine(GetWorld(), vWallTraceStart, vWallTraceEnd, FColor::Red, false, 2, 0, 2);
+
+	UE_LOG(LogTemp, Warning, TEXT("Trace Start: %s"), *vWallTraceStart.ToString());
+	UE_LOG(LogTemp, Warning, TEXT("Trace End:   %s"), *vWallTraceEnd.ToString());
+	UE_LOG(LogTemp, Warning, TEXT("Forward: %s"), *GetActorForwardVector().ToString());
+	UE_LOG(LogTemp, Warning, TEXT("Distance: %f"), FVector::Dist(vWallTraceStart, vWallTraceEnd));
 
 
 
@@ -584,14 +657,13 @@ bool AC_PlayerCharacter::checkClimbableSurface()
 
 void AC_PlayerCharacter::startClimbUp()
 {
-	if (!m_bCanClimbUp)
-		return;
+	m_eState = E_CombatState::Climb;
 
-	
+
+
 	m_bCanClimbUp = false;
 	m_bIsWallGrabbing = false;
-	GetCharacterMovement()->GravityScale = 1.f;
-	GetCharacterMovement()->AirControl = 0.5f;
+
 
 	if (m_bUseDirectClimb)
 	{
@@ -602,59 +674,50 @@ void AC_PlayerCharacter::startClimbUp()
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 
 		if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
-		{
+		{	
 			pAnim->playUpToClimb();
 		}
 	}
 	
 }
 
-void AC_PlayerCharacter::setCombatState(E_CombatState eNewState)
-{
-	Super::setCombatState(eNewState);
-
-	if (m_eState == E_CombatState::Idle)
-	{
-		GetCharacterMovement()->MaxWalkSpeed = 800.f;
-	}
-}
-
-void AC_PlayerCharacter::onComboTransition()
-{
-	if (m_bNextComboQueued && GetWorld()->GetTimeSeconds() - m_fLastAttackInputTime <= m_fInputBuffer)
-	{
-		m_bNextComboQueued = false;
-		m_nCurrentComboIndex++;
-
-		if (m_nCurrentComboIndex > m_nMaxComboIndex)
-		{
-			resetCombo();
-			return;
-		}
-
-		playCombo(m_nCurrentComboIndex);
-	}
-	else
-	{
-		resetCombo();
-	}
-}
-
-void AC_PlayerCharacter::resetCombo()
-{
-	m_eState = E_CombatState::Idle;
-	m_nCurrentComboIndex = 0;
-	m_bNextComboQueued = false;
-}
-
-bool AC_PlayerCharacter::isLockOn() const
-{
-	return m_bIsLockOn;
-}
-
 bool AC_PlayerCharacter::isWallGrab() const
 {
 	return m_bIsWallGrabbing;
+}
+
+
+void AC_PlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+
+	// 락온 기능
+	setLockOn(DeltaTime);
+
+	checkWallTrace();  // 무조건 실행
+
+	if (m_bCanWallGrab && m_bJumpPressed)
+	{
+		if (checkClimbableSurface())
+		{
+			startClimbUp();
+		}
+	}
+
+	if (m_bJumpPressed)
+	{
+		if (m_bIsWallGrabbing && m_bCanWallJump)
+		{
+			FVector JumpDirection = FVector::UpVector * 600.f; // 위로 + 벽 반대 방향
+			LaunchCharacter(JumpDirection, true, true);
+
+			m_bCanWallJump = false;  // 벽 점프는 1회만
+			m_bIsWallGrabbing = false; // 점프하면 벽 놓음
+		}
+	}
+	
+	
 }
 
 bool AC_PlayerCharacter::tryExcuteEnemy() const
@@ -684,52 +747,6 @@ bool AC_PlayerCharacter::tryExcuteEnemy() const
 
 	}
 	return false;
-}
-
-
-void AC_PlayerCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	// 락온 기능
-	setLockOn(DeltaTime);
-
-	if (GetCharacterMovement()->IsFalling())
-	{
-		// 벽 근처인지 체크만
-		checkWallTrace();
-	}
-	else
-	{
-		m_bCanWallGrab = false;
-	}
-
-	// 벽 짚기 토글
-	if (m_bCanWallGrab && !m_bIsWallGrabbing)
-	{
-		setWallGrab(true);
-	}
-	else if (m_bIsWallGrabbing && !m_bCanWallGrab)
-	{
-		setWallGrab(false);
-		StopJumping();
-	}
-
-	// 벽 짚은 상태 로직
-	if (m_bIsWallGrabbing)
-	{
-		GetCharacterMovement()->Velocity = FVector::ZeroVector;
-		GetCharacterMovement()->GravityScale = 0.f;
-
-		if (checkClimbableSurface())
-		{
-			m_bCanClimbUp = true;
-			startClimbUp();
-		}
-	}
-
-
-	
 }
 
 void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

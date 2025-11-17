@@ -19,6 +19,7 @@ enum class E_CombatState : uint8
 	Attacking,
 	Executing,
 	Guard,
+	Climb,
 	Die
 };
 
@@ -112,6 +113,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void onPostureBroken();
+
 
 public:
 	AC_CombatCharacter();

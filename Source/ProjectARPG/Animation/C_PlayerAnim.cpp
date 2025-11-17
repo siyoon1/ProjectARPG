@@ -89,4 +89,5 @@ void UC_PlayerAnim::AnimNotify_onClimbFinished()
     AC_PlayerCharacter* pOwner = Cast<AC_PlayerCharacter>(TryGetPawnOwner());
 
     pOwner->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+    pOwner->setCombatState(E_CombatState::Idle);
 }
