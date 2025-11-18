@@ -12,6 +12,15 @@ void UC_EnemyAnim::playAttackMontage()
 		Montage_Play(m_pAttackMontage);
 }
 
+void UC_EnemyAnim::playHitMontage()
+{
+	if (!IsAnyMontagePlaying())
+	{
+		Montage_Stop(0.1f);
+	}
+	Montage_Play(m_pHitMontage);
+}
+
 void UC_EnemyAnim::AnimNotify_EndAttack()
 {
 	if (AC_CombatCharacter* pOwner = Cast<AC_CombatCharacter>(TryGetPawnOwner()))

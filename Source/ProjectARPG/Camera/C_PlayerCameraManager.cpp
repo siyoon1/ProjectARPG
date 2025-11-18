@@ -115,7 +115,7 @@ void AC_PlayerCameraManager::parryEffect(float fLength)
 
 	if (UWorld* pWorld = GetWorld())
 	{
-		pWorld->GetWorldSettings()->SetTimeDilation(0.8f);
+		pWorld->GetWorldSettings()->SetTimeDilation(0.7f);
 
 		pWorld->GetTimerManager().SetTimer(m_TimerHandle_Reset, [this]()
 			{

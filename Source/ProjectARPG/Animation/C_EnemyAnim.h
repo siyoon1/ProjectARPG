@@ -18,8 +18,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pAttackMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> m_pHitMontage;
+
 public:
 	void playAttackMontage();
 	UFUNCTION()
 	void AnimNotify_EndAttack();
+
+	void playHitMontage();
 };

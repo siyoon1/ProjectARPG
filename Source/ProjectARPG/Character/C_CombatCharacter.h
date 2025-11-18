@@ -18,6 +18,7 @@ enum class E_CombatState : uint8
 	Dodging,
 	Attacking,
 	Executing,
+	Parrying,
 	Guard,
 	Climb,
 	Die
@@ -86,8 +87,11 @@ protected:
 	bool m_bIsPostureBroken = false;
 	bool m_bIsRecoveryDelay = false;
 	bool m_bWasParried = false;
+	bool m_bIsGuarding = false;
 	
 	FTimerHandle m_timerHandle_PostureBroken;
+
+	FTimerHandle m_hitStopTimerHandle;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
@@ -114,7 +118,12 @@ protected:
 
 	virtual void onPostureBroken();
 
+	inline virtual void playHitMontage(AActor* pDefensor) {};
 
+	UFUNCTION()
+	void applyHitStop(float fDuration, float fDilation = 0.01f);
+
+	void endHitStop();
 public:
 	AC_CombatCharacter();
 
@@ -124,6 +133,11 @@ public:
 	E_CombatState getCombatState() const;
 
 	bool isGuardingFront(AActor* pAttacker) const;
+
+	void setGuard(bool bSet);
+	bool isGuard() const;
+
+	
 
 	UFUNCTION(BlueprintCallable)
 	void setHp(float fHp);
@@ -144,7 +158,7 @@ public:
 	void performAttackTrace();
 
 	UFUNCTION()
-	void takeDamage_Implementation(float fDamage, float fPostureDamage);
+	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess);
 
 	UFUNCTION()
 	FVector getLocation_Implementation();

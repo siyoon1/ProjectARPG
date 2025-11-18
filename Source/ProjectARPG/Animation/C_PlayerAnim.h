@@ -33,6 +33,9 @@ protected:
 	TObjectPtr<UAnimMontage> m_pDodgeMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> m_pHitMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pSprintStartMontage;
 	/// <summary>
 	/// //////////////////
@@ -48,6 +51,8 @@ public:
 	void playSprintStartMontage();
 	void playComboMontage(E_AttackType eType, int32 nComboIndex);
 	void playUpToClimb();
+
+	void playHitMontage();
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
 	void setIsGuarding(bool bNewGuard);

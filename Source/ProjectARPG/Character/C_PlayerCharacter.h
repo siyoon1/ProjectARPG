@@ -73,6 +73,7 @@ private:
 	bool m_bCanClimbUp = false; // 벽을 올라갈수 있는지
 	bool m_bUseDirectClimb = false; //몽타주를 실행않고 다이렉트로 올라갈수있는지
 	bool m_bCanWallJump = false; //벽점프가 가능한지
+	int32 m_nJumpCount = 0;
 
 
 public:
@@ -130,6 +131,9 @@ protected:
 	void sprintReleased(const FInputActionInstance& sInst);
 	void guard(const FInputActionInstance& sInst);
 
+	// AC_CombatCharacter을(를) 통해 상속됨
+	void playHitMontage(AActor* pDefensor) override;
+
 public:
 	void setCombatState(E_CombatState eNewState) override;
 	void onComboTransition();
@@ -146,4 +150,6 @@ public:
 	//클라이밍 함수
 	UFUNCTION(BlueprintCallable)
 	bool isWallGrab() const;
+
+
 };

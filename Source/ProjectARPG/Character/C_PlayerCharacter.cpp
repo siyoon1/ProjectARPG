@@ -15,6 +15,7 @@
 #include "Components/SphereComponent.h"
 #include "Engine/OverlapResult.h"
 #include "Components/CapsuleComponent.h"
+#include "ProjectARPG/Animation/C_PlayerAnim.h"
 
 AC_PlayerCharacter::AC_PlayerCharacter()
 {
@@ -359,6 +360,7 @@ bool AC_PlayerCharacter::canAttack() const
 	case E_CombatState::Dodging:
 	case E_CombatState::Executing:
 	case E_CombatState::Guard:
+	case E_CombatState::Parrying:
 	case E_CombatState::Climb:
 	case E_CombatState::Die:
 		return false;
@@ -686,6 +688,15 @@ bool AC_PlayerCharacter::isWallGrab() const
 	return m_bIsWallGrabbing;
 }
 
+void AC_PlayerCharacter::playHitMontage(AActor* pDefensor)
+{
+	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
+	{
+		pAnim->playHitMontage();
+	}
+	
+}
+
 
 void AC_PlayerCharacter::Tick(float DeltaTime)
 {
@@ -712,11 +723,11 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 			FVector JumpDirection = FVector::UpVector * 600.f; // 위로 + 벽 반대 방향
 			LaunchCharacter(JumpDirection, true, true);
 
+			
 			m_bCanWallJump = false;  // 벽 점프는 1회만
 			m_bIsWallGrabbing = false; // 점프하면 벽 놓음
 		}
 	}
-	
 	
 }
 

@@ -8,11 +8,34 @@
 #include "CollisionQueryParams.h"
 #include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 #include "ProjectARPG/ActorComponents/C_ParryComponent.h"
+#include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "../Camera/C_PlayerCameraManager.h"
+
 
 AC_CombatCharacter::AC_CombatCharacter()
 {
 
+}
+
+void AC_CombatCharacter::applyHitStop(float fDuration, float fDilation)
+{
+	GetWorldTimerManager().ClearTimer(m_hitStopTimerHandle);
+
+	CustomTimeDilation = fDilation;
+
+	GetWorldTimerManager().SetTimer
+	(
+		m_hitStopTimerHandle,
+		this,
+		&AC_CombatCharacter::endHitStop,
+		fDuration,
+		false
+	);
+}
+
+void AC_CombatCharacter::endHitStop()
+{
+	CustomTimeDilation = 1.f;
 }
 
 void AC_CombatCharacter::Tick(float DeltaTime)
@@ -68,6 +91,16 @@ bool AC_CombatCharacter::isGuardingFront(AActor* pAttacker) const
 	float fDot = FVector::DotProduct(vFront, vAttacker);
 
 	return (fDot > -0.3f);
+}
+
+void AC_CombatCharacter::setGuard(bool bSet)
+{
+	m_bIsGuarding = bSet;
+}
+
+bool AC_CombatCharacter::isGuard() const
+{
+	return m_bIsGuarding;
 }
 
 void AC_CombatCharacter::setHp(float fHp)
@@ -165,9 +198,12 @@ void AC_CombatCharacter::performAttackTrace()
 			m_fTraceRadius, FQuat::Identity, bHit ? FColor::Green : FColor::Red, false, 0.05f);
 	
 #endif 
+		bool bGuardSuccess = false;
+		bool bAppliedHitStop = false;
 
 		if (bHit)
 		{
+			
 			for (const FHitResult& Hit : HitRes)
 			{
 				AActor* pHitActor = Hit.GetActor();
@@ -181,9 +217,15 @@ void AC_CombatCharacter::performAttackTrace()
 				if (m_HitActors.Contains(pHitActor))
 					continue;
 
+				
 
 				if (pHitActor->GetClass()->ImplementsInterface(UC_CombatInterface::StaticClass()))
 				{
+					if (!bAppliedHitStop)
+					{
+						applyHitStop(0.03f, 0.25f);  // 공격자
+						bAppliedHitStop = true;
+					}
 
 					float fFinalDamage = m_fAttackDamage;
 					float fFinalPostureDamage = m_fPostureDamage;
@@ -199,8 +241,14 @@ void AC_CombatCharacter::performAttackTrace()
 						fFinalPostureDamage *= 1.0f;
 						break;
 					}
+
+					
+
 					if (AC_CombatCharacter* pTarget = Cast<AC_CombatCharacter>(pHitActor))
 					{
+						
+						pTarget->applyHitStop(0.06f, 0.1f); // 피격자
+
 						if (pTarget->getCombatState() == E_CombatState::Guard)
 						{
 							bool bFront = pTarget->isGuardingFront(this);
@@ -209,12 +257,14 @@ void AC_CombatCharacter::performAttackTrace()
 							{
 								fFinalDamage *= 0.1f;
 								fFinalPostureDamage *= 0.5f;
+								bGuardSuccess = true;
 							}
 							
 						}
 					}
 					UE_LOG(LogTemp, Warning, TEXT("[%s] Hit %s!"), *GetName(), *pHitActor->GetName());
-					IC_CombatInterface::Execute_takeDamage(pHitActor, fFinalDamage, fFinalPostureDamage);
+					IC_CombatInterface::Execute_takeDamage(pHitActor, fFinalDamage, fFinalPostureDamage, bGuardSuccess);
+						
 				}
 
 				m_HitActors.Add(pHitActor);
@@ -224,7 +274,7 @@ void AC_CombatCharacter::performAttackTrace()
 
 }
 
-void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage)
+void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess)
 {
 	if (m_fCurrentHp > 0)
 		m_fCurrentHp = FMath::Clamp(m_fCurrentHp - fDamage, 0.f, m_fMaxHp);
@@ -254,6 +304,9 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 
 		onPostureBroken();
 	}
+
+	if (!bGuardSuccess)
+		playHitMontage(this);
 }
 
 void AC_CombatCharacter::onPostureBroken()
@@ -284,6 +337,8 @@ FVector AC_CombatCharacter::getLocation_Implementation()
 void AC_CombatCharacter::tryParry_Implementation(AActor* ParryOwner)
 {
 	if (!m_pParryCom) return;
+
+	m_eState = E_CombatState::Parrying;
 
 	if (m_pParryCom->isCanParry())
 	{
@@ -345,6 +400,8 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 			PCM->executionEffect(1.f);
 		}
 	}
+
+	m_eState = E_CombatState::Idle;
 
 }
 

@@ -83,3 +83,11 @@ void AC_EnemyCharacter::attack()
 		}
 	}
 }
+
+void AC_EnemyCharacter::playHitMontage(AActor* pDefensor)
+{
+	if (UC_EnemyAnim* pAnim = Cast<UC_EnemyAnim>(GetMesh()->GetAnimInstance()))
+	{
+		pAnim->playHitMontage();
+	}
+}

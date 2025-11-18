@@ -74,6 +74,15 @@ void UC_PlayerAnim::playUpToClimb()
         Montage_Play(m_pUpToClimbMontage);
 }
 
+void UC_PlayerAnim::playHitMontage()
+{
+    if (!IsAnyMontagePlaying())
+    {
+        Montage_Stop(0.1f);
+    }
+    Montage_Play(m_pHitMontage);
+}
+
 void UC_PlayerAnim::setIsGuarding(bool bNewGuard)
 {
     m_bIsGuarding = bNewGuard;
