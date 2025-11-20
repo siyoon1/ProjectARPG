@@ -3,6 +3,7 @@
 
 #include "C_PlayerCameraManager.h"
 #include "ProjectARPG/Character/C_PlayerCharacter.h"
+#include "ProjectARPG/Camera/C_HitStopCameraShake.h"
 
 AC_PlayerCameraManager::AC_PlayerCameraManager()
 {
@@ -76,7 +77,7 @@ void AC_PlayerCameraManager::executionEffect(float fLength)
 	
 	if (UWorld* pWorld = GetWorld())
 	{
-		pWorld->GetWorldSettings()->SetTimeDilation(0.8f);
+		pWorld->GetWorldSettings()->SetTimeDilation(0.7f);
 
 		pWorld->GetTimerManager().SetTimer(m_TimerHandle_Reset, [this]()
 			{
@@ -135,6 +136,20 @@ void AC_PlayerCameraManager::parryEffect(float fLength)
 				m_bIsExecuting = false;
 
 			}, fLength, false);
+	}
+}
+
+void AC_PlayerCameraManager::playHitCameraShake(float fScale)
+{
+	if (!IsValid(this))
+		return;
+
+	if (APlayerController* PC = Cast<APlayerController>(GetOwningPlayerController()))
+	{
+		if (PC->PlayerCameraManager)
+		{
+			PC->PlayerCameraManager->StartCameraShake(UC_HitStopCameraShake::StaticClass(), fScale);
+		}
 	}
 }
 

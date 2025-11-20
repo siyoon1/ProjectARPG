@@ -91,6 +91,9 @@ protected:
 	
 	FTimerHandle m_timerHandle_PostureBroken;
 
+	//히트 스탑 관련
+	UAnimMontage* m_lastMontage = nullptr;
+	float m_fOriginalPlayRate = 1.f;
 	FTimerHandle m_hitStopTimerHandle;
 
 public:
@@ -112,16 +115,22 @@ public:
 	UPROPERTY()
 	TObjectPtr<class UC_ParryComponent> m_pParryCom;
 
+	UPROPERTY()
+	TObjectPtr<class AC_PlayerCameraManager> m_CamMgr;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void onPostureBroken();
 
+	void reduceHp(float fDamage);
+	void reducePosture(float fDamage);
+
 	inline virtual void playHitMontage(AActor* pDefensor) {};
 
 	UFUNCTION()
-	void applyHitStop(float fDuration, float fDilation = 0.01f);
+	void applyHitStop(float fSlowlate, float fDuration);
 
 	void endHitStop();
 public:

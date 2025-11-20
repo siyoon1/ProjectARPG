@@ -34,5 +34,7 @@ public:
 	void stopSprintEffect();
 	void executionEffect(float fLength);
 	void parryEffect(float fLength);
+
+	void playHitCameraShake(float fScale);
 	
 };

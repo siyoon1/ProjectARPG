@@ -17,11 +17,30 @@ AC_CombatCharacter::AC_CombatCharacter()
 
 }
 
-void AC_CombatCharacter::applyHitStop(float fDuration, float fDilation)
+void AC_CombatCharacter::applyHitStop(float fSlowlate, float fDuration)
 {
+	UAnimInstance* pAnim = GetMesh()->GetAnimInstance();
+
+	if (!pAnim)
+		return;
+
+	UAnimMontage* pMontage{};
+
+	pMontage = pAnim->GetCurrentActiveMontage();
+
+	if (!pMontage)
+		return;
+
 	GetWorldTimerManager().ClearTimer(m_hitStopTimerHandle);
 
-	CustomTimeDilation = fDilation;
+	m_lastMontage = pMontage;
+
+	m_fOriginalPlayRate = pAnim->Montage_GetPlayRate(pMontage);
+
+
+
+	pAnim->Montage_SetPlayRate(pMontage, fSlowlate);
+	UE_LOG(LogTemp, Warning, TEXT("HitStop start: rate=%.3f duration=%.3f"), fSlowlate, fDuration);
 
 	GetWorldTimerManager().SetTimer
 	(
@@ -31,11 +50,24 @@ void AC_CombatCharacter::applyHitStop(float fDuration, float fDilation)
 		fDuration,
 		false
 	);
+
 }
 
 void AC_CombatCharacter::endHitStop()
 {
-	CustomTimeDilation = 1.f;
+	UAnimInstance* Anim = GetMesh()->GetAnimInstance();
+	if (!Anim) return;
+
+	UAnimMontage* Montage = Anim->GetCurrentActiveMontage();
+	if (!Montage) return;
+
+	if (m_lastMontage)
+	{
+		Anim->Montage_SetPlayRate(m_lastMontage, m_fOriginalPlayRate);
+	}
+	UE_LOG(LogTemp, Warning, TEXT("HitStop END: rate=%.3f"), m_fOriginalPlayRate);
+
+	m_lastMontage = nullptr;
 }
 
 void AC_CombatCharacter::Tick(float DeltaTime)
@@ -65,6 +97,7 @@ void AC_CombatCharacter::Tick(float DeltaTime)
 		m_fCurrentPosture = FMath::Min(m_fMaxPosture, m_fCurrentPosture + m_fRecoveryRate * DeltaTime);
 		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
 	}
+
 
 }
 
@@ -223,8 +256,9 @@ void AC_CombatCharacter::performAttackTrace()
 				{
 					if (!bAppliedHitStop)
 					{
-						applyHitStop(0.03f, 0.25f);  // 공격자
+						applyHitStop(0.01f, 0.09f);  // 공격자
 						bAppliedHitStop = true;
+						m_CamMgr->playHitCameraShake(0.3f);
 					}
 
 					float fFinalDamage = m_fAttackDamage;
@@ -245,9 +279,7 @@ void AC_CombatCharacter::performAttackTrace()
 					
 
 					if (AC_CombatCharacter* pTarget = Cast<AC_CombatCharacter>(pHitActor))
-					{
-						
-						pTarget->applyHitStop(0.06f, 0.1f); // 피격자
+					{				
 
 						if (pTarget->getCombatState() == E_CombatState::Guard)
 						{
@@ -260,6 +292,16 @@ void AC_CombatCharacter::performAttackTrace()
 								bGuardSuccess = true;
 							}
 							
+						}
+
+						if (bGuardSuccess)
+						{
+							// 공격자 방향과 반대 방향으로 살짝 밀기
+							FVector KnockBackDir = (pTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+							KnockBackDir.Z = 0.f; // 위로 안 튀게
+							float KnockBackStrength = 150.f; // 거리 조절
+
+							pTarget->LaunchCharacter(KnockBackDir * KnockBackStrength, true, false);
 						}
 					}
 					UE_LOG(LogTemp, Warning, TEXT("[%s] Hit %s!"), *GetName(), *pHitActor->GetName());
@@ -277,7 +319,7 @@ void AC_CombatCharacter::performAttackTrace()
 void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess)
 {
 	if (m_fCurrentHp > 0)
-		m_fCurrentHp = FMath::Clamp(m_fCurrentHp - fDamage, 0.f, m_fMaxHp);
+		reduceHp(fDamage);
 
 	m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
 	UE_LOG(LogTemp, Warning, TEXT("TakeDamage: HP %.1f / %.1f"), m_fCurrentHp, m_fMaxHp);
@@ -287,7 +329,7 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 	// Posture 처리
 	if (m_fCurrentPosture > 0.f)
 	{
-		m_fCurrentPosture = FMath::Clamp(m_fCurrentPosture - fPostureDamage, 0.f, m_fMaxPosture);
+		reducePosture(fPostureDamage);
 
 		// 체간 회복 지연 초기화
 		m_bIsRecoveryDelay = true;
@@ -306,7 +348,18 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 	}
 
 	if (!bGuardSuccess)
+	{
 		playHitMontage(this);
+		applyHitStop(0.01f, 0.12f);
+		
+
+	}
+	else if (bGuardSuccess)
+	{
+		applyHitStop(0.05f, 0.02f); // 거의 체감 안 나는 히트스탑
+		m_CamMgr->playHitCameraShake(0.2f);   // 흔들림 약하게
+	}
+		
 }
 
 void AC_CombatCharacter::onPostureBroken()
@@ -326,6 +379,16 @@ void AC_CombatCharacter::onPostureBroken()
 			m_bIsPostureBroken = false;
 
 		}, m_fBrokenDuration, false);
+}
+
+void AC_CombatCharacter::reduceHp(float fDamage)
+{
+	m_fCurrentHp = FMath::Clamp(m_fCurrentHp - fDamage, 0.f, m_fMaxHp);
+}
+
+void AC_CombatCharacter::reducePosture(float fDamage)
+{
+	m_fCurrentPosture = FMath::Clamp(m_fCurrentPosture - fDamage, 0.f, m_fMaxPosture);
 }
 
 
@@ -375,6 +438,12 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 
 	if (!m_pParryCom) return;
 
+	AC_CombatCharacter* pTarget = Cast<AC_CombatCharacter>(ParryTarget);
+	
+	if (!pTarget)
+		return;
+
+
 	UAnimInstance* pAnim = GetMesh()->GetAnimInstance();
 	if (!pAnim) return;
 
@@ -387,19 +456,23 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[%s] Playing ParryOwnerMontage"), *GetName());
 		pAnim->Montage_Play(m_pParryCom->m_ParryOwnerMontage, 1.0f);
+		applyHitStop(0.01f, 0.12f);
+
+
+		pTarget->applyHitStop(0.01f, 0.12f);
+		m_CamMgr->playHitCameraShake(1.5f);
+		m_CamMgr->executionEffect(1.f);
+
+
+		IC_CombatInterface::Execute_takeDamage(pTarget, 0.f, m_fAttackDamage, false);
+
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("[%s] ParryOwnerMontage is NULL!"), *GetName());
 	}
 
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		if (AC_PlayerCameraManager* PCM = Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager))
-		{
-			PCM->executionEffect(1.f);
-		}
-	}
+	
 
 	m_eState = E_CombatState::Idle;
 
@@ -453,7 +526,10 @@ void AC_CombatCharacter::BeginPlay()
 
 	m_pParryCom = GetComponentByClass<UC_ParryComponent>();
 	
-	
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		m_CamMgr = Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager);
+	}
 }
 
 
