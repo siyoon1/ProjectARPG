@@ -3,24 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Animation/AnimInstance.h"
-#include "ProjectARPG/Character/C_CombatCharacter.h"
+#include "ProjectARPG/Animation/C_CombatAnim.h"
 #include "C_PlayerAnim.generated.h"
 
-UENUM(BlueprintType)
-enum class E_Direction : uint8
-{
-	Forward     UMETA(DisplayName = "Forward"),
-	Backward    UMETA(DisplayName = "Backward"),
-	Left        UMETA(DisplayName = "Left"),
-	Right       UMETA(DisplayName = "Right")
-};
 
 /**
  * 
  */
 UCLASS()
-class PROJECTARPG_API UC_PlayerAnim : public UAnimInstance
+class PROJECTARPG_API UC_PlayerAnim : public UC_CombatAnim
 {
 	GENERATED_BODY()
 
@@ -31,9 +22,6 @@ private:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pDodgeMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> m_pHitMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pSprintStartMontage;
@@ -51,8 +39,6 @@ public:
 	void playSprintStartMontage();
 	void playComboMontage(E_AttackType eType, int32 nComboIndex);
 	void playUpToClimb();
-
-	void playHitMontage();
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
 	void setIsGuarding(bool bNewGuard);

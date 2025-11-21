@@ -21,6 +21,7 @@ enum class E_CombatState : uint8
 	Parrying,
 	Guard,
 	Climb,
+	Crouch,
 	Die
 };
 
@@ -30,6 +31,15 @@ enum class E_AttackType : uint8
 	Normal,
 	Air,
 	Charge
+};
+
+UENUM(BlueprintType)
+enum class E_Direction : uint8
+{
+	Forward     UMETA(DisplayName = "Forward"),
+	Backward    UMETA(DisplayName = "Backward"),
+	Left        UMETA(DisplayName = "Left"),
+	Right       UMETA(DisplayName = "Right")
 };
 /**
  * 
@@ -127,7 +137,9 @@ protected:
 	void reduceHp(float fDamage);
 	void reducePosture(float fDamage);
 
-	inline virtual void playHitMontage(AActor* pDefensor) {};
+	void playHitMontage(E_Direction eDir);
+
+	E_Direction getHitDirection(AActor* pAttacker);
 
 	UFUNCTION()
 	void applyHitStop(float fSlowlate, float fDuration);
@@ -167,7 +179,7 @@ public:
 	void performAttackTrace();
 
 	UFUNCTION()
-	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess);
+	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker);
 
 	UFUNCTION()
 	FVector getLocation_Implementation();

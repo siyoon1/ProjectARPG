@@ -128,7 +128,7 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 		// 대시 실행
 		if (m_eState == E_CombatState::Idle)
 		{			
-			m_eState = E_CombatState::Sprinting;
+			setCombatState(E_CombatState::Sprinting);
 
 			pAnim->playSprintStartMontage();
 
@@ -244,11 +244,29 @@ void AC_PlayerCharacter::guard(const FInputActionInstance& sInst)
 	
 }
 
+void AC_PlayerCharacter::crouch(const FInputActionValue& sValue)
+{
+	if (!m_bIsCrouch)
+	{
+		m_bIsCrouch = true;
+		setCombatState(E_CombatState::Crouch);
+		GetCharacterMovement()->MaxWalkSpeed = 250.f;
+	}
+		
+	else
+	{
+		m_bIsCrouch = false;
+		setCombatState(E_CombatState::Idle);
+		GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
+	}
+		
+}
+
 void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
 {
 	if (m_eState == E_CombatState::Guard)
 	{
-		m_eState = E_CombatState::Idle;
+		setCombatState(E_CombatState::Idle);
 		if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 		{
 			pAnim->setIsGuarding(false);
@@ -362,6 +380,7 @@ bool AC_PlayerCharacter::canAttack() const
 	case E_CombatState::Guard:
 	case E_CombatState::Parrying:
 	case E_CombatState::Climb:
+	case E_CombatState::Crouch:
 	case E_CombatState::Die:
 		return false;
 	default:
@@ -688,13 +707,9 @@ bool AC_PlayerCharacter::isWallGrab() const
 	return m_bIsWallGrabbing;
 }
 
-void AC_PlayerCharacter::playHitMontage(AActor* pDefensor)
+bool AC_PlayerCharacter::isCrouch() const
 {
-	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
-	{
-		pAnim->playHitMontage();
-	}
-	
+	return m_bIsCrouch;
 }
 
 
@@ -777,5 +792,6 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::parry);
 		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::guardEnd);
 		pEinputCom->BindAction(m_pLockOnAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::lockOn);
+		pEinputCom->BindAction(m_pCrouchAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::crouch);
 	}
 }

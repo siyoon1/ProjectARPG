@@ -26,9 +26,6 @@ private:
 protected:
 	void BeginPlay() override;
 
-	// AC_CombatCharacter을(를) 통해 상속됨
-	void playHitMontage(AActor* pDefensor) override;
-
 public:
 	void showHpBar(bool bShow);
 

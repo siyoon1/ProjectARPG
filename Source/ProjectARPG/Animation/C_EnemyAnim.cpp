@@ -2,7 +2,6 @@
 
 
 #include "C_EnemyAnim.h"
-#include "ProjectARPG/Character/C_CombatCharacter.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "C_EnemyAnim.h"
 
@@ -10,15 +9,6 @@ void UC_EnemyAnim::playAttackMontage()
 {
 	if (!IsAnyMontagePlaying())
 		Montage_Play(m_pAttackMontage);
-}
-
-void UC_EnemyAnim::playHitMontage()
-{
-	if (!IsAnyMontagePlaying())
-	{
-		Montage_Stop(0.1f);
-	}
-	Montage_Play(m_pHitMontage);
 }
 
 void UC_EnemyAnim::AnimNotify_EndAttack()

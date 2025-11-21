@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Animation/AnimInstance.h"
+#include "ProjectARPG/Animation/C_CombatAnim.h"
 #include "C_EnemyAnim.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTARPG_API UC_EnemyAnim : public UAnimInstance
+class PROJECTARPG_API UC_EnemyAnim : public UC_CombatAnim
 {
 	GENERATED_BODY()
 
@@ -18,13 +18,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pAttackMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> m_pHitMontage;
-
 public:
 	void playAttackMontage();
 	UFUNCTION()
 	void AnimNotify_EndAttack();
-
-	void playHitMontage();
 };

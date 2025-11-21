@@ -9,6 +9,7 @@
 #include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 #include "ProjectARPG/ActorComponents/C_ParryComponent.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
+#include "ProjectARPG/Animation/C_CombatAnim.h"
 #include "../Camera/C_PlayerCameraManager.h"
 
 
@@ -305,7 +306,7 @@ void AC_CombatCharacter::performAttackTrace()
 						}
 					}
 					UE_LOG(LogTemp, Warning, TEXT("[%s] Hit %s!"), *GetName(), *pHitActor->GetName());
-					IC_CombatInterface::Execute_takeDamage(pHitActor, fFinalDamage, fFinalPostureDamage, bGuardSuccess);
+					IC_CombatInterface::Execute_takeDamage(pHitActor, fFinalDamage, fFinalPostureDamage, bGuardSuccess, this);
 						
 				}
 
@@ -316,7 +317,7 @@ void AC_CombatCharacter::performAttackTrace()
 
 }
 
-void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess)
+void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker)
 {
 	if (m_fCurrentHp > 0)
 		reduceHp(fDamage);
@@ -349,7 +350,9 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 
 	if (!bGuardSuccess)
 	{
-		playHitMontage(this);
+		E_Direction eDir = getHitDirection(pAttacker);
+
+		playHitMontage(eDir);
 		applyHitStop(0.01f, 0.12f);
 		
 
@@ -389,6 +392,31 @@ void AC_CombatCharacter::reduceHp(float fDamage)
 void AC_CombatCharacter::reducePosture(float fDamage)
 {
 	m_fCurrentPosture = FMath::Clamp(m_fCurrentPosture - fDamage, 0.f, m_fMaxPosture);
+}
+
+void AC_CombatCharacter::playHitMontage(E_Direction eDir)
+{
+	if (UC_CombatAnim* pAnim = Cast<UC_CombatAnim>(GetMesh()->GetAnimInstance()))
+	{
+		pAnim->playHitMontage(eDir);
+	}
+}
+
+E_Direction AC_CombatCharacter::getHitDirection(AActor* pAttacker)
+{
+	FVector AttackDir = (pAttacker->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	FVector Forward = GetActorForwardVector();
+
+	float Dot = FVector::DotProduct(Forward, AttackDir);
+	float CrossZ = FVector::CrossProduct(Forward, AttackDir).Z;
+
+	if (Dot > 0.5f)      return E_Direction::Forward;
+	if (Dot < -0.5f)     return E_Direction::Backward;
+	if (CrossZ > 0.f)    return E_Direction::Right;
+
+
+	return E_Direction::Left;
+
 }
 
 
@@ -464,7 +492,7 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 		m_CamMgr->executionEffect(1.f);
 
 
-		IC_CombatInterface::Execute_takeDamage(pTarget, 0.f, m_fAttackDamage, false);
+		IC_CombatInterface::Execute_takeDamage(pTarget, 0.f, m_fAttackDamage, false, this);
 
 	}
 	else
