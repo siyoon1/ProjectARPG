@@ -106,6 +106,9 @@ void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 	if (!pAnim)
 		return;
 
+	if (isCrouch())
+		return;
+
 	
 	if (sInst.GetTriggerEvent() != ETriggerEvent::Triggered)
 		return;	
@@ -208,9 +211,14 @@ void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
 
 void AC_PlayerCharacter::jumpStart(const FInputActionValue& sValue)
 {
-	m_bJumpPressed = true;
-	if (!m_bIsWallGrabbing)
-		Jump();
+	if (!isCrouch())
+	{
+		m_bJumpPressed = true;
+		if (!m_bIsWallGrabbing)
+			Jump();
+	}
+
+	
 }
 
 void AC_PlayerCharacter::jumpEnd(const FInputActionValue& sValue)

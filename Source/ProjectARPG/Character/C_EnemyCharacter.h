@@ -26,6 +26,8 @@ private:
 protected:
 	void BeginPlay() override;
 
+	
+
 public:
 	void showHpBar(bool bShow);
 
@@ -38,6 +40,8 @@ public:
 	void onPostureBroken() override;
 
 	void attack();
+
+	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker) override;
 
 	
 };

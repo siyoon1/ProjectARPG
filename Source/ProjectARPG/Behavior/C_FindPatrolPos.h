@@ -15,6 +15,8 @@ class PROJECTARPG_API UC_FindPatrolPos : public UBTService
 	GENERATED_BODY()
 
 public:
+	UC_FindPatrolPos();
+
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 	
 };

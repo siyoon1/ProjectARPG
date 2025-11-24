@@ -6,6 +6,7 @@
 #include "NiagaraComponent.h"
 #include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 #include "ProjectARPG/Animation/C_EnemyAnim.h"
+#include "ProjectARPG/AI/C_DetectComponent.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
 
 void AC_EnemyCharacter::BeginPlay()
@@ -81,5 +82,15 @@ void AC_EnemyCharacter::attack()
 		{
 			pEnemyAnim->playAttackMontage();
 		}
+	}
+}
+
+void AC_EnemyCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker)
+{
+	Super::takeDamage_Implementation(fDamage, fPostureDamage, bGuardSuccess, pAttacker);
+
+	if (UC_DetectComponent* pDetect = FindComponentByClass<UC_DetectComponent>())
+	{
+		pDetect->forceDetect(pAttacker);
 	}
 }
