@@ -211,11 +211,11 @@ void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
 
 void AC_PlayerCharacter::jumpStart(const FInputActionValue& sValue)
 {
-	if (!isCrouch())
-	{
-		m_bJumpPressed = true;
-		if (!m_bIsWallGrabbing)
-			Jump();
+	m_bJumpPressed = true;
+
+	if (!m_bIsWallGrabbing && !isCrouch())
+	{		
+		Jump();
 	}
 
 	
@@ -268,6 +268,14 @@ void AC_PlayerCharacter::crouch(const FInputActionValue& sValue)
 		GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
 	}
 		
+}
+
+void AC_PlayerCharacter::interact(const FInputActionValue& sValue)
+{
+	if (m_bCanWallGrab && !m_bIsWallGrabbing)
+	{
+		setWallGrab(true);
+	}
 }
 
 void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
@@ -542,6 +550,9 @@ bool AC_PlayerCharacter::isLockOn() const
 
 void AC_PlayerCharacter::checkWallTrace()
 {
+	if (!m_bCanWallJump)
+		return;
+
 	FVector vStart = GetActorLocation();
 	FVector vForward = GetActorForwardVector();
 	FVector vEnd = vStart + vForward * 100.f;
@@ -567,14 +578,13 @@ void AC_PlayerCharacter::checkWallTrace()
 	if (bHit && HitResult.Normal.Z < 0.5f && fDistance <= fMinWallGrabDistance)
 	{
 		m_bCanWallGrab = true;
-		m_bCanWallJump = true;
-		setWallGrab(true);
 		m_vWallNormal = HitResult.Normal;
 	}
 	else
 	{
 		m_bCanWallGrab = false;
-		setWallGrab(false);
+		if (m_bIsWallGrabbing)
+			setWallGrab(false);
 	}
 }
 
@@ -584,17 +594,17 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 	{
 		m_bIsWallGrabbing = true;
 
-		//// 중력 제거
-		//GetCharacterMovement()->GravityScale = 0.f;
+		///중력 제거
+		GetCharacterMovement()->GravityScale = 0.f;
 
-		////// 속도 제거
-		//GetCharacterMovement()->StopMovementImmediately();
+		// 속도 제거
+		GetCharacterMovement()->StopMovementImmediately();
 
-		////// 공중제어 금지
-		//GetCharacterMovement()->AirControl = 0.f;
+		// 공중제어 금지
+		GetCharacterMovement()->AirControl = 0.f;
 
-		//FVector Push = -m_vWallNormal * 10.f;
-		//SetActorLocation(GetActorLocation() + Push);
+		FVector Push = -m_vWallNormal * 10.f;
+		SetActorLocation(GetActorLocation() + Push);
 
 
 	}
@@ -602,8 +612,8 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 	{
 		m_bIsWallGrabbing = false;
 
-		/*GetCharacterMovement()->GravityScale = 1.f;
-		GetCharacterMovement()->AirControl = 0.5f;*/
+		GetCharacterMovement()->GravityScale = 1.f;
+		GetCharacterMovement()->AirControl = 0.5f;
 	}
 }
 
@@ -710,6 +720,13 @@ void AC_PlayerCharacter::startClimbUp()
 	
 }
 
+void AC_PlayerCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	m_bCanWallJump = true;
+}
+
 bool AC_PlayerCharacter::isWallGrab() const
 {
 	return m_bIsWallGrabbing;
@@ -746,7 +763,6 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 			FVector JumpDirection = FVector::UpVector * 600.f; // 위로 + 벽 반대 방향
 			LaunchCharacter(JumpDirection, true, true);
 
-			
 			m_bCanWallJump = false;  // 벽 점프는 1회만
 			m_bIsWallGrabbing = false; // 점프하면 벽 놓음
 		}
@@ -801,5 +817,6 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::guardEnd);
 		pEinputCom->BindAction(m_pLockOnAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::lockOn);
 		pEinputCom->BindAction(m_pCrouchAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::crouch);
+		pEinputCom->BindAction(m_pInteractAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::interact);
 	}
 }

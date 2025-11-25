@@ -49,6 +49,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> m_pCrouchAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> m_pInteractAction;
+
 	UPROPERTY()
 	class USphereComponent* m_pExecutionDetectSphere{};
 
@@ -76,7 +79,6 @@ private:
 	bool m_bCanClimbUp = false; // 벽을 올라갈수 있는지
 	bool m_bUseDirectClimb = false; //몽타주를 실행않고 다이렉트로 올라갈수있는지
 	bool m_bCanWallJump = false; //벽점프가 가능한지
-	int32 m_nJumpCount = 0; //점프 카운트
 
 	//플레이어 웅크리기 관련 변수
 	bool m_bIsCrouch = false;
@@ -124,7 +126,12 @@ private:
 	//벽 올라가기
 	void startClimbUp();
 
+	void Landed(const FHitResult& Hit) override;
+
 protected:
+	void sprint(const struct FInputActionInstance& sInst);
+	void sprintReleased(const FInputActionInstance& sInst);
+	void guard(const FInputActionInstance& sInst);
 	void look(const struct FInputActionValue& sValue);
 	void move(const FInputActionValue& sValue);
 	void comboAttack(const FInputActionValue& sValue);
@@ -133,10 +140,8 @@ protected:
 	void guardEnd(const FInputActionValue& sValue);
 	void parry(const FInputActionValue& sValue);
 	void lockOn(const FInputActionValue& sValue);
-	void sprint(const struct FInputActionInstance& sInst);
-	void sprintReleased(const FInputActionInstance& sInst);
-	void guard(const FInputActionInstance& sInst);
 	void crouch(const FInputActionValue& sValue);
+	void interact(const FInputActionValue& sValue);
 
 public:
 	void setCombatState(E_CombatState eNewState) override;
