@@ -213,11 +213,30 @@ void AC_PlayerCharacter::jumpStart(const FInputActionValue& sValue)
 {
 	m_bJumpPressed = true;
 
-	if (!m_bIsWallGrabbing && !isCrouch())
-	{		
-		Jump();
+	if (isCrouch())
+		return;
+
+	if (m_bIsWallGrabbing)
+	{
+		// 벽을 넘어갈 수 있는지 체크
+		if (checkClimbableSurface())
+		{
+			startClimbUp();  // 벽 위로 올라가는 함수 호출
+		}
+		return; // 평소 점프 로직 실행 금지
 	}
 
+	if (m_nJumpCount == 0 && GetCharacterMovement()->IsMovingOnGround())
+	{
+		Jump();
+		m_nJumpCount++;
+	}
+	// 2단 점프 (공중)
+	else if (!GetCharacterMovement()->IsMovingOnGround() && m_nJumpCount < m_MaxJumpCount)
+	{
+		LaunchCharacter(FVector(0, 0, 600.f), false, true);
+		m_nJumpCount++;
+	}
 	
 }
 
@@ -272,7 +291,7 @@ void AC_PlayerCharacter::crouch(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::interact(const FInputActionValue& sValue)
 {
-	if (m_bCanWallGrab && !m_bIsWallGrabbing)
+	if (isCanWallGrab())
 	{
 		setWallGrab(true);
 	}
@@ -553,9 +572,13 @@ void AC_PlayerCharacter::checkWallTrace()
 	if (!m_bCanWallJump)
 		return;
 
-	FVector vStart = GetActorLocation();
+
+	float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+	FVector vStart = GetActorLocation() + FVector(0, 0, HalfHeight * 0.8f);
+
 	FVector vForward = GetActorForwardVector();
-	FVector vEnd = vStart + vForward * 100.f;
+	FVector vEnd = vStart + vForward * 80.f;
 
 	FHitResult HitResult{};
 	FCollisionQueryParams Params{};
@@ -572,17 +595,25 @@ void AC_PlayerCharacter::checkWallTrace()
 		);
 
 
-	float fDistance = (HitResult.Location - GetActorLocation()).Size();
-	const float fMinWallGrabDistance = 80.f;
+	float fDistance = (HitResult.Location - vStart).Size();
+	const float fMinWallGrabDistance = 60.f;
 
 	if (bHit && HitResult.Normal.Z < 0.5f && fDistance <= fMinWallGrabDistance)
 	{
 		m_bCanWallGrab = true;
-		m_vWallNormal = HitResult.Normal;
+
+		if (!m_bIsWallGrabbing)
+		{
+			m_vWallNormal = HitResult.Normal;
+		}
 	}
 	else
 	{
-		m_bCanWallGrab = false;
+		if (!m_bIsWallGrabbing)
+		{
+			m_bCanWallGrab = false;
+		}
+
 		if (m_bIsWallGrabbing)
 			setWallGrab(false);
 	}
@@ -603,6 +634,8 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 		// 공중제어 금지
 		GetCharacterMovement()->AirControl = 0.f;
 
+		bUseControllerRotationYaw = false;
+
 		FVector Push = -m_vWallNormal * 10.f;
 		SetActorLocation(GetActorLocation() + Push);
 
@@ -614,83 +647,76 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 
 		GetCharacterMovement()->GravityScale = 1.f;
 		GetCharacterMovement()->AirControl = 0.5f;
+		bUseControllerRotationYaw = true;
 	}
 }
 
 bool AC_PlayerCharacter::checkClimbableSurface()
 {
-	FVector vWallTraceStart = GetActorLocation() + FVector(0.f, 0.f, 50.f);;
-	FVector vWallTraceEnd = vWallTraceStart + (-m_vWallNormal * 80.f) + FVector(0.f, 0.f, 100.f);
-	FHitResult WallHit{};
-	FCollisionQueryParams Params{};
+	// ? 현재 벽짚기 상태 기준
+	if (!m_bIsWallGrabbing)
+		return false;
+
+	FVector ActorLoc = GetActorLocation();
+	const float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+	// ─────────────────────────────────────
+	// 1) ledge sweep 시작 위치
+	//    벽 표면에서 약간 띄우고, 캐릭터 가슴 정도 높이
+	// ─────────────────────────────────────
+	FVector LedgeStart =
+		ActorLoc
+		- (m_vWallNormal * 35.f)     // 벽에서 조금 뒤로
+		+ FVector(0, 0, CapsuleHalfHeight * 0.6f); // 가슴 높이
+
+	// 2) 위쪽으로 난간 있는지 검사
+	FVector LedgeEnd = LedgeStart + FVector(-70.f, 0, 90.f);
+
+	const float CapsuleRadius = 25.f;
+	const float CapsuleHeight = 40.f;
+
+	FHitResult LedgeHit;
+	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 
-	bool bWallHit =
-		GetWorld()->LineTraceSingleByChannel
-		(
-			WallHit,
-			vWallTraceStart,
-			vWallTraceEnd,
-			ECC_GameTraceChannel4,
-			Params
-		);
-
-	if (!bWallHit)
-		return false;
-
-	const float fCapsuleRadius = 34.f;
-	const float fCapsuleHalfHeight = 88.f;
-
-	float fWallHeight = WallHit.Location.Z - GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-
-	FVector vLedgeStart = WallHit.Location + (-m_vWallNormal * 50.f) + FVector(0.f, 0.f, 50.f);
-	FVector vLedgeEnd = vLedgeStart + FVector(0.f, 0.f, fCapsuleHalfHeight * 2.f);
-	
-	
-
-	FHitResult bLedgeHit{};
-
-	bool bHit =
-		GetWorld()->SweepSingleByChannel
-		(
-			bLedgeHit,
-			vLedgeStart,
-			vLedgeEnd,
+	bool bLedge =
+		GetWorld()->SweepSingleByChannel(
+			LedgeHit,
+			LedgeStart,
+			LedgeEnd,
 			FQuat::Identity,
 			ECC_GameTraceChannel4,
-			FCollisionShape::MakeCapsule(fCapsuleRadius, fCapsuleHalfHeight),
+			FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHeight),
 			Params
 		);
 
-	DrawDebugCapsule(GetWorld(), (vLedgeStart + vLedgeEnd) * 0.5f,
-		fCapsuleHalfHeight, fCapsuleRadius,
-		FQuat::Identity, FColor::Green, false, 0.1f, 0, 1.f);
+	// 디버그 시각화
+	DrawDebugCapsule(GetWorld(), LedgeStart, CapsuleHeight, CapsuleRadius, FQuat::Identity, FColor::Red, false, 2.f);
+	DrawDebugCapsule(GetWorld(), LedgeEnd, CapsuleHeight, CapsuleRadius, FQuat::Identity, FColor::Green, false, 2.f);
+	DrawDebugLine(GetWorld(), LedgeStart, LedgeEnd, FColor::White, false, 2.f, 0, 2.f);
 
-	if (!bHit)
+	if (!bLedge)
 		return false;
 
-	UE_LOG(LogTemp, Warning, TEXT("=== ClimbableSurface Trace ==="));
+	// 난간은 위를 향한 표면이어야 한다
+	if (LedgeHit.Normal.Z < 0.5f)
+		return false;
 
-	DrawDebugLine(GetWorld(), vWallTraceStart, vWallTraceEnd, FColor::Red, false, 2, 0, 2);
+	// ─────────────────────────────────────
+	// ? 3) 올라갈 위치 계산
+	// ─────────────────────────────────────
+	FVector ClimbPos = LedgeHit.Location;
 
-	UE_LOG(LogTemp, Warning, TEXT("Trace Start: %s"), *vWallTraceStart.ToString());
-	UE_LOG(LogTemp, Warning, TEXT("Trace End:   %s"), *vWallTraceEnd.ToString());
-	UE_LOG(LogTemp, Warning, TEXT("Forward: %s"), *GetActorForwardVector().ToString());
-	UE_LOG(LogTemp, Warning, TEXT("Distance: %f"), FVector::Dist(vWallTraceStart, vWallTraceEnd));
+	// 캐릭터 캡슐 높이 만큼 위로 올리고
+	ClimbPos.Z += CapsuleHalfHeight;
 
+	// 벽에서 조금 앞으로 밀어낸다
+	ClimbPos += m_vWallNormal * 45.f;
 
+	m_vClimbLocation = ClimbPos;
+	m_bUseDirectClimb = true;
 
-	if (bLedgeHit.Normal.Z >= 0.1f)
-	{
-		m_vClimbLocation = bLedgeHit.Location;
-
-		m_bUseDirectClimb = fWallHeight < 50.f;
-
-		return true;
-	}
-
-
-	return false;
+	return true;
 	
 }
 
@@ -698,24 +724,18 @@ void AC_PlayerCharacter::startClimbUp()
 {
 	m_eState = E_CombatState::Climb;
 
-
-
 	m_bCanClimbUp = false;
 	m_bIsWallGrabbing = false;
 
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 
-	if (m_bUseDirectClimb)
-	{
-		SetActorLocation(m_vClimbLocation);
-	}
-	else
-	{
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SetActorLocation(m_vClimbLocation);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-		if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
-		{	
-			pAnim->playUpToClimb();
-		}
+	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
+	{
+		pAnim->playUpToClimb();
 	}
 	
 }
@@ -724,7 +744,13 @@ void AC_PlayerCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
+	m_nJumpCount = 0;
 	m_bCanWallJump = true;
+}
+
+void AC_PlayerCharacter::handleWallGrabMovement(float fDelta)
+{
+	
 }
 
 bool AC_PlayerCharacter::isWallGrab() const
@@ -735,6 +761,16 @@ bool AC_PlayerCharacter::isWallGrab() const
 bool AC_PlayerCharacter::isCrouch() const
 {
 	return m_bIsCrouch;
+}
+
+bool AC_PlayerCharacter::isCanWallGrab() const
+{
+	return m_bCanWallGrab && !m_bIsWallGrabbing;
+}
+
+bool AC_PlayerCharacter::isWallGrabbing() const
+{
+	return m_bIsWallGrabbing;
 }
 
 
@@ -748,23 +784,14 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 
 	checkWallTrace();  // 무조건 실행
 
+
+
+
 	if (m_bCanWallGrab && m_bJumpPressed)
 	{
 		if (checkClimbableSurface())
 		{
 			startClimbUp();
-		}
-	}
-
-	if (m_bJumpPressed)
-	{
-		if (m_bIsWallGrabbing && m_bCanWallJump)
-		{
-			FVector JumpDirection = FVector::UpVector * 600.f; // 위로 + 벽 반대 방향
-			LaunchCharacter(JumpDirection, true, true);
-
-			m_bCanWallJump = false;  // 벽 점프는 1회만
-			m_bIsWallGrabbing = false; // 점프하면 벽 놓음
 		}
 	}
 	
@@ -810,7 +837,7 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::sprint);
 		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::sprintReleased);
 		pEinputCom->BindAction(m_pComboAttackAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::comboAttack);
-		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::jumpStart);
+		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::jumpStart);
 		pEinputCom->BindAction(m_pJumpAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::jumpEnd);
 		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::guard);
 		pEinputCom->BindAction(m_pGuardAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::parry);

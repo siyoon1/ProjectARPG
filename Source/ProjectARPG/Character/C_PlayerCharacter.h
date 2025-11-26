@@ -80,6 +80,10 @@ private:
 	bool m_bUseDirectClimb = false; //몽타주를 실행않고 다이렉트로 올라갈수있는지
 	bool m_bCanWallJump = false; //벽점프가 가능한지
 
+	int32 m_nJumpCount = 0;
+	int32 m_MaxJumpCount = 2;
+
+
 	//플레이어 웅크리기 관련 변수
 	bool m_bIsCrouch = false;
 
@@ -126,7 +130,10 @@ private:
 	//벽 올라가기
 	void startClimbUp();
 
+	//착지 상태
 	void Landed(const FHitResult& Hit) override;
+
+	void handleWallGrabMovement(float fDelta);
 
 protected:
 	void sprint(const struct FInputActionInstance& sInst);
@@ -163,5 +170,13 @@ public:
 	//웅크리기 함수
 	UFUNCTION(BlueprintCallable)
 	bool isCrouch() const;
+
+	//벽짚기 가능확인 함수
+	UFUNCTION(BlueprintCallable)
+	bool isCanWallGrab() const;
+
+	//벽짚기 함수
+	UFUNCTION(BlueprintCallable)
+	bool isWallGrabbing() const;
 
 };
