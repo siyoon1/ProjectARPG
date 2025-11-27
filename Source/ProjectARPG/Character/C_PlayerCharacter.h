@@ -125,7 +125,7 @@ private:
 	void setWallGrab(bool bEnable);
 
 	//위쪽 지면 감지하기
-	bool checkClimbableSurface();
+	FVector checkClimbableSurface();
 
 	//벽 올라가기
 	void startClimbUp();
