@@ -34,11 +34,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Climb")
 	TObjectPtr<UAnimMontage> m_pUpToClimbMontage;
 
+
+
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
 	void playComboMontage(E_AttackType eType, int32 nComboIndex);
 	void playUpToClimb();
+
+	float getMontageRootMotionZ();
+
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
 	void setIsGuarding(bool bNewGuard);

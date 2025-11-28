@@ -133,6 +133,8 @@ private:
 	//착지 상태
 	void Landed(const FHitResult& Hit) override;
 
+
+
 	void handleWallGrabMovement(float fDelta);
 
 protected:
@@ -178,5 +180,8 @@ public:
 	//벽짚기 함수
 	UFUNCTION(BlueprintCallable)
 	bool isWallGrabbing() const;
+
+	//벽짚은 위치
+	FVector getClimbLoc() const;
 
 };
