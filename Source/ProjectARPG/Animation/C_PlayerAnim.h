@@ -35,7 +35,6 @@ protected:
 	TObjectPtr<UAnimMontage> m_pUpToClimbMontage;
 
 
-
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
@@ -52,4 +51,7 @@ public:
 
 	UFUNCTION()
 	void AnimNotify_onClimbFinished();
+
+
+	void montageEnded(UAnimMontage* Montage, bool bInterrupted);
 };

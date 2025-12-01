@@ -74,8 +74,12 @@ void UC_PlayerAnim::playComboMontage(E_AttackType eType, int32 nComboIndex)
 void UC_PlayerAnim::playUpToClimb()
 {
     if (!IsAnyMontagePlaying())
+    {
         Montage_Play(m_pUpToClimbMontage);
+    }
+        
 
+  
     
 }
 
@@ -93,7 +97,7 @@ float UC_PlayerAnim::getMontageRootMotionZ()
             UAnimSequence* pAnimSeq = Cast<UAnimSequence>(Segment.AnimReference);
             if (!pAnimSeq)
                 continue;
-
+          
             FTransform RootMotion = pAnimSeq->ExtractRootMotionFromRange(Segment.StartPos, Segment.AnimEndTime);
             fTotalZ += RootMotion.GetTranslation().Z;
         }
@@ -115,7 +119,7 @@ bool UC_PlayerAnim::getIsGuarding() const
 void UC_PlayerAnim::AnimNotify_onClimbFinished()
 {
     AC_PlayerCharacter* pOwner = Cast<AC_PlayerCharacter>(TryGetPawnOwner());
-    //pOwner->SetActorLocation(pOwner->getClimbLoc());
     pOwner->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
     pOwner->setCombatState(E_CombatState::Idle);
+
 }

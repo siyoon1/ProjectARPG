@@ -215,7 +215,7 @@ void AC_PlayerCharacter::jumpStart(const FInputActionValue& sValue)
 	if (isCrouch())
 		return;
 
-	if (m_bIsWallGrabbing && m_eState == E_CombatState::Climb)
+	if (m_bIsWallGrabbing && m_eState == E_CombatState::WallGrabbing)
 	{
 		FVector ClimbPos = checkClimbableSurface();
 
@@ -627,8 +627,7 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 	if (bEnable)
 	{
 		m_bIsWallGrabbing = true;
-		m_eState = E_CombatState::Climb;
-
+		m_eState = E_CombatState::WallGrabbing;
 		// 중력 제거 + 속도 제거
 		auto Move = GetCharacterMovement();
 		Move->GravityScale = 0.f;
@@ -666,9 +665,9 @@ FVector AC_PlayerCharacter::checkClimbableSurface()
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 
-	//-------------------------------------------
-	// 1) 캐릭터 앞면 Sweep (벽 위 모서리 찾기)
-	//-------------------------------------------
+
+
+	// 벽 위 모서리 찾기
 	FVector SweepStart = ActorLoc + FVector(0, 0, HalfHeight * 0.4f) - m_vWallNormal * 90.f;
 	FVector SweepEnd = SweepStart + (-m_vWallNormal * 70.f);
 
@@ -689,9 +688,7 @@ FVector AC_PlayerCharacter::checkClimbableSurface()
 		return FVector::ZeroVector;
 	}
 
-	//-------------------------------------------
-	// 2) 모서리 위 → 아래로 레이
-	//-------------------------------------------
+	//모서리 위에서 아래로 레이
 	FVector TopStart = FrontHit.ImpactPoint + FVector(0, 0, 40.f);
 	FVector TopEnd = TopStart - FVector(0, 0, 150.f);
 
@@ -719,10 +716,10 @@ FVector AC_PlayerCharacter::checkClimbableSurface()
 		return FVector::ZeroVector;
 	}
 
-	//-------------------------------------------
-	// 최종 발판 위치
-	//-------------------------------------------
+
+	// 최종 위치
 	FVector FinalPos = DownHit.ImpactPoint;
+	FinalPos.Z += HalfHeight;
 
 	// Debug
 	DrawDebugLine(GetWorld(), SweepStart, SweepEnd, FColor::Yellow, false, 2.f, 0, 2.f);
@@ -740,11 +737,17 @@ void AC_PlayerCharacter::startClimbUp()
 	m_bCanClimbUp = false;
 	m_bIsWallGrabbing = false;
 
+	// ? 2) RootMotion 제어 위해 Flying
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+
 
 	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
+
 		pAnim->playUpToClimb();
+
+
+
 		m_nJumpCount = 0;
 	}
 	
@@ -799,15 +802,25 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 
 	checkWallTrace();  // 무조건 실행
 
-
-
-	/*if (m_bCanWallGrab && m_bJumpPressed)
+	if(m_eState == E_CombatState::Climb)
 	{
-		if (checkClimbableSurface())
+		FVector ActorLoc = GetActorLocation();
+
+		// Tick 기준으로 RootMotion에 의해 이동한 X/Y값은 그대로 두고 Z만 Clamp
+		FVector CurrentVelocity = GetCharacterMovement()->Velocity;
+
+		// Z Clamp
+		if (ActorLoc.Z > m_vClimbLocation.Z)
 		{
-			startClimbUp();
+			ActorLoc.Z = m_vClimbLocation.Z;
+
+			SetActorLocation(ActorLoc, true);
+
+			FVector NewVelocity = FVector(CurrentVelocity.X, CurrentVelocity.Y, 0.f);
+			GetCharacterMovement()->Velocity = NewVelocity;
 		}
-	}*/
+	}
+
 	
 }
 

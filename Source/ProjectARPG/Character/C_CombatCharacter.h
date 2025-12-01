@@ -20,6 +20,7 @@ enum class E_CombatState : uint8
 	Executing,
 	Parrying,
 	Guard,
+	WallGrabbing,
 	Climb,
 	Crouch,
 	Die
