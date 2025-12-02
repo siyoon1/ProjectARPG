@@ -77,33 +77,8 @@ void UC_PlayerAnim::playUpToClimb()
     {
         Montage_Play(m_pUpToClimbMontage);
     }
-        
-
-  
+      
     
-}
-
-float UC_PlayerAnim::getMontageRootMotionZ()
-{
-    if (!m_pUpToClimbMontage)
-        return 0.0f;
-
-    float fTotalZ = 0.f;
-
-    for (FSlotAnimationTrack& SlotTrak : m_pUpToClimbMontage->SlotAnimTracks)
-    {
-        for (FAnimSegment& Segment : SlotTrak.AnimTrack.AnimSegments)
-        {
-            UAnimSequence* pAnimSeq = Cast<UAnimSequence>(Segment.AnimReference);
-            if (!pAnimSeq)
-                continue;
-          
-            FTransform RootMotion = pAnimSeq->ExtractRootMotionFromRange(Segment.StartPos, Segment.AnimEndTime);
-            fTotalZ += RootMotion.GetTranslation().Z;
-        }
-    }
-
-    return fTotalZ;
 }
 
 void UC_PlayerAnim::setIsGuarding(bool bNewGuard)

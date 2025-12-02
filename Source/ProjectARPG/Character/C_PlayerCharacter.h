@@ -71,13 +71,14 @@ private:
 	bool m_bIsLockOn = false;
 
 	//플레이어 클라이밍
+	FVector2D m_vCurrentMoveInput{};
 	FVector m_vWallNormal{};
+	FVector m_vWallHitLocation{};
 	FVector m_vClimbLocation{};
 	bool m_bJumpPressed = false; // 점프가 눌리고 있는지
 	bool m_bCanWallGrab = false; // 벽을 짚을수 있는지
 	bool m_bIsWallGrabbing = false; // 벽을 짚고 있는지
 	bool m_bCanClimbUp = false; // 벽을 올라갈수 있는지
-	bool m_bUseDirectClimb = false; //몽타주를 실행않고 다이렉트로 올라갈수있는지
 	bool m_bCanWallJump = false; //벽점프가 가능한지
 
 	int32 m_nJumpCount = 0;
@@ -133,9 +134,8 @@ private:
 	//착지 상태
 	void Landed(const FHitResult& Hit) override;
 
-
-
-	void handleWallGrabMovement(float fDelta);
+	//벽 좌우 이동
+	void wallGrabMove(float fInputX, float fDelta);
 
 protected:
 	void sprint(const struct FInputActionInstance& sInst);

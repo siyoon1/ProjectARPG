@@ -41,8 +41,6 @@ public:
 	void playComboMontage(E_AttackType eType, int32 nComboIndex);
 	void playUpToClimb();
 
-	float getMontageRootMotionZ();
-
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
 	void setIsGuarding(bool bNewGuard);
@@ -51,7 +49,4 @@ public:
 
 	UFUNCTION()
 	void AnimNotify_onClimbFinished();
-
-
-	void montageEnded(UAnimMontage* Montage, bool bInterrupted);
 };
