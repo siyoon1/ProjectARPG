@@ -122,6 +122,8 @@ private:
 	//벽 짚기 가능한지 확인하기
 	void checkWallTrace();
 
+	bool canGrabWallAtLoc(const FVector& checkLoc);
+
 	//벽 짚기
 	void setWallGrab(bool bEnable);
 
@@ -135,7 +137,7 @@ private:
 	void Landed(const FHitResult& Hit) override;
 
 	//벽 좌우 이동
-	void wallGrabMove(float fInputX, float fDelta);
+	void wallGrabMove(const FVector2D& MoveInput);
 
 protected:
 	void sprint(const struct FInputActionInstance& sInst);

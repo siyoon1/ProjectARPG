@@ -85,44 +85,14 @@ void AC_PlayerCharacter::move(const FInputActionValue& sValue)
 {
 	FVector2D vMoveDir = sValue.Get<FVector2D>();
 
+	if (m_eState == E_CombatState::WallGrabbing)
+	{
+		wallGrabMove(vMoveDir);
+		return;
+	}
+
 	if (Controller)
 	{
-		if (m_eState == E_CombatState::WallGrabbing)
-		{
-			GetCharacterMovement()->MaxWalkSpeed = 200.f;
-
-			float InputX = vMoveDir.X;
-
-			if (!FMath::IsNearlyZero(InputX))
-			{
-				// 벽 기준 좌우 방향
-				FVector WallRight = FVector::CrossProduct(m_vWallNormal, FVector::UpVector).GetSafeNormal();
-
-				// 이동 가능 여부 체크 (벽 끝 감지)
-				FHitResult Hit;
-				FCollisionQueryParams Params;
-				Params.AddIgnoredActor(this);
-
-				FVector TestLocation = GetActorLocation() + WallRight * InputX * 10.f; // 작은 단위 체크
-				FVector TraceStart = TestLocation + m_vWallNormal * 50.f;
-				FVector TraceEnd = TraceStart - m_vWallNormal * 100.f;
-
-				bool bCanMove = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_EngineTraceChannel4, Params);
-
-				if (bCanMove)
-				{
-					// 벽 끝이 아니면 AddMovementInput로 이동
-					AddMovementInput(WallRight, InputX);
-				}
-			}
-
-			// 회전은 Tick에서 막기
-			return;
-		}
-		else
-			GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
-
-
 		const auto rot = Controller->GetControlRotation();
 		const FRotator rYawRot(0, rot.Yaw, 0);
 		const auto vForwardDir = FRotationMatrix(rYawRot).GetUnitAxis(EAxis::X);
@@ -660,6 +630,29 @@ void AC_PlayerCharacter::checkWallTrace()
 	DrawDebugLine(GetWorld(), Start, End, m_bCanWallGrab ? FColor::Green : FColor::Red, false, 0.1f, 0, 2.f);
 }
 
+bool AC_PlayerCharacter::canGrabWallAtLoc(const FVector& checkLoc)
+{
+	float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+	// 벽 앞에서 상체 정도 높이에서 트레이스
+	FVector Start = checkLoc + FVector(0, 0, HalfHeight * 0.7f);
+	FVector End = Start + GetActorForwardVector() * 80.f;
+
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		Hit, Start, End, ECC_GameTraceChannel4, Params
+	);
+
+	const float fMinGrabDistance = 80.f;
+
+	return (bHit && Hit.Normal.Z < 0.5f &&
+		FVector::Dist(Start, Hit.Location) <= fMinGrabDistance);
+
+}
+
 void AC_PlayerCharacter::setWallGrab(bool bEnable)
 {
 	auto Move = GetCharacterMovement();
@@ -669,7 +662,7 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 		m_bIsWallGrabbing = true;
 		m_eState = E_CombatState::WallGrabbing;
 
-		Move->SetMovementMode(EMovementMode::MOVE_Flying);
+		//Move->SetMovementMode(EMovementMode::MOVE_Flying);
 
 		// 중력 제거 + 속도 제거
 		
@@ -686,7 +679,7 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 	{
 		m_bIsWallGrabbing = false;
 
-		Move->SetMovementMode(EMovementMode::MOVE_Walking);
+		//Move->SetMovementMode(EMovementMode::MOVE_Walking);
 		m_eState = E_CombatState::Idle;
 
 		Move->GravityScale = 1.f;
@@ -800,45 +793,41 @@ void AC_PlayerCharacter::Landed(const FHitResult& Hit)
 	m_bCanWallJump = true;
 }
 
-void AC_PlayerCharacter::wallGrabMove(float fInputX, float fDelta)
+void AC_PlayerCharacter::wallGrabMove(const FVector2D& MoveInput)
 {
-	if (FMath::IsNearlyZero(fInputX))
+	if (m_eState != E_CombatState::WallGrabbing)
 		return;
 
-	FVector WallRight = FVector::CrossProduct(m_vWallNormal, FVector::UpVector).GetSafeNormal();
-	float MoveSpeed = 200.f;
-	float TotalMove = fInputX * MoveSpeed * fDelta;
-	float Direction = FMath::Sign(TotalMove);
-	float Remaining = FMath::Abs(TotalMove);
-	float Step = 10.f;
+	UCharacterMovementComponent* Move = GetCharacterMovement();
 
-	FVector FinalLocation = GetActorLocation();
+	// 오직 좌우 입력만 사용
+	float InputX = MoveInput.X;
 
-	while (Remaining > 0.f)
+	// 벽 기준 좌우 벡터 (월드 좌표)
+	FVector WallRight = FVector::CrossProduct(FVector::UpVector, m_vWallNormal).GetSafeNormal();
+	const float WallMoveSpeed = 200.f; // 벽잡기 이동 속도
+
+	if (FMath::IsNearlyZero(InputX))
 	{
-		float MoveStep = FMath::Min(Step, Remaining);
-		FVector TestLocation = FinalLocation + WallRight * MoveStep * Direction;
-
-		FHitResult Hit;
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(this);
-
-		FVector TraceStart = TestLocation + m_vWallNormal * 50.f;
-		FVector TraceEnd = TraceStart - m_vWallNormal * 100.f;
-
-		if (!GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, Params))
-		{
-			// 벽 끝이면 이동 중단
-			break;
-		}
-
-		FinalLocation = TestLocation;
-		Remaining -= MoveStep;
+		// 입력 없으면 즉시 정지
+		Move->StopMovementImmediately();
+		GetCharacterMovement()->Velocity.X = 0.f;
+		GetCharacterMovement()->Velocity.Y = 0.f;
+		Move->ConsumeInputVector();
+	}
+	else
+	{
+		// 입력 있을 때만 이동
+		Move->Velocity = WallRight * InputX * WallMoveSpeed;
+		Move->ConsumeInputVector();
 	}
 
-	// 벽에 한 번만 밀착
-	FinalLocation -= m_vWallNormal * 10.f;
-	SetActorLocation(FinalLocation);
+	// 중력 제거
+	Move->GravityScale = 0.f;
+
+	// 캐릭터 회전 고정
+	bUseControllerRotationYaw = false;
+	Move->bOrientRotationToMovement = false;
 }
 
 
@@ -859,7 +848,7 @@ bool AC_PlayerCharacter::isCanWallGrab() const
 
 bool AC_PlayerCharacter::isWallGrabbing() const
 {
-	return m_bIsWallGrabbing;
+	return  m_eState == E_CombatState::WallGrabbing;
 }
 
 FVector AC_PlayerCharacter::getClimbLoc() const
@@ -878,13 +867,6 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 
 	checkWallTrace();  // 무조건 실행
 
-	if (m_eState == E_CombatState::WallGrabbing)
-	{	
-	
-		GetCharacterMovement()->bOrientRotationToMovement = false;
-		//bUseControllerRotationYaw = false;
-
-	}
 
 	if(m_eState == E_CombatState::Climb)
 	{
