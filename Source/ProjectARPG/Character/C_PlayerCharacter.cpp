@@ -662,7 +662,6 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 		m_bIsWallGrabbing = true;
 		m_eState = E_CombatState::WallGrabbing;
 
-		//Move->SetMovementMode(EMovementMode::MOVE_Flying);
 
 		// 중력 제거 + 속도 제거
 		
@@ -679,7 +678,6 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 	{
 		m_bIsWallGrabbing = false;
 
-		//Move->SetMovementMode(EMovementMode::MOVE_Walking);
 		m_eState = E_CombatState::Idle;
 
 		Move->GravityScale = 1.f;
@@ -795,32 +793,10 @@ void AC_PlayerCharacter::Landed(const FHitResult& Hit)
 
 void AC_PlayerCharacter::wallGrabMove(const FVector2D& MoveInput)
 {
-	if (m_eState != E_CombatState::WallGrabbing)
-		return;
-
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 
-	// 오직 좌우 입력만 사용
+	// 좌우 입력만 사용 (W,S 무시)
 	float InputX = MoveInput.X;
-
-	// 벽 기준 좌우 벡터 (월드 좌표)
-	FVector WallRight = FVector::CrossProduct(FVector::UpVector, m_vWallNormal).GetSafeNormal();
-	const float WallMoveSpeed = 200.f; // 벽잡기 이동 속도
-
-	if (FMath::IsNearlyZero(InputX))
-	{
-		// 입력 없으면 즉시 정지
-		Move->StopMovementImmediately();
-		GetCharacterMovement()->Velocity.X = 0.f;
-		GetCharacterMovement()->Velocity.Y = 0.f;
-		Move->ConsumeInputVector();
-	}
-	else
-	{
-		// 입력 있을 때만 이동
-		Move->Velocity = WallRight * InputX * WallMoveSpeed;
-		Move->ConsumeInputVector();
-	}
 
 	// 중력 제거
 	Move->GravityScale = 0.f;
@@ -828,6 +804,23 @@ void AC_PlayerCharacter::wallGrabMove(const FVector2D& MoveInput)
 	// 캐릭터 회전 고정
 	bUseControllerRotationYaw = false;
 	Move->bOrientRotationToMovement = false;
+
+	// 벽 기준 좌우 벡터
+	FVector CamRight = GetControlRotation().RotateVector(FVector::RightVector);
+	CamRight.Z = 0.f;
+	CamRight.Normalize();
+
+	FVector WallRight = FVector::VectorPlaneProject(CamRight, m_vWallNormal).GetSafeNormal();;
+	
+
+	if (FMath::Abs(InputX) < 0.2f)
+	{
+		Move->Velocity = FVector::ZeroVector;
+		return;
+	}
+
+	Move->Velocity = WallRight * InputX * 200.f;
+
 }
 
 
