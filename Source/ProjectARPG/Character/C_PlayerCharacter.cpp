@@ -713,7 +713,7 @@ FVector AC_PlayerCharacter::checkClimbableSurface()
 		SweepStart,
 		SweepEnd,
 		FQuat::Identity,
-		ECC_GameTraceChannel4,
+		ECC_Visibility,
 		FCollisionShape::MakeSphere(Radius),
 		Params
 	);
@@ -729,7 +729,13 @@ FVector AC_PlayerCharacter::checkClimbableSurface()
 	FVector TopEnd = TopStart - FVector(0, 0, 150.f);
 
 	FHitResult DownHit;
-	bool bDown = GetWorld()->LineTraceSingleByChannel(DownHit, TopStart, TopEnd, ECC_GameTraceChannel4, Params);
+	bool bDown = GetWorld()->LineTraceSingleByChannel
+	(	DownHit,
+		TopStart,
+		TopEnd,
+		ECC_Visibility,
+		Params
+	);
 
 	if (!bDown)
 	{
@@ -796,7 +802,10 @@ void AC_PlayerCharacter::wallGrabMove(const FVector2D& MoveInput)
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 
 	// 좌우 입력만 사용 (W,S 무시)
-	float InputX = MoveInput.X;
+	const float InputX = MoveInput.X;
+
+	if (FMath::IsNearlyZero(InputX))
+		return;
 
 	// 중력 제거
 	Move->GravityScale = 0.f;
@@ -805,21 +814,47 @@ void AC_PlayerCharacter::wallGrabMove(const FVector2D& MoveInput)
 	bUseControllerRotationYaw = false;
 	Move->bOrientRotationToMovement = false;
 
-	// 벽 기준 좌우 벡터
-	FVector CamRight = GetControlRotation().RotateVector(FVector::RightVector);
-	CamRight.Z = 0.f;
-	CamRight.Normalize();
+	const float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 
-	FVector WallRight = FVector::VectorPlaneProject(CamRight, m_vWallNormal).GetSafeNormal();;
-	
+	FVector WallRight = FVector::CrossProduct(m_vWallNormal, FVector::UpVector).GetSafeNormal();
 
-	if (FMath::Abs(InputX) < 0.2f)
+	FVector SweepDir = WallRight * InputX;
+
+
+	FHitResult Hit{};
+	FCollisionQueryParams Params{};
+	Params.AddIgnoredActor(this);
+
+	FVector vHead = GetActorLocation() + FVector(0, 0, HalfHeight * 0.7f);
+
+	FVector vStart = vHead + SweepDir * 10.f + GetActorForwardVector() * 9.f;
+	FVector vEnd = vHead + SweepDir * 40.f + GetActorForwardVector() * 9.f;
+
+	const float fRadius = 30.f;
+
+
+	bool bHit = 
+
+	GetWorld()->SweepSingleByChannel
+	(
+		Hit,
+		vStart,
+		vEnd,
+		FQuat::Identity,
+		ECC_EngineTraceChannel4,
+		FCollisionShape::MakeSphere(fRadius),
+		Params
+	);
+
+	FVector vLast = GetActorLocation() + SweepDir * 1.5f;
+
+	if (bHit)
 	{
-		Move->Velocity = FVector::ZeroVector;
-		return;
+		SetActorLocation(vLast);
 	}
 
-	Move->Velocity = WallRight * InputX * 200.f;
+	//DrawDebugSphere(GetWorld(), vStart, fRadius, 12, FColor::Green, false, 2.f);
+	//DrawDebugSphere(GetWorld(), vEnd, fRadius, 12, FColor::Blue, false, 2.f);
 
 }
 
