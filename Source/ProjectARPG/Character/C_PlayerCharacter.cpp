@@ -281,26 +281,25 @@ void AC_PlayerCharacter::guard(const FInputActionInstance& sInst)
 
 void AC_PlayerCharacter::crouch(const FInputActionValue& sValue)
 {
-	if (m_eState != E_CombatState::Idle)
+	// 벽잡기 중이면 무조건 탈출 처리 먼저
+	if (m_eState == E_CombatState::WallGrabbing)
+	{
+		setWallGrab(false);
 		return;
+	}
 
+	// 일반 앉기 토글
 	if (!m_bIsCrouch)
 	{
 		m_bIsCrouch = true;
 		setCombatState(E_CombatState::Crouch);
 		GetCharacterMovement()->MaxWalkSpeed = 250.f;
-	}	
-	
-	if (m_eState == E_CombatState::Crouch)
+	}
+	else
 	{
 		m_bIsCrouch = false;
 		setCombatState(E_CombatState::Idle);
 		GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
-	}
-
-	if (m_eState == E_CombatState::Climb)
-	{
-		setWallGrab(false);
 	}
 }
 
@@ -655,7 +654,6 @@ bool AC_PlayerCharacter::canGrabWallAtLoc(const FVector& checkLoc)
 
 void AC_PlayerCharacter::setWallGrab(bool bEnable)
 {
-	auto Move = GetCharacterMovement();
 
 	if (bEnable)
 	{
@@ -665,13 +663,13 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 
 		// 중력 제거 + 속도 제거
 		
-		Move->GravityScale = 0.f;
-		Move->StopMovementImmediately();
-		Move->AirControl = 1.f;
-		Move->Velocity = FVector::ZeroVector;
+		GetCharacterMovement()->GravityScale = 0.f;
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->AirControl = 1.f;
+		GetCharacterMovement()->Velocity = FVector::ZeroVector;
 
 		bUseControllerRotationYaw = false;
-		// 벽에 밀착
+
 		SetActorLocation(GetActorLocation() - (-m_vWallNormal * 10.f));
 	}
 	else
@@ -680,11 +678,14 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 
 		m_eState = E_CombatState::Idle;
 
-		Move->GravityScale = 1.f;
-		Move->AirControl = 0.5f;
+		
+		GetCharacterMovement()->GravityScale = 1.f;
+		GetCharacterMovement()->AirControl = 0.5f;
 
 		bUseControllerRotationYaw = true;
-		
+
+
+		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
 	}
 }
 
@@ -871,7 +872,7 @@ bool AC_PlayerCharacter::isCrouch() const
 
 bool AC_PlayerCharacter::isCanWallGrab() const
 {
-	return m_bCanWallGrab && !m_bIsWallGrabbing;
+	return m_bCanWallGrab && !m_bIsWallGrabbing && m_eState == E_CombatState::Idle;
 }
 
 bool AC_PlayerCharacter::isWallGrabbing() const
