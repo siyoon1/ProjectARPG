@@ -15,6 +15,7 @@
 #include "Engine/OverlapResult.h"
 #include "Components/CapsuleComponent.h"
 #include "ProjectARPG/Animation/C_PlayerAnim.h"
+#include "ProjectARPG/ActorComponents/C_GrappleComponent.h"
 
 AC_PlayerCharacter::AC_PlayerCharacter()
 {
@@ -54,6 +55,8 @@ void AC_PlayerCharacter::BeginPlay()
 	}
 
 	m_pExecutionDetectSphere = GetComponentByClass<USphereComponent>();
+
+	m_pGrappleCom = GetComponentByClass<UC_GrappleComponent>();
 
 
 }
@@ -309,6 +312,12 @@ void AC_PlayerCharacter::interact(const FInputActionValue& sValue)
 	{
 		setWallGrab(true);
 	}
+}
+
+void AC_PlayerCharacter::grapple(const FInputActionValue& sValue)
+{
+	if (m_pGrappleCom)
+		m_pGrappleCom->tryStartGrapple();
 }
 
 void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
@@ -584,7 +593,7 @@ bool AC_PlayerCharacter::isLockOn() const
 
 void AC_PlayerCharacter::checkWallTrace()
 {
-	if (!m_bCanWallJump)
+	if (!isPlayerControlled())
 		return;
 
 	float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
@@ -795,7 +804,6 @@ void AC_PlayerCharacter::Landed(const FHitResult& Hit)
 	Super::Landed(Hit);
 
 	m_nJumpCount = 0;
-	m_bCanWallJump = true;
 }
 
 void AC_PlayerCharacter::wallGrabMove(const FVector2D& MoveInput)
@@ -885,6 +893,17 @@ FVector AC_PlayerCharacter::getClimbLoc() const
 	return m_vClimbLocation;
 }
 
+bool AC_PlayerCharacter::isPlayerControlled() const
+{
+
+	return Cast<APlayerController>(GetController()) != nullptr;
+}
+
+UCameraComponent* AC_PlayerCharacter::getFollowCamera() const
+{
+	return m_pCamera;
+}
+
 
 void AC_PlayerCharacter::Tick(float DeltaTime)
 {
@@ -967,5 +986,6 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pLockOnAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::lockOn);
 		pEinputCom->BindAction(m_pCrouchAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::crouch);
 		pEinputCom->BindAction(m_pInteractAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::interact);
+		pEinputCom->BindAction(m_pGrappleAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::grapple);
 	}
 }

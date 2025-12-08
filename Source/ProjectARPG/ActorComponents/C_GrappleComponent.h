@@ -13,11 +13,29 @@ class PROJECTARPG_API UC_GrappleComponent : public UActorComponent
 	GENERATED_BODY()
 
 private:
+	bool m_bIsPulling = false;
+
+	FVector m_vPullDir{};
+	FVector m_vOwnerPos{};
+	FVector m_vTargetPos{};
+
 	float m_fGrappleSpeed = 3000.f;
 
-	TObjectPtr<ACharacter> m_pOwner = nullptr;
+
+	float m_fElapsed{};
+	float m_fDuration{};
+
+	TObjectPtr<class AC_PlayerCharacter> m_pOwner = nullptr;
 
 	TObjectPtr<class AC_GrapplePoint> m_pCurrentTarget = nullptr;
+
+
+private:
+	void endPull();
+
+	bool isInView(class UCameraComponent* pCamera, AC_GrapplePoint* pTarget);
+
+	AC_GrapplePoint* findBestGrapplePoint();
 
 public:	
 	// Sets default values for this component's properties

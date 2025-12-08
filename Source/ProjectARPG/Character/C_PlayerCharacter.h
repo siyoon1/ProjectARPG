@@ -52,9 +52,14 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> m_pInteractAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> m_pGrappleAction;
+
 	UPROPERTY()
 	class USphereComponent* m_pExecutionDetectSphere{};
 
+	UPROPERTY()
+	class UC_GrappleComponent* m_pGrappleCom{};
 
 	//플레이어 연속 공격 관련 변수
 	int32 m_nCurrentComboIndex = 0;
@@ -79,7 +84,6 @@ private:
 	bool m_bCanWallGrab = false; // 벽을 짚을수 있는지
 	bool m_bIsWallGrabbing = false; // 벽을 짚고 있는지
 	bool m_bCanClimbUp = false; // 벽을 올라갈수 있는지
-	bool m_bCanWallJump = false; //벽점프가 가능한지
 
 	int32 m_nJumpCount = 0;
 	int32 m_MaxJumpCount = 2;
@@ -153,6 +157,7 @@ protected:
 	void lockOn(const FInputActionValue& sValue);
 	void crouch(const FInputActionValue& sValue);
 	void interact(const FInputActionValue& sValue);
+	void grapple(const FInputActionValue& sValue);
 
 public:
 	void setCombatState(E_CombatState eNewState) override;
@@ -185,5 +190,9 @@ public:
 
 	//벽짚은 위치
 	FVector getClimbLoc() const;
+
+	bool isPlayerControlled() const;
+
+	UCameraComponent* getFollowCamera() const;
 
 };
