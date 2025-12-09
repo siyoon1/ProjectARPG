@@ -13,6 +13,13 @@ class PROJECTARPG_API UC_GrappleComponent : public UActorComponent
 	GENERATED_BODY()
 
 private:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAnimMontage> m_pGrappleStartMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAnimMontage> m_pGrappleEndMontage;
+
+private:
 	bool m_bIsPulling = false;
 
 	FVector m_vPullDir{};
@@ -52,4 +59,6 @@ public:
 	void tryStartGrapple();
 
 	void startPull(AC_GrapplePoint* pTarget);
+
+	bool isPulling() const;
 };

@@ -188,11 +188,16 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool isWallGrabbing() const;
 
+	UFUNCTION(BlueprintCallable)
+	bool isPulling() const;
+
 	//º®Â¤Àº À§Ä¡
 	FVector getClimbLoc() const;
 
 	bool isPlayerControlled() const;
 
 	UCameraComponent* getFollowCamera() const;
+
+	void initJump();
 
 };

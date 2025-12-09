@@ -888,6 +888,14 @@ bool AC_PlayerCharacter::isWallGrabbing() const
 	return  m_eState == E_CombatState::WallGrabbing;
 }
 
+bool AC_PlayerCharacter::isPulling() const
+{
+	if (m_pGrappleCom)
+		return m_pGrappleCom->isPulling();
+
+	return false;
+}
+
 FVector AC_PlayerCharacter::getClimbLoc() const
 {
 	return m_vClimbLocation;
@@ -902,6 +910,11 @@ bool AC_PlayerCharacter::isPlayerControlled() const
 UCameraComponent* AC_PlayerCharacter::getFollowCamera() const
 {
 	return m_pCamera;
+}
+
+void AC_PlayerCharacter::initJump()
+{
+	m_nJumpCount = 0;
 }
 
 

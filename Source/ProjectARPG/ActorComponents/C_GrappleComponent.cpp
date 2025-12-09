@@ -14,6 +14,12 @@ void UC_GrappleComponent::endPull()
 	m_bIsPulling = false;
 	m_pCurrentTarget = nullptr;
 	m_pOwner->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	m_pOwner->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	m_pOwner->initJump();
+	if (UAnimInstance* pAnim = Cast<UAnimInstance>(m_pOwner->GetMesh()->GetAnimInstance()))
+	{
+		pAnim->Montage_Play(m_pGrappleEndMontage);
+	}
 }
 
 bool UC_GrappleComponent::isInView(UCameraComponent* pCamera, AC_GrapplePoint* pTarget)
@@ -90,6 +96,9 @@ void UC_GrappleComponent::BeginPlay()
 
 void UC_GrappleComponent::tryStartGrapple()
 {
+	if (m_bIsPulling)
+		return;
+
 	m_pOwner = Cast<AC_PlayerCharacter>(GetOwner());
 
 	if (!m_pOwner)
@@ -100,7 +109,14 @@ void UC_GrappleComponent::tryStartGrapple()
 	if (pTarget)
 	{
 		startPull(pTarget);
+
+		if (UAnimInstance* pAnim = Cast<UAnimInstance>(m_pOwner->GetMesh()->GetAnimInstance()))
+		{
+			pAnim->Montage_Play(m_pGrappleStartMontage);
+		}
+
 		DrawDebugLine(GetWorld(), m_pOwner->GetActorLocation(), pTarget->GetActorLocation(), FColor::Green, false, 1.f);
+
 	}
 		
 
@@ -120,14 +136,23 @@ void UC_GrappleComponent::startPull(AC_GrapplePoint* pTarget)
 	m_vOwnerPos = m_pOwner->GetActorLocation();
 	m_vTargetPos = m_pCurrentTarget->GetActorLocation();
 
+	m_pOwner->GetCharacterMovement()->Velocity = FVector::ZeroVector;
+	m_pOwner->GetCharacterMovement()->StopMovementImmediately();
+
 	m_bIsPulling = true;
 	m_pOwner->GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+	m_pOwner->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 
 	m_vPullDir = (m_vTargetPos - m_vOwnerPos).GetSafeNormal();
 
 	m_fElapsed = 0.f;
 	m_fDuration = 0.8f;
+}
+
+bool UC_GrappleComponent::isPulling() const
+{
+	return m_bIsPulling;
 }
 
 // Called every frame
@@ -161,8 +186,9 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	
 	float fDistToTarget = FVector::Dist(vNextPos, m_vTargetPos);
 
-	if (fDistToTarget < 80.f && Alpha >= 1.f)
+	if (fDistToTarget < 80.f)
 	{
+		m_pOwner->SetActorLocation(vNextPos);
 		endPull();
 	}
 
