@@ -10,6 +10,10 @@ UCLASS()
 class PROJECTARPG_API AC_GrapplePoint : public AActor
 {
 	GENERATED_BODY()
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	class USphereComponent* m_pSphere{};
 	
 public:	
 	// Sets default values for this actor's properties
@@ -22,5 +26,7 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	bool isOverlapSphere();
 
 };

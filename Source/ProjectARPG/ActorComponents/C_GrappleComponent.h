@@ -37,12 +37,28 @@ private:
 	TObjectPtr<class AC_GrapplePoint> m_pCurrentTarget = nullptr;
 
 
+
+	// 로프 관련
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
+	class UCableComponent* m_pCable{};
+
+	bool m_bIsFiringRope = false;
+
+	float m_fRopeFireAlpha = 0.f;
+
+	float m_fRopeFireSpeed = 3.0f;
+
+	FVector m_vRopeFireStart{};
+	FVector m_vRopeFireEnd{};
+
 private:
 	void endPull();
 
 	bool isInView(class UCameraComponent* pCamera, AC_GrapplePoint* pTarget);
 
 	AC_GrapplePoint* findBestGrapplePoint();
+
+	void startFireRope(AC_GrapplePoint* pTarget);
 
 public:	
 	// Sets default values for this component's properties
@@ -61,4 +77,5 @@ public:
 	void startPull(AC_GrapplePoint* pTarget);
 
 	bool isPulling() const;
+
 };
