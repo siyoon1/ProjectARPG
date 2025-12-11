@@ -91,6 +91,7 @@ void UC_GrappleComponent::startFireRope(AC_GrapplePoint* pTarget)
 	m_vRopeFireEnd = pTarget->GetActorLocation();
 
 	m_pCable->SetVisibility(true);
+	m_pCable->bAttachEnd = false;
 	m_pCable->EndLocation = FVector::ZeroVector;
 }
 
@@ -117,24 +118,23 @@ void UC_GrappleComponent::BeginPlay()
 
 	m_pCable = NewObject<UCableComponent>(this, UCableComponent::StaticClass());
 
-	if (m_pCable)
-	{
-		m_pCable->AttachToComponent
-		(
-			m_pOwner->GetMesh(),
-			FAttachmentTransformRules::SnapToTargetIncludingScale,
-			FName("hand_r")
-		);
+	m_pCable->RegisterComponent();
 
-		m_pCable->bAttachEnd = false;
-		m_pCable->CableLength = 500.f;
-		m_pCable->NumSegments = 12;
-		m_pCable->CableGravityScale = 0.f;
+	// 소켓 부착 금지 ? 월드에 둔다
+	m_pCable->AttachToComponent(
+		m_pOwner->GetRootComponent(),
+		FAttachmentTransformRules::KeepWorldTransform
+	);
 
-		m_pCable->SetVisibility(false);
-
-		m_pCable->RegisterComponent();
-	}
+	m_pCable->bAttachEnd = false;
+	m_pCable->CableLength = 300.f;
+	m_pCable->NumSegments = 4;
+	m_pCable->CableWidth = 3.f;
+	m_pCable->CableGravityScale = 0.f;
+	m_pCable->bEnableCollision = false;
+	m_pCable->bEnableStiffness = true;
+	m_pCable->SolverIterations = 16;
+	m_pCable->SetVisibility(false);
 }
 
 
@@ -180,18 +180,11 @@ void UC_GrappleComponent::startPull(AC_GrapplePoint* pTarget)
 
 	if (m_pCable)
 	{
-		// 로프 켜기
-		m_pCable->SetVisibility(true);
-
-		// 끝 위치는 Target의 실제 위치
-		FVector HandLoc = m_pOwner->GetMesh()->GetSocketLocation("hand_r");
-
-		//
-		m_pCable->bAttachEnd = false;
-		FVector LocalEnd = m_pCable->GetComponentTransform().InverseTransformPosition(
-			m_pCurrentTarget->GetActorLocation()
+		m_pCable->bAttachEnd = true;
+		m_pCable->SetAttachEndToComponent(
+			pTarget->GetRootComponent(),
+			NAME_None
 		);
-		m_pCable->EndLocation = LocalEnd;
 	}
 
 	m_vOwnerPos = m_pOwner->GetActorLocation();
@@ -229,22 +222,27 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	if (m_bIsFiringRope)
 	{
+
+		FVector HandPos = m_pOwner->GetMesh()->GetSocketLocation("hand_r");
+		m_pCable->SetWorldLocation(HandPos);
+
 		m_fRopeFireAlpha += m_fRopeFireSpeed * DeltaTime;
 		float fAlpha = FMath::Clamp(m_fRopeFireAlpha, 0.f, 1.f);
 
-		FVector vCurEnd = FMath::Lerp(m_vRopeFireStart, m_vRopeFireEnd, fAlpha);
-
-		FVector LocalEnd = m_pCable->GetComponentTransform().InverseTransformPosition(vCurEnd);
-		m_pCable->bAttachEnd = false;
-		m_pCable->EndLocation = LocalEnd;
-
-		
 
 		if (fAlpha >= 1.f)
 		{
 			m_bIsFiringRope = false;
+
+			m_pCable->bAttachEnd = true;
+			m_pCable->SetAttachEndToComponent(
+				m_pCurrentTarget->GetRootComponent(),
+				NAME_None
+			);
+
 			startPull(m_pCurrentTarget);
 		}
+
 		return;
 	}
 
@@ -253,14 +251,10 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	if (!m_bIsPulling || !m_pOwner || !m_pCurrentTarget)
 		return;
 
-	FVector vHandLoc = m_pOwner->GetMesh()->GetSocketLocation("hand_r");
-
-	FVector WorldEnd = m_pCurrentTarget->GetActorLocation();
-	FVector LocalEnd = m_pCable->GetComponentTransform().InverseTransformPosition(WorldEnd);
-	m_pCable->EndLocation = LocalEnd;
-
 	m_fElapsed += DeltaTime;
 	float Alpha = FMath::Clamp(m_fElapsed / m_fDuration, 0.f, 1.f);
+
+	
 
 	// 기본 Lerp 이동 (시작→목적지 까지 정확히 도달)
 	FVector Pos = FMath::Lerp(m_vOwnerPos, m_vTargetPos, Alpha);

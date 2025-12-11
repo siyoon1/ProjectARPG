@@ -28,6 +28,7 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 	m_pCamera->SetupAttachment(m_pSpringArm);
 	m_pCamera->bUsePawnControlRotation = false;
 
+
 	m_pExecutionDetectSphere = nullptr;
 }
 

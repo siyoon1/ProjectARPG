@@ -46,7 +46,9 @@ private:
 
 	float m_fRopeFireAlpha = 0.f;
 
-	float m_fRopeFireSpeed = 3.0f;
+	float m_fRopeFireSpeed = 2.5f;
+
+	float m_DesiredLength{};
 
 	FVector m_vRopeFireStart{};
 	FVector m_vRopeFireEnd{};
