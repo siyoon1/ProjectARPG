@@ -3,6 +3,7 @@
 
 #include "C_DetectComponent.h"
 #include "ProjectARPG/Character/C_PlayerCharacter.h"
+#include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "Engine/OverlapResult.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
@@ -186,6 +187,7 @@ void UC_DetectComponent::BeginPlay()
 
 	// ...
 	
+	m_pEnemy = Cast<AC_EnemyCharacter>(GetOwner());
 }
 
 
@@ -200,9 +202,15 @@ void UC_DetectComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	{
 		detectTarget();
 		m_TimeSinceLastDetect = 0.f;
+
 	}
 
 	
 	// ...
+}
+
+bool UC_DetectComponent::isDetecting() const
+{
+	return m_bIsDetecting;
 }
 

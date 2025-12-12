@@ -12,6 +12,7 @@
 void AC_EnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
 }
 
 void AC_EnemyCharacter::showHpBar(bool bShow)
@@ -24,7 +25,8 @@ void AC_EnemyCharacter::showHpBar(bool bShow)
 
 void AC_EnemyCharacter::showExecutionVFX(bool bShow)
 {
-	m_ExecutionVFX = GetComponentByClass<UNiagaraComponent>();
+	if (!m_ExecutionVFX)
+		m_ExecutionVFX = GetComponentByClass<UNiagaraComponent>();
 
 	if (m_ExecutionVFX)
 		m_ExecutionVFX->SetVisibility(bShow);
@@ -37,7 +39,7 @@ void AC_EnemyCharacter::setCanBeExecuted(bool bCan)
 
 bool AC_EnemyCharacter::canBeExecuted() const
 {
-	return m_bCanbeExcuted;
+	return m_bCanbeExcuted && m_bIsPostureBroken;
 }
 
 void AC_EnemyCharacter::onPostureBroken()

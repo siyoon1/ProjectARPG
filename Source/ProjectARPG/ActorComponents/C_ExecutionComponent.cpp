@@ -45,8 +45,7 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim)
 	if (!pAttacker || !pEnemy)
 		return;
 
-	
-
+	UE_LOG(LogTemp, Error, TEXT("pAttacker => %s  pEnemy => %s"), *pAttacker->GetName(), *pEnemy->GetName());
 
 	pAttacker->setCombatState(E_CombatState::Executing);
 	pAttacker->DisableInput(nullptr);
@@ -125,7 +124,9 @@ void UC_ExecutionComponent::triggerExecution(APawn* pVictim)
 	if (!pOwner)
 		return;
 
+
 	performExecution(pOwner, pVictim);
+
 }
 
 void UC_ExecutionComponent::playStunMontage()

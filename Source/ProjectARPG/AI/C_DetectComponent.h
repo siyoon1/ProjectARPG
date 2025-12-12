@@ -28,7 +28,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Detect|General")
 	float m_DetectInterval = 0.1f;
 
+	UPROPERTY()
+	class AC_EnemyCharacter* m_pEnemy = nullptr;
+
 	float m_TimeSinceLastDetect = 0.f;
+
+	bool m_bIsDetecting = false;
 
 private:
 	void detectTarget();
@@ -37,6 +42,8 @@ private:
 	bool checkFOV(AC_PlayerCharacter* pPlayer);
 	bool checkLineOfSight(AC_PlayerCharacter* pPlayer);
 	float getAdjustedDetectDist(AC_PlayerCharacter* pPlayer);
+
+	void canExecute();
 
 
 protected:
@@ -56,5 +63,7 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+	bool isDetecting() const;
+
+	
 };

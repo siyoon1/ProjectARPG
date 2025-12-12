@@ -493,7 +493,22 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 
 
 		IC_CombatInterface::Execute_takeDamage(pTarget, 0.f, m_fAttackDamage, false, this);
+		if (AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(pTarget)) {
 
+			FTimerHandle Timer;
+			GetWorld()->GetTimerManager().SetTimer(
+				Timer,
+				FTimerDelegate::CreateLambda([this, pEnemy]()
+					{
+						if (pEnemy && pEnemy->canBeExecuted())
+						{
+							this->m_pExecutionCom->triggerExecution(pEnemy);
+						}
+					}),
+				0.12f,
+				false
+			);
+		}
 	}
 	else
 	{

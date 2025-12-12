@@ -234,11 +234,12 @@ void AC_PlayerCharacter::jumpStart(const FInputActionValue& sValue)
 			setWallGrab(false);
 			m_vClimbLocation = ClimbPos;
 			startClimbUp();
+			m_nJumpCount = 0;
 		}
 		return;
 	}
 
-	if (m_nJumpCount == 0 && GetCharacterMovement()->IsMovingOnGround())
+	if (m_nJumpCount == 0 && GetCharacterMovement()->IsMovingOnGround() && m_eState != E_CombatState::Climb)
 	{
 		Jump();
 		m_nJumpCount++;
@@ -792,10 +793,7 @@ void AC_PlayerCharacter::startClimbUp()
 	{
 
 		pAnim->playUpToClimb();
-
-
-
-		m_nJumpCount = 0;
+		
 	}
 	
 }
@@ -979,6 +977,11 @@ bool AC_PlayerCharacter::tryExcuteEnemy() const
 
 	}
 	return false;
+}
+
+void AC_PlayerCharacter::checkExecutionCandidate()
+{
+
 }
 
 void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

@@ -46,7 +46,7 @@ private:
 
 	float m_fRopeFireAlpha = 0.f;
 
-	float m_fRopeFireSpeed = 2.5f;
+	float m_fRopeFireSpeed = 2.f;
 
 	float m_DesiredLength{};
 

@@ -61,6 +61,9 @@ private:
 	UPROPERTY()
 	class UC_GrappleComponent* m_pGrappleCom{};
 
+	UPROPERTY()
+	class AC_EnemyCharacter* m_pCurrentExecutionTarget = nullptr;
+
 	//플레이어 연속 공격 관련 변수
 	int32 m_nCurrentComboIndex = 0;
 	int32 m_nMaxComboIndex = 5;
@@ -143,6 +146,12 @@ private:
 	//벽 좌우 이동
 	void wallGrabMove(const FVector2D& MoveInput);
 
+	//인살 시도 함수
+	bool tryExcuteEnemy() const;
+
+	//인살 가능한 적 감지하는 함수
+	void checkExecutionCandidate();
+
 protected:
 	void sprint(const struct FInputActionInstance& sInst);
 	void sprintReleased(const FInputActionInstance& sInst);
@@ -164,8 +173,6 @@ public:
 	void onComboTransition();
 	void resetCombo();
 
-	//인살 시도 함수
-	bool tryExcuteEnemy() const;
 
 
 	//락온 함수
