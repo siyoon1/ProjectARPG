@@ -6,6 +6,13 @@
 #include "Components/ActorComponent.h"
 #include "C_ExecutionComponent.generated.h"
 
+enum class E_ExecutionType : uint8
+{
+	None,
+	PostureBreak,
+	Stealth
+};
+
 USTRUCT(BlueprintType)
 struct FS_ExecutionMontagePair
 {
@@ -31,22 +38,38 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stun", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAnimMontage> m_pStunMontage;
 
+	UPROPERTY()
+	TObjectPtr<class AC_EnemyCharacter> m_pCurrentExecutableTarget;
+
+	UPROPERTY()
+	TObjectPtr<class AC_PlayerCharacter> m_pOwnerPlayer;
+
+	E_ExecutionType m_eCurrentExecutionType = E_ExecutionType::None;
+
 public:	
 	// Sets default values for this component's properties
 	UC_ExecutionComponent();
+
+private:
+	void updateExecutionTarget();
+	void setCurrentExecutableTarget(AC_EnemyCharacter* pNewTarget, E_ExecutionType eType);
+	bool isBehindTarget(AC_EnemyCharacter* pEnemy) const;
+	bool canStealthExecute(AC_EnemyCharacter* pEnemy) const;
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	void performExecution(APawn* pInstigator, APawn* pVictim);
+	void performExecution(APawn* pInstigator, APawn* pVictim, E_ExecutionType eType);
 
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	void onBecomeExecutable(APawn* pVictim);
-	void triggerExecution(APawn* pVictim);
+	void triggerExecution(APawn* pVictim, E_ExecutionType eType);
+
+	bool tryExecuteCurrentTarget();
 
 	void playStunMontage();
 

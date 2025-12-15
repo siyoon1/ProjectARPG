@@ -380,10 +380,10 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
 	m_fLastAttackInputTime = GetWorld()->GetTimeSeconds();
 
-	if (!canAttack())
+	if (canExecute() && tryExcuteEnemy())
 		return;
 
-	if (tryExcuteEnemy())
+	if (!canAttack())
 		return;
 
 	if (m_eState == E_CombatState::Sprinting || m_eState == E_CombatState::Dodging)
@@ -441,9 +441,28 @@ bool AC_PlayerCharacter::canAttack() const
 	case E_CombatState::Parrying:
 	case E_CombatState::WallGrabbing:
 	case E_CombatState::Climb:
-	case E_CombatState::Crouch:
 	case E_CombatState::Die:
 		return false;
+
+	case E_CombatState::Crouch:
+		return false;
+
+
+	default:
+		return true;
+	}
+}
+
+bool AC_PlayerCharacter::canExecute() const
+{
+	switch (m_eState)
+	{
+	case E_CombatState::Dodging:
+	case E_CombatState::Executing:
+	case E_CombatState::Climb:
+	case E_CombatState::Die:
+		return false;
+
 	default:
 		return true;
 	}
@@ -508,6 +527,14 @@ void AC_PlayerCharacter::resetCombo()
 	m_eState = E_CombatState::Idle;
 	m_nCurrentComboIndex = 0;
 	m_bNextComboQueued = false;
+}
+
+USphereComponent* AC_PlayerCharacter::getExecutionSphere() const
+{
+	if (m_pExecutionDetectSphere)
+		return m_pExecutionDetectSphere;
+
+	return nullptr;
 }
 
 AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()
@@ -952,37 +979,18 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 
 bool AC_PlayerCharacter::tryExcuteEnemy() const
 {
-	TArray<AActor*> Overlaps{};
+	if (!m_pExecutionCom)
+		return false;
 
-	if (m_pExecutionDetectSphere)
-		m_pExecutionDetectSphere->GetOverlappingActors(Overlaps, AC_EnemyCharacter::StaticClass());
+	if (m_eState == E_CombatState::Climb ||
+		m_eState == E_CombatState::Dodging ||
+		m_eState == E_CombatState::Executing ||
+		m_eState == E_CombatState::Guard)
+		return false;
 
-	UE_LOG(LogTemp, Warning, TEXT("Overlapping Count: %d"), Overlaps.Num());
-
-	for (AActor* pAct : Overlaps)
-	{
-		if (AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(pAct))
-		{
-			if (pEnemy->canBeExecuted())
-			{
-				if (m_pExecutionCom)
-				{
-					m_pExecutionCom->triggerExecution(pEnemy);
-					UE_LOG(LogTemp, Error, TEXT("TriggerExecution!!!"));
-					return true;
-				}
-			}
-
-		}
-
-	}
-	return false;
+	return m_pExecutionCom->tryExecuteCurrentTarget();
 }
 
-void AC_PlayerCharacter::checkExecutionCandidate()
-{
-
-}
 
 void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {

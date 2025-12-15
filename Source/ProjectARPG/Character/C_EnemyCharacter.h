@@ -23,24 +23,38 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UNiagaraComponent> m_ExecutionVFX;
 
+	UPROPERTY()
+	TObjectPtr<class UC_DetectComponent> m_DetectCom;
+
+	
+
 protected:
 	void BeginPlay() override;
 
 	
 
 public:
+	// UI 관련
 	void showHpBar(bool bShow);
 
 	void showExecutionVFX(bool bShow);
+
+	//인살 관련
 
 	void setCanBeExecuted(bool bCan);
 
 	bool canBeExecuted() const;
 
+	bool isUnawareOfPlayer() const;
+
+	//체간 붕괴
+
 	void onPostureBroken() override;
 
+	//공격
 	void attack();
 
+	//데미지 처리
 	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker) override;
 
 	

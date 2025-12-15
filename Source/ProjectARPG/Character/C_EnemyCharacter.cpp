@@ -12,7 +12,8 @@
 void AC_EnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	m_DetectCom = GetComponentByClass<UC_DetectComponent>();
 }
 
 void AC_EnemyCharacter::showHpBar(bool bShow)
@@ -42,6 +43,14 @@ bool AC_EnemyCharacter::canBeExecuted() const
 	return m_bCanbeExcuted && m_bIsPostureBroken;
 }
 
+bool AC_EnemyCharacter::isUnawareOfPlayer() const
+{
+	if (m_DetectCom)
+		return m_DetectCom->isDetecting();
+
+	return false;
+}
+
 void AC_EnemyCharacter::onPostureBroken()
 {
 	Super::onPostureBroken();
@@ -58,7 +67,6 @@ void AC_EnemyCharacter::onPostureBroken()
 
 
 	}
-
 
 }
 

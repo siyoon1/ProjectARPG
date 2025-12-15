@@ -502,7 +502,7 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 					{
 						if (pEnemy && pEnemy->canBeExecuted())
 						{
-							this->m_pExecutionCom->triggerExecution(pEnemy);
+							this->m_pExecutionCom->triggerExecution(pEnemy, E_ExecutionType::PostureBreak);
 						}
 					}),
 				0.12f,

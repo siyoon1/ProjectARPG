@@ -117,6 +117,9 @@ private:
 	//공격이 가능한지 체크
 	bool canAttack() const;
 
+	//인살이 가능한지 체크
+	bool canExecute() const;
+
 	//전방에 적 찾기
 	AActor* getCurrentEnemy();
 
@@ -149,9 +152,6 @@ private:
 	//인살 시도 함수
 	bool tryExcuteEnemy() const;
 
-	//인살 가능한 적 감지하는 함수
-	void checkExecutionCandidate();
-
 protected:
 	void sprint(const struct FInputActionInstance& sInst);
 	void sprintReleased(const FInputActionInstance& sInst);
@@ -172,6 +172,7 @@ public:
 	void setCombatState(E_CombatState eNewState) override;
 	void onComboTransition();
 	void resetCombo();
+	USphereComponent* getExecutionSphere() const;
 
 
 
