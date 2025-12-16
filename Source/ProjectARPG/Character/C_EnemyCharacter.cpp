@@ -43,12 +43,9 @@ bool AC_EnemyCharacter::canBeExecuted() const
 	return m_bCanbeExcuted && m_bIsPostureBroken;
 }
 
-bool AC_EnemyCharacter::isUnawareOfPlayer() const
+bool AC_EnemyCharacter::isAnawareOfPlayer() const
 {
-	if (m_DetectCom)
-		return m_DetectCom->isDetecting();
-
-	return false;
+	return m_DetectCom && m_DetectCom->isDetecting();
 }
 
 void AC_EnemyCharacter::onPostureBroken()

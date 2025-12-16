@@ -45,7 +45,7 @@ public:
 
 	bool canBeExecuted() const;
 
-	bool isUnawareOfPlayer() const;
+	bool isAnawareOfPlayer() const;
 
 	//Ã¼°£ ºØ±«
 

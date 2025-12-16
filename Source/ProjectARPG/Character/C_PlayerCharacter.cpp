@@ -59,6 +59,8 @@ void AC_PlayerCharacter::BeginPlay()
 
 	m_pGrappleCom = GetComponentByClass<UC_GrappleComponent>();
 
+	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
+
 
 }
 
@@ -296,12 +298,14 @@ void AC_PlayerCharacter::crouch(const FInputActionValue& sValue)
 	// 일반 앉기 토글
 	if (!m_bIsCrouch)
 	{
+		Crouch();
 		m_bIsCrouch = true;
 		setCombatState(E_CombatState::Crouch);
 		GetCharacterMovement()->MaxWalkSpeed = 250.f;
 	}
 	else
 	{
+		UnCrouch();
 		m_bIsCrouch = false;
 		setCombatState(E_CombatState::Idle);
 		GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;

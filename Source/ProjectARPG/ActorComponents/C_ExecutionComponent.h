@@ -13,18 +13,6 @@ enum class E_ExecutionType : uint8
 	Stealth
 };
 
-USTRUCT(BlueprintType)
-struct FS_ExecutionMontagePair
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage")
-	TObjectPtr<UAnimMontage> sAttackerMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage")
-	TObjectPtr<UAnimMontage> sEnemyMontage;
-};
-
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTARPG_API UC_ExecutionComponent : public UActorComponent
@@ -32,8 +20,10 @@ class PROJECTARPG_API UC_ExecutionComponent : public UActorComponent
 	GENERATED_BODY()
 
 private:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Execution", meta = (AllowPrivateAccess = "true"))
-	TArray<FS_ExecutionMontagePair> m_ExecutionMontages;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
+	UDataTable* m_pExecutionAnimsTable{};
+
+	struct FS_ExecutionAnim* m_pExecutionAnims{};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stun", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAnimMontage> m_pStunMontage;
@@ -46,6 +36,9 @@ private:
 
 	E_ExecutionType m_eCurrentExecutionType = E_ExecutionType::None;
 
+	UPROPERTY()
+	TArray<FS_ExecutionAnim> m_ExecutionMontages;
+
 public:	
 	// Sets default values for this component's properties
 	UC_ExecutionComponent();
@@ -53,6 +46,10 @@ public:
 private:
 	void updateExecutionTarget();
 	void setCurrentExecutableTarget(AC_EnemyCharacter* pNewTarget, E_ExecutionType eType);
+	bool isValidCurrentTarget() const;
+	void findNewExecutionTarget();
+	void clearCurrentTarget();
+	bool isInStealthRange(AC_EnemyCharacter* pEnemy) const;
 	bool isBehindTarget(AC_EnemyCharacter* pEnemy) const;
 	bool canStealthExecute(AC_EnemyCharacter* pEnemy) const;
 

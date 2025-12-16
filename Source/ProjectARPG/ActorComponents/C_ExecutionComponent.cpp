@@ -9,6 +9,7 @@
 #include "../Camera/C_PlayerCameraManager.h"
 #include "Components/SphereComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "ProjectARPG/Sturcts/FS_ExecutionAnim.h"
 
 // Sets default values for this component's properties
 UC_ExecutionComponent::UC_ExecutionComponent()
@@ -23,50 +24,32 @@ UC_ExecutionComponent::UC_ExecutionComponent()
 
 void UC_ExecutionComponent::updateExecutionTarget()
 {
-	TArray<AActor*> Candidates{};
+	if (!m_pOwnerPlayer)
+		return;
 
-	if (m_pOwnerPlayer)
-		m_pOwnerPlayer->getExecutionSphere()->GetOverlappingActors
-		(
-			Candidates,
-			AC_EnemyCharacter::StaticClass()
-		);
+	if (m_pOwnerPlayer->getCombatState() == E_CombatState::Executing)
+		return;
 
-	AC_EnemyCharacter* pBestTarget = nullptr;
-	E_ExecutionType eBestType = E_ExecutionType::None;
-
-	for (AActor* Act : Candidates)
+	USphereComponent* ExecSphere = m_pOwnerPlayer->getExecutionSphere();
+	if (!ExecSphere)
 	{
-		auto pEnemy = Cast<AC_EnemyCharacter>(Act);
-
-		if (!pEnemy)
-			continue;
-
-		if (pEnemy->canBeExecuted())
-		{
-			pBestTarget = pEnemy;
-			eBestType = E_ExecutionType::PostureBreak;
-			break;
-		}
-
-		if (canStealthExecute(pEnemy))
-		{
-			pBestTarget = pEnemy;
-			eBestType = E_ExecutionType::Stealth;
-			break;
-		}
-
-
-		pBestTarget = pEnemy;
-		break;
+		UE_LOG(LogTemp, Error, TEXT("ExecutionSphere is NULL"));
+		return;
 	}
 
-	setCurrentExecutableTarget(pBestTarget, eBestType);
+	if (isValidCurrentTarget())
+		return;
+
+
+
+
+	findNewExecutionTarget();
 }
 
 void UC_ExecutionComponent::setCurrentExecutableTarget(AC_EnemyCharacter* pNewTarget, E_ExecutionType eType)
 {
-	if (m_pCurrentExecutableTarget == pNewTarget && m_eCurrentExecutionType == eType)
+	if (m_pCurrentExecutableTarget == pNewTarget &&
+		m_eCurrentExecutionType == eType)
 		return;
 
 	if (m_pCurrentExecutableTarget)
@@ -75,45 +58,106 @@ void UC_ExecutionComponent::setCurrentExecutableTarget(AC_EnemyCharacter* pNewTa
 	m_pCurrentExecutableTarget = pNewTarget;
 	m_eCurrentExecutionType = eType;
 
-	if (m_pCurrentExecutableTarget)
+	if (m_pCurrentExecutableTarget && eType != E_ExecutionType::None)
 		m_pCurrentExecutableTarget->showExecutionVFX(true);
+}
+
+bool UC_ExecutionComponent::isValidCurrentTarget() const
+{
+	if (!m_pCurrentExecutableTarget)
+		return false;
+
+	switch (m_eCurrentExecutionType)
+	{
+	case E_ExecutionType::Stealth:
+		return canStealthExecute(m_pCurrentExecutableTarget);
+
+	case E_ExecutionType::PostureBreak:
+		return m_pCurrentExecutableTarget->canBeExecuted();
+
+	default:
+		return false;
+	}
+}
+
+void UC_ExecutionComponent::findNewExecutionTarget()
+{
+	if (!m_pOwnerPlayer || !m_pOwnerPlayer->getExecutionSphere())
+		return;
+
+	TArray<AActor*> Overlaps{};
+	m_pOwnerPlayer->getExecutionSphere()->GetOverlappingActors(
+		Overlaps,
+		AC_EnemyCharacter::StaticClass()
+	);
+
+	for (AActor* Act : Overlaps)
+	{
+		if (AC_EnemyCharacter* Enemy = Cast<AC_EnemyCharacter>(Act))
+		{
+			if (canStealthExecute(Enemy))
+			{
+				setCurrentExecutableTarget(Enemy, E_ExecutionType::Stealth);
+				return;
+			}
+
+			if (Enemy->canBeExecuted())
+			{
+				setCurrentExecutableTarget(Enemy, E_ExecutionType::PostureBreak);
+				return;
+			}
+		}
+	}
+
+	// 못 찾았으면 해제
+	clearCurrentTarget();
+}
+
+void UC_ExecutionComponent::clearCurrentTarget()
+{
+	setCurrentExecutableTarget(nullptr, E_ExecutionType::None);
+}
+
+bool UC_ExecutionComponent::isInStealthRange(AC_EnemyCharacter* pEnemy) const
+{
+	FVector BackPos =
+		pEnemy->GetActorLocation() -
+		pEnemy->GetActorForwardVector() * 80.f;
+
+	float Dist =
+		FVector::Dist(m_pOwnerPlayer->GetActorLocation(), BackPos);
+
+	return Dist < 150.f;
 }
 
 bool UC_ExecutionComponent::isBehindTarget(AC_EnemyCharacter* pEnemy) const
 {
-	if (!pEnemy || !m_pOwnerPlayer)
-		return false;
+	FVector EnemyToPlayer =
+		(m_pOwnerPlayer->GetActorLocation() - pEnemy->GetActorLocation()).GetSafeNormal();
 
-	const FVector vEnemyForward = pEnemy->GetActorForwardVector();
-	const FVector vToPlayer = (m_pOwnerPlayer->GetActorLocation() - pEnemy->GetActorLocation()).GetSafeNormal();
+	float Dot =
+		FVector::DotProduct(pEnemy->GetActorForwardVector(), EnemyToPlayer);
 
-	const float fDot = FVector::DotProduct(vEnemyForward, vToPlayer);
-
-
-
-	return fDot < -0.6f;
+	return Dot < -0.5f;
 }
 
 bool UC_ExecutionComponent::canStealthExecute(AC_EnemyCharacter* pEnemy) const
 {
+
 	if (!pEnemy || !m_pOwnerPlayer)
 		return false;
 
-	if (m_pOwnerPlayer->getCombatState() != E_CombatState::Crouch)
+	if (!m_pOwnerPlayer->GetCharacterMovement()->IsCrouching())
 		return false;
 
-	if (!pEnemy->isUnawareOfPlayer())
+	if (pEnemy->isAnawareOfPlayer())
 		return false;
 
 	if (!isBehindTarget(pEnemy))
 		return false;
 
-	const float fDist = FVector::Dist(m_pOwnerPlayer->GetActorLocation(), pEnemy->GetActorLocation());
+	return isInStealthRange(pEnemy);
 
-
-
-
-	return fDist < 130.f;
 }
 
 
@@ -129,6 +173,24 @@ void UC_ExecutionComponent::BeginPlay()
 
 	if (pChar)
 		pChar->showExecutionVFX(false);
+
+	if (!m_pExecutionAnimsTable)
+		return;
+
+	m_ExecutionMontages.Empty();
+
+	static const FString Context(TEXT("ExecutionAnims Load"));
+	TArray<FS_ExecutionAnim*> Rows;
+	m_pExecutionAnimsTable->GetAllRows(Context, Rows);
+
+
+	for (FS_ExecutionAnim* Row : Rows)
+	{
+		if (Row)
+		{
+			m_ExecutionMontages.Add(*Row);
+		}
+	}
 	
 }
 
@@ -170,20 +232,21 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim,
 		if (m_ExecutionMontages.Num() > 0)
 		{
 			int32 nIndex = FMath::RandRange(0, m_ExecutionMontages.Num() - 1);
-			const FS_ExecutionMontagePair& sExecutionPair = m_ExecutionMontages[nIndex];
+			const FS_ExecutionAnim& sExecutionPair = m_ExecutionMontages[nIndex];
 
 			if (UAnimInstance* AttackerAnim = pAttacker->GetMesh()->GetAnimInstance())
 				if (UAnimInstance* EnemyAnim = pEnemy->GetMesh()->GetAnimInstance())
 				{
-					AttackerAnim->Montage_Play(sExecutionPair.sAttackerMontage);
-					EnemyAnim->Montage_Play(sExecutionPair.sEnemyMontage);
+					pAttacker->setCombatState(E_CombatState::Executing);
+					AttackerAnim->Montage_Play(sExecutionPair.AttackerExecutionMontage);
+					EnemyAnim->Montage_Play(sExecutionPair.VictimExecutionMontage);
 
 					if (APlayerController* PC = Cast<APlayerController>(pAttacker->GetController()))
 						if (AC_PlayerCameraManager* PCM =
 							Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager))
 						{
 							PCM->executionEffect(
-								sExecutionPair.sAttackerMontage->GetPlayLength());
+								sExecutionPair.AttackerExecutionMontage->GetPlayLength());
 						}
 
 					FOnMontageEnded OnEnd;
@@ -194,7 +257,7 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim,
 
 					AttackerAnim->Montage_SetEndDelegate(
 						OnEnd,
-						sExecutionPair.sAttackerMontage);
+						sExecutionPair.AttackerExecutionMontage);
 				}
 		}
 		break;
@@ -210,6 +273,12 @@ void UC_ExecutionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
+
+	if (!m_pOwnerPlayer)
+		return;
+
+	if (m_pOwnerPlayer->getCombatState() == E_CombatState::Executing)
+		return;
 
 	updateExecutionTarget();
 }
@@ -240,41 +309,11 @@ void UC_ExecutionComponent::triggerExecution(APawn* pVictim, E_ExecutionType eTy
 
 bool UC_ExecutionComponent::tryExecuteCurrentTarget()
 {
-	if (!m_pCurrentExecutableTarget || !m_pOwnerPlayer)
+	if (!isValidCurrentTarget())
 		return false;
 
-	UE_LOG(LogTemp, Warning,
-		TEXT("TryExec | Type=%d Crouch=%d Unaware=%d"),
-		(int)m_eCurrentExecutionType,
-		m_pOwnerPlayer->bIsCrouched,
-		m_pCurrentExecutableTarget->isUnawareOfPlayer());
-
-
-	switch (m_eCurrentExecutionType)
-	{
-	case E_ExecutionType::Stealth:
-	{
-		if (m_pOwnerPlayer->getCombatState() != E_CombatState::Crouch)
-			return false;
-
-		if (!m_pCurrentExecutableTarget->isUnawareOfPlayer())
-			return false;
-
-		triggerExecution(m_pCurrentExecutableTarget, E_ExecutionType::Stealth);
-		return true;
-	}
-		
-
-	case E_ExecutionType::PostureBreak:
-	{
-
-		triggerExecution(m_pCurrentExecutableTarget, E_ExecutionType::PostureBreak);
-		return true;
-	}
-	}
-
-	
-	return false;
+	triggerExecution(m_pCurrentExecutableTarget, m_eCurrentExecutionType);
+	return true;
 }
 
 void UC_ExecutionComponent::playStunMontage()
