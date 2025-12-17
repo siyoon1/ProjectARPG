@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "C_GrappleComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGrappleStateChanged, bool, bCanGrapple, AC_GrapplePoint*, pTarget);
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTARPG_API UC_GrappleComponent : public UActorComponent
@@ -20,7 +22,9 @@ private:
 	TObjectPtr<UAnimMontage> m_pGrappleEndMontage;
 
 private:
+	bool m_bCachedCanGrapple = false;
 	bool m_bIsPulling = false;
+
 
 	FVector m_vPullDir{};
 	FVector m_vOwnerPos{};
@@ -53,10 +57,18 @@ private:
 	FVector m_vRopeFireStart{};
 	FVector m_vRopeFireEnd{};
 
+public:
+	UPROPERTY(BlueprintAssignable)
+	FOnGrappleStateChanged m_onGrappleStateChanged;
+
 private:
 	void endPull();
 
 	bool isInView(class UCameraComponent* pCamera, AC_GrapplePoint* pTarget);
+
+	bool canGrapple(AC_GrapplePoint*& outTarget);
+
+	bool hasLineOfSight(AC_GrapplePoint* pTarget) const;
 
 	AC_GrapplePoint* findBestGrapplePoint();
 

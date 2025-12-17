@@ -64,6 +64,13 @@ private:
 	UPROPERTY()
 	class AC_EnemyCharacter* m_pCurrentExecutionTarget = nullptr;
 
+	//위젯 관련
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> m_GrappleWidgetClass;
+
+	UPROPERTY()
+	UUserWidget* m_GrappleWidget;
+
 	//플레이어 연속 공격 관련 변수
 	int32 m_nCurrentComboIndex = 0;
 	int32 m_nMaxComboIndex = 5;

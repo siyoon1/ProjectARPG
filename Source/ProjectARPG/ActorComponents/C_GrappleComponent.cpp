@@ -19,6 +19,7 @@ void UC_GrappleComponent::endPull()
 	m_pOwner->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 	m_pOwner->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	m_pOwner->initJump();
+	m_bCachedCanGrapple = false;
 }
 
 bool UC_GrappleComponent::isInView(UCameraComponent* pCamera, AC_GrapplePoint* pTarget)
@@ -27,6 +28,62 @@ bool UC_GrappleComponent::isInView(UCameraComponent* pCamera, AC_GrapplePoint* p
 	float fDot = FVector::DotProduct(pCamera->GetForwardVector(), vToTarget);
 
 	return fDot > 0.7f;
+}
+
+bool UC_GrappleComponent::canGrapple(AC_GrapplePoint*& outTarget)
+{
+	outTarget = nullptr;
+
+	if (!m_pOwner)
+		return false;
+
+	if (m_bIsPulling || m_bIsFiringRope)
+		return false;
+
+	AC_GrapplePoint* pTarget = findBestGrapplePoint();
+
+	if (!pTarget)
+		return false;
+
+	float fDist = FVector::Dist(m_pOwner->GetActorLocation(), pTarget->GetActorLocation());
+
+	if (fDist < 150.f || fDist > 2000.f)
+		return false;
+
+	if (!hasLineOfSight(pTarget))
+		return false;
+
+	outTarget = pTarget;
+	return true;
+}
+
+bool UC_GrappleComponent::hasLineOfSight(AC_GrapplePoint* pTarget) const
+{
+	FHitResult HitResult{};
+
+	FVector vStart = m_pOwner->getFollowCamera()->GetComponentLocation();
+	FVector vEnd = pTarget->GetActorLocation();
+
+	FCollisionQueryParams Params{};
+
+	Params.AddIgnoredActor(m_pOwner);
+
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel
+	(
+		HitResult,
+		vStart,
+		vEnd,
+		ECC_Visibility,
+		Params
+	);
+
+
+	if (!bHit)
+		return true;
+
+
+	return HitResult.GetActor() == pTarget;
 }
 
 AC_GrapplePoint* UC_GrappleComponent::findBestGrapplePoint()
@@ -112,6 +169,8 @@ void UC_GrappleComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
+	m_bCachedCanGrapple = false;
+
 	m_pOwner = Cast<AC_PlayerCharacter>(GetOwner());
 	if (!m_pOwner)
 		return;
@@ -216,7 +275,14 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	AC_GrapplePoint* pTarget = nullptr;
+	bool bCanGrapple = canGrapple(pTarget);
+
+	if (bCanGrapple != m_bCachedCanGrapple)
+	{
+		m_bCachedCanGrapple = bCanGrapple;
+		m_onGrappleStateChanged.Broadcast(bCanGrapple, pTarget);
+	}
 
 	// 로프 발사
 
