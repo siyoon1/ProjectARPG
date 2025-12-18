@@ -74,7 +74,7 @@ bool UC_GrappleComponent::hasLineOfSight(AC_GrapplePoint* pTarget) const
 		HitResult,
 		vStart,
 		vEnd,
-		ECC_Visibility,
+		ECC_GameTraceChannel5,
 		Params
 	);
 
