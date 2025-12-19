@@ -55,9 +55,6 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> m_pGrappleAction;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> m_pOpenMenuAction;
-
 	UPROPERTY()
 	class USphereComponent* m_pExecutionDetectSphere{};
 
@@ -177,8 +174,7 @@ protected:
 	void crouch(const FInputActionValue& sValue);
 	void interact(const FInputActionValue& sValue);
 	void grapple(const FInputActionValue& sValue);
-	UFUNCTION(BlueprintNativeEvent)
-	void openMenu(const FInputActionValue& sValue);
+
 
 public:
 	void setCombatState(E_CombatState eNewState) override;

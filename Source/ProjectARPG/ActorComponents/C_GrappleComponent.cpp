@@ -14,10 +14,23 @@ void UC_GrappleComponent::endPull()
 {
 
 	m_bIsPulling = false;
+
 	m_pCable->SetVisibility(false);
 	m_pCurrentTarget = nullptr;
+
+	FHitResult Hit;
+	FVector Start = m_pOwner->GetActorLocation();
+	FVector End = Start - FVector(0, 0, 500.f);
+
+	if (GetWorld()->LineTraceSingleByChannel(
+		Hit, Start, End, ECC_Visibility))
+	{
+		m_pOwner->SetActorLocation(Hit.Location);
+	}
+
+
 	m_pOwner->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-	m_pOwner->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
 	m_pOwner->initJump();
 	m_bCachedCanGrapple = false;
 }
@@ -255,7 +268,6 @@ void UC_GrappleComponent::startPull(AC_GrapplePoint* pTarget)
 
 	m_bIsPulling = true;
 	m_pOwner->GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-	m_pOwner->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 
 	m_vPullDir = (m_vTargetPos - m_vOwnerPos).GetSafeNormal();
@@ -331,7 +343,7 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	FRotator TargetRot = (m_vTargetPos - m_pOwner->GetActorLocation()).Rotation();
 	FRotator NewRot = FMath::RInterpTo(m_pOwner->GetActorRotation(), TargetRot, DeltaTime, 10.f);
-	m_pOwner->SetActorRotation(NewRot);
+	//m_pOwner->SetActorRotation(NewRot);
 
 	m_pOwner->SetActorLocation(Pos, false);
 
