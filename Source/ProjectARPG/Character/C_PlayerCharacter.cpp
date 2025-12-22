@@ -37,6 +37,12 @@ void AC_PlayerCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = m_fDefaultCrouched;
+	GetCharacterMovement()->MaxAcceleration = m_fDefaultAcceleration;
+	GetCharacterMovement()->BrakingDecelerationWalking = m_fDefaultBraking;
+	GetCharacterMovement()->GravityScale = m_fDefaultGravity;
+	GetCharacterMovement()->JumpZVelocity = m_fDefaultJumpVelocity;
+	GetCharacterMovement()->AirControl = m_fDefaultAirControl;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -44,7 +50,7 @@ void AC_PlayerCharacter::BeginPlay()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 800.f, 0.f);
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 720.f, 0.f);
 
 	if (APlayerController* pPlayerCon = Cast<APlayerController>(Controller))
 	{
@@ -721,8 +727,8 @@ void AC_PlayerCharacter::setWallGrab(bool bEnable)
 		m_eState = E_CombatState::Idle;
 
 		
-		GetCharacterMovement()->GravityScale = 1.f;
-		GetCharacterMovement()->AirControl = 0.5f;
+		GetCharacterMovement()->GravityScale = m_fDefaultGravity;
+		GetCharacterMovement()->AirControl = m_fDefaultAirControl;
 
 		bUseControllerRotationYaw = true;
 

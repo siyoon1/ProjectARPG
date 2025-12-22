@@ -78,8 +78,14 @@ private:
 	float m_fLastAttackInputTime = 0.f;
 	float m_fInputBuffer = 0.25f;
 
-	//플레이어 기본 이동속도
-	float m_fDefaultSpeed = 800.f;
+	//플레이어 기본 이동수치 관련 변수
+	float m_fDefaultSpeed = 620.f;
+	float m_fDefaultCrouched = 300.f;
+	float m_fDefaultAcceleration = 4000.f;
+	float m_fDefaultBraking = 4200.f;
+	float m_fDefaultGravity = 2.f;
+	float m_fDefaultJumpVelocity = 560.f;
+	float m_fDefaultAirControl = 0.35f;
 
 	//플레이어 락온 관련 변수
 	AC_CombatCharacter* m_pCurrentLockOnTarget{};

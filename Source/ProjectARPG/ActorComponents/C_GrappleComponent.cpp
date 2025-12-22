@@ -60,7 +60,7 @@ bool UC_GrappleComponent::canGrapple(AC_GrapplePoint*& outTarget)
 
 	float fDist = FVector::Dist(m_pOwner->GetActorLocation(), pTarget->GetActorLocation());
 
-	if (fDist < 150.f || fDist > 2000.f)
+	if (fDist < 500.f || fDist > 2000.f)
 		return false;
 
 	if (!hasLineOfSight(pTarget))
@@ -228,7 +228,7 @@ void UC_GrappleComponent::tryStartGrapple()
 
 	float dist = FVector::Dist2D(m_pOwner->GetActorLocation(), pTarget->GetActorLocation());
 
-	float MinPullDistance = 150.f; // 코앞에서 안되게 하고 싶은 거리
+	float MinPullDistance = 500.f; // 코앞에서 안되게 하고 싶은 거리
 	if (dist < MinPullDistance)
 		return; // 너무 가까우면 Pulling 금지
 
@@ -346,6 +346,7 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	//m_pOwner->SetActorRotation(NewRot);
 
 	m_pOwner->SetActorLocation(Pos, false);
+	m_pOwner->SetActorRotation(TargetRot);
 
 	if (Alpha >= 1.0f || m_pCurrentTarget->isOverlapSphere())
 	{
