@@ -7,6 +7,8 @@
 #include "C_ItemObject.h"
 #include "C_Inventory.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryChanged);
+
 USTRUCT(BlueprintType)
 struct FS_InventorySlot
 {
@@ -33,6 +35,9 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FS_InventorySlot> m_Slots;
 
+	UPROPERTY(BlueprintAssignable)
+	FOnInventoryChanged m_onInventoryChanged;
+
 
 public:	
 	// Sets default values for this component's properties
@@ -51,4 +56,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool removeItem(FName ItemID, int32 nCount);
+
+	UFUNCTION(BlueprintCallable)
+	TArray<FS_InventorySlot>& getSlots();
 };

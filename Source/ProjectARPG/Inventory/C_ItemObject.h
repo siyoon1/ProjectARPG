@@ -35,4 +35,13 @@ public:
 	int32 m_MaxStack;
 
 
+public:
+	UFUNCTION(BlueprintCallable)
+	FText getItemName() const;
+
+	UFUNCTION(BlueprintCallable)
+	UTexture2D* getItemIcon() const;
+
+
+
 };

@@ -98,12 +98,41 @@ bool UC_Inventory::addItem(UC_ItemObject* pItem, int32 nCount)
 		);
 	}
 
+	m_onInventoryChanged.Broadcast();
 
 	return true;
 }
 
 bool UC_Inventory::removeItem(FName ItemID, int32 nCount)
 {
+	if (nCount <= 0)
+		return false;
+
+	int32 nRemaining = nCount;
+
+
+	for (FS_InventorySlot& slot : m_Slots)
+	{
+		if (!slot.Item)
+			continue;
+
+		if (slot.nCount < 0)
+			return false;
+
+
+		if (ItemID == slot.Item->m_ItemID)
+		{
+			int32 nSpace = slot.Item->m_MaxStack + nCount;
+
+		}
+	}
+
+
 	return false;
+}
+
+TArray<FS_InventorySlot>& UC_Inventory::getSlots()
+{
+	return m_Slots;
 }
 
