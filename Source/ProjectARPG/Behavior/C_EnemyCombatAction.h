@@ -4,17 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "C_EnemyAttack.generated.h"
+#include "C_EnemyCombatAction.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTARPG_API UC_EnemyAttack : public UBTTaskNode
+class PROJECTARPG_API UC_EnemyCombatAction : public UBTTaskNode
 {
 	GENERATED_BODY()
 
 public:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	
+	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 };

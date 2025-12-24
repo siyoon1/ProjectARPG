@@ -43,8 +43,6 @@ private:
 
 
 	// 로프 관련
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
-	class UCableComponent* m_pCable{};
 
 	bool m_bIsFiringRope = false;
 
@@ -58,6 +56,12 @@ private:
 	FVector m_vRopeFireEnd{};
 
 public:
+	UPROPERTY(EditDefaultsOnly)
+	class UNiagaraSystem* m_pGrappleBeamSystem{};
+
+	UPROPERTY()
+	class UNiagaraComponent* m_pBeamComp{};
+
 	UPROPERTY(BlueprintAssignable)
 	FOnGrappleStateChanged m_onGrappleStateChanged;
 

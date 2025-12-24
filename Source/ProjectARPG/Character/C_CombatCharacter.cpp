@@ -325,7 +325,11 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 	m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
 	UE_LOG(LogTemp, Warning, TEXT("TakeDamage: HP %.1f / %.1f"), m_fCurrentHp, m_fMaxHp);
 
-
+	if (m_fCurrentHp <= 0)
+	{
+		onPostureBroken();
+		m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
+	}
 
 	// Posture Ã³¸®
 	if (m_fCurrentPosture > 0.f)

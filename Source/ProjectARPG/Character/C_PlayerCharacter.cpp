@@ -81,6 +81,12 @@ void AC_PlayerCharacter::setCombatState(E_CombatState eNewState)
 }
 
 
+E_CombatState AC_PlayerCharacter::getCombatState() const
+{
+	return m_eState;
+}
+
+
 
 void AC_PlayerCharacter::look(const FInputActionValue& sValue)
 {
@@ -274,6 +280,9 @@ void AC_PlayerCharacter::guard(const FInputActionInstance& sInst)
 	if (!pAnim)
 		return;
 
+	if (m_eState != E_CombatState::Idle)
+		return;
+
 	FVector vInputDir = GetLastMovementInputVector().GetSafeNormal();
 
 	const float fElapsedTime = sInst.GetElapsedTime();
@@ -284,7 +293,7 @@ void AC_PlayerCharacter::guard(const FInputActionInstance& sInst)
 	{
 		if (m_eState != E_CombatState::Guard)
 		{
-			m_eState = E_CombatState::Guard;
+			setCombatState(E_CombatState::Guard);
 			pAnim->setIsGuarding(true);
 			GetCharacterMovement()->MaxWalkSpeed = 400.f;
 		}
@@ -348,6 +357,9 @@ void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
 void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 {
 	UE_LOG(LogTemp, Warning, TEXT(">>> [Player] Parry Input Triggered"));
+
+	if (m_eState != E_CombatState::Idle)
+		return;
 
 	if (AActor* pEnemy = getCurrentEnemy())
 	{

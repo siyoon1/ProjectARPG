@@ -6,7 +6,6 @@
 #include "C_CombatCharacter.h"
 #include "C_PlayerCharacter.generated.h"
 
-
 /**
  * 
  */
@@ -165,6 +164,7 @@ private:
 	//인살 시도 함수
 	bool tryExcuteEnemy() const;
 
+
 protected:
 	void sprint(const struct FInputActionInstance& sInst);
 	void sprintReleased(const FInputActionInstance& sInst);
@@ -184,6 +184,7 @@ protected:
 
 public:
 	void setCombatState(E_CombatState eNewState) override;
+	E_CombatState getCombatState() const;
 	void onComboTransition();
 	void resetCombo();
 	USphereComponent* getExecutionSphere() const;

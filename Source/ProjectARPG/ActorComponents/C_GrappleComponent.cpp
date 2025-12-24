@@ -7,15 +7,21 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "CableComponent.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "Components/CapsuleComponent.h"
 
 void UC_GrappleComponent::endPull()
 {
-
 	m_bIsPulling = false;
 
-	m_pCable->SetVisibility(false);
+	if (m_pBeamComp)
+	{
+		m_pBeamComp->Deactivate();
+		m_pBeamComp = nullptr;
+	}
+
 	m_pCurrentTarget = nullptr;
 
 	FHitResult Hit;
@@ -149,7 +155,7 @@ AC_GrapplePoint* UC_GrappleComponent::findBestGrapplePoint()
 
 void UC_GrappleComponent::startFireRope(AC_GrapplePoint* pTarget)
 {
-	if (!m_pOwner || !m_pCable)
+	if (!m_pOwner || !pTarget || !m_pGrappleBeamSystem)
 		return;
 
 	m_pCurrentTarget = pTarget;
@@ -160,9 +166,25 @@ void UC_GrappleComponent::startFireRope(AC_GrapplePoint* pTarget)
 	m_vRopeFireStart = m_pOwner->GetMesh()->GetSocketLocation("hand_r");
 	m_vRopeFireEnd = pTarget->GetActorLocation();
 
-	m_pCable->SetVisibility(true);
-	m_pCable->bAttachEnd = false;
-	m_pCable->EndLocation = FVector::ZeroVector;
+	m_pBeamComp = UNiagaraFunctionLibrary::SpawnSystemAttached
+	(
+		m_pGrappleBeamSystem,
+		m_pOwner->GetMesh(),
+		"hand_r",
+		FVector::ZeroVector,
+		FRotator::ZeroRotator,
+		EAttachLocation::SnapToTarget,
+		true
+	);
+
+	m_pBeamComp->SetVectorParameter
+	(
+		"TargetPos",
+		m_pOwner->GetMesh()->GetSocketLocation("hand_r")
+	);
+
+	m_pBeamComp->SetFloatParameter("BeamAlpha", 0.f);
+
 }
 
 // Sets default values for this component's properties
@@ -187,26 +209,6 @@ void UC_GrappleComponent::BeginPlay()
 	m_pOwner = Cast<AC_PlayerCharacter>(GetOwner());
 	if (!m_pOwner)
 		return;
-
-	m_pCable = NewObject<UCableComponent>(this, UCableComponent::StaticClass());
-
-	m_pCable->RegisterComponent();
-
-	// 소켓 부착 금지 ? 월드에 둔다
-	m_pCable->AttachToComponent(
-		m_pOwner->GetRootComponent(),
-		FAttachmentTransformRules::KeepWorldTransform
-	);
-
-	m_pCable->bAttachEnd = false;
-	m_pCable->CableLength = 300.f;
-	m_pCable->NumSegments = 4;
-	m_pCable->CableWidth = 3.f;
-	m_pCable->CableGravityScale = 0.f;
-	m_pCable->bEnableCollision = false;
-	m_pCable->bEnableStiffness = true;
-	m_pCable->SolverIterations = 16;
-	m_pCable->SetVisibility(false);
 }
 
 
@@ -245,36 +247,25 @@ void UC_GrappleComponent::tryStartGrapple()
 
 void UC_GrappleComponent::startPull(AC_GrapplePoint* pTarget)
 {
-	m_pCurrentTarget = pTarget;
-
-	if (!m_pOwner)
+	if (!m_pOwner || !pTarget)
 		return;
 
-	if (m_pCable)
-	{
-		m_pCable->bAttachEnd = true;
-		m_pCable->SetAttachEndToComponent(
-			pTarget->GetRootComponent(),
-			NAME_None
-		);
-	}
+	m_bIsPulling = true;
+	m_pCurrentTarget = pTarget;
 
 	m_vOwnerPos = m_pOwner->GetActorLocation();
 	m_vTargetPos = m_pCurrentTarget->GetActorLocation();
 
+	m_fElapsed = 0.f;
+	m_fDuration = 0.8f;
+
 
 	m_pOwner->GetCharacterMovement()->Velocity = FVector::ZeroVector;
 	m_pOwner->GetCharacterMovement()->StopMovementImmediately();
-
-	m_bIsPulling = true;
 	m_pOwner->GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 
-
-	m_vPullDir = (m_vTargetPos - m_vOwnerPos).GetSafeNormal();
-
-
-	m_fElapsed = 0.f;
-	m_fDuration = 0.8f;
+	m_pBeamComp->SetVectorParameter("TargetPos", m_vTargetPos);
+	m_pBeamComp->SetFloatParameter("BeamAlpha", 1.f);
 }
 
 bool UC_GrappleComponent::isPulling() const
@@ -300,23 +291,20 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	if (m_bIsFiringRope)
 	{
-
-		FVector HandPos = m_pOwner->GetMesh()->GetSocketLocation("hand_r");
-		m_pCable->SetWorldLocation(HandPos);
-
 		m_fRopeFireAlpha += m_fRopeFireSpeed * DeltaTime;
 		float fAlpha = FMath::Clamp(m_fRopeFireAlpha, 0.f, 1.f);
+
+		FVector vStart = m_pOwner->GetMesh()->GetSocketLocation("hand_r");
+		FVector vEnd = m_pCurrentTarget->GetActorLocation();
+		FVector vCur = FMath::Lerp(vStart, vEnd, fAlpha);
+
+		m_pBeamComp->SetVectorParameter("TargetPos", vCur);
+		m_pBeamComp->SetFloatParameter("BeamAlpha", fAlpha);
 
 
 		if (fAlpha >= 1.f)
 		{
 			m_bIsFiringRope = false;
-
-			m_pCable->bAttachEnd = true;
-			m_pCable->SetAttachEndToComponent(
-				m_pCurrentTarget->GetRootComponent(),
-				NAME_None
-			);
 
 			startPull(m_pCurrentTarget);
 		}
@@ -341,12 +329,18 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	float Height = 300.f;
 	Pos.Z += Height * FMath::Sin(Alpha * PI);
 
+
+
 	FRotator TargetRot = (m_vTargetPos - m_pOwner->GetActorLocation()).Rotation();
-	FRotator NewRot = FMath::RInterpTo(m_pOwner->GetActorRotation(), TargetRot, DeltaTime, 10.f);
-	//m_pOwner->SetActorRotation(NewRot);
+
 
 	m_pOwner->SetActorLocation(Pos, false);
 	m_pOwner->SetActorRotation(TargetRot);
+
+	m_pBeamComp->SetFloatParameter(
+		"NoiseStrength",
+		(1.f - Alpha)
+	);
 
 	if (Alpha >= 1.0f || m_pCurrentTarget->isOverlapSphere())
 	{
