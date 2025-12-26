@@ -19,29 +19,8 @@ EBTNodeResult::Type UC_EnemyCombatAction::ExecuteTask(UBehaviorTreeComponent& Ow
 	if (!pEnemy)
 		return EBTNodeResult::Failed;
 
-	pEnemy->executeCombatAction(); // 공격 시도
 
-	if (pEnemy->isExecutingAction())
-		return EBTNodeResult::InProgress;
-
+	pEnemy->setInCombat(true);
 	return EBTNodeResult::Succeeded;
 	
-
-}
-
-void UC_EnemyCombatAction::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
-{
-	AC_EnemyCharacter* Enemy =
-		Cast<AC_EnemyCharacter>(OwnerComp.GetAIOwner()->GetPawn());
-
-	if (!Enemy)
-	{
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
-		return;
-	}
-
-	if (Enemy->isActionFinished())
-	{
-		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-	}
 }

@@ -234,6 +234,7 @@ void UC_GrappleComponent::tryStartGrapple()
 	if (dist < MinPullDistance)
 		return; // 너무 가까우면 Pulling 금지
 
+	
 	startFireRope(pTarget);
 
 
@@ -289,8 +290,13 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	// 로프 발사
 
+
 	if (m_bIsFiringRope)
 	{
+		FRotator TargetRot = (m_vTargetPos - m_pOwner->GetActorLocation()).Rotation();
+		FRotator rNewRot = FMath::RInterpTo(m_pOwner->GetActorRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 10.f);
+		m_pOwner->SetActorRotation(rNewRot);
+
 		m_fRopeFireAlpha += m_fRopeFireSpeed * DeltaTime;
 		float fAlpha = FMath::Clamp(m_fRopeFireAlpha, 0.f, 1.f);
 
@@ -330,10 +336,7 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	Pos.Z += Height * FMath::Sin(Alpha * PI);
 
 
-
 	FRotator TargetRot = (m_vTargetPos - m_pOwner->GetActorLocation()).Rotation();
-
-
 	m_pOwner->SetActorLocation(Pos, false);
 	m_pOwner->SetActorRotation(TargetRot);
 

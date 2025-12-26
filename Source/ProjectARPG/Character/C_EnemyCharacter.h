@@ -44,7 +44,14 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UC_DetectComponent> m_DetectCom;
 
+
+	bool m_bInCombat = false;
+
 	bool m_bIsExecutingAction = false;
+	bool m_bActionStarted = false;
+
+	float m_nextActionTime = 0.f;
+	float m_actionInterval = 0.25f;
 
 	FTimerHandle m_guardHandle;
 
@@ -69,6 +76,8 @@ protected:
 	
 
 public:
+	void Tick(float DeltaTime) override;
+
 	// UI 관련
 	void showHpBar(bool bShow);
 
@@ -87,19 +96,31 @@ public:
 	void onPostureBroken() override;
 
 	//행동
+	void updateCombatAI(float fDelta);
+
 	void executeCombatAction();
 
-	bool isExecutingAction() const;
+	void setInCombat(bool bEnable);
 
-	bool isActionFinished() const;
+	bool isExecutingAction() const;
 
 	void endGuard();
 	void endAttack();
 
 	void attack();
 
+	UFUNCTION(BlueprintCallable)
+	bool isGuard() const;
+
+	void onParryFinished();
+
+	//죽음
+	void onDeath() override;
+
 	//데미지 처리
 	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker) override;
+
+	void tryParry_Implementation(AActor* ParryOwner) override;
 
 	
 };

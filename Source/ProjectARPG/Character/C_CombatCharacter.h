@@ -88,6 +88,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "trace", meta = (AllowPrivateAccess = "true"))
 	float m_fPostureDamage = 0.f;
 
+	// 생명력 점 (보스용)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 m_MaxLifeNodes = 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int32 m_CurrentLifeNodes = 1;
+
 	FVector m_vLastTraceStart{};
 	FVector m_vLastTraceEnd{};
 	TArray<AActor*> m_HitActors{};
@@ -95,6 +102,9 @@ protected:
 	E_AttackType m_eAttackType = E_AttackType::Normal;
 
 protected:
+	bool m_bIsDead = false;
+	bool m_bExecutionAvailable = false;
+
 	bool m_bIsPostureBroken = false;
 	bool m_bIsRecoveryDelay = false;
 	bool m_bWasParried = false;
@@ -106,6 +116,7 @@ protected:
 	UAnimMontage* m_lastMontage = nullptr;
 	float m_fOriginalPlayRate = 1.f;
 	FTimerHandle m_hitStopTimerHandle;
+	bool m_bHitStopActive = false;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
@@ -135,6 +146,8 @@ protected:
 
 	virtual void onPostureBroken();
 
+	void enterExecutionReady();
+
 	void reduceHp(float fDamage);
 	void reducePosture(float fDamage);
 
@@ -154,11 +167,19 @@ public:
 	virtual void setCombatState(E_CombatState eNewState);
 	E_CombatState getCombatState() const;
 
-	bool isGuardingFront(AActor* pAttacker) const;
 
+	// 가드
+	bool isGuardingFront(AActor* pAttacker) const;
 	void setGuard(bool bSet);
 	bool isGuard() const;
 
+	bool canAct() const;
+
+	virtual bool isInvincibleAgainst(AActor* pAttacker) const;
+
+	// 죽음
+	virtual void onDeath();
+	bool isDead() const;
 	
 
 	UFUNCTION(BlueprintCallable)

@@ -10,6 +10,8 @@
 #include "Components/SphereComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "ProjectARPG/Sturcts/FS_ExecutionAnim.h"
+#include "AIController.h"
+#include "BrainComponent.h"
 
 // Sets default values for this component's properties
 UC_ExecutionComponent::UC_ExecutionComponent()
@@ -209,11 +211,19 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim,
 		*pAttacker->GetName(), *pEnemy->GetName());
 
 	pAttacker->setCombatState(E_CombatState::Executing);
+	pEnemy->setCombatState(E_CombatState::Executing);
+
 	pAttacker->DisableInput(nullptr);
 	pAttacker->GetCharacterMovement()->StopMovementImmediately();
 
 	pEnemy->setCanBeExecuted(false);
 	pEnemy->GetCharacterMovement()->DisableMovement();
+
+	if (AAIController* AICon = Cast<AAIController>(pEnemy->GetController()))
+	{
+		AICon->StopMovement();
+		AICon->BrainComponent->StopLogic(TEXT("Executed"));
+	}
 
 	switch (eType)
 	{
@@ -303,6 +313,8 @@ void UC_ExecutionComponent::triggerExecution(APawn* pVictim, E_ExecutionType eTy
 		return;
 
 
+
+
 	performExecution(pOwner, pVictim, eType);
 
 }
@@ -338,7 +350,7 @@ void UC_ExecutionComponent::onExecutionFinished(UAnimMontage* Montage, bool bInt
 	if (!pOwner)
 		return;
 
-	pVictim->setCombatState(E_CombatState::Die);
+	pVictim->onDeath();
 
 	pOwner->EnableInput(nullptr);
 	pOwner->setCombatState(E_CombatState::Idle);

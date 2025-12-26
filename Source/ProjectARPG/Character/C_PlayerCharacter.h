@@ -122,6 +122,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	bool isInvincibleAgainst(AActor* pAttacker) const override;
+
 private:
 	//콤보 공격 실행
 	void playCombo(int32 nComboIndex);

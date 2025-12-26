@@ -204,8 +204,6 @@ void UC_DetectComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 		m_TimeSinceLastDetect = 0.f;
 
 	}
-
-	
 	// ...
 }
 

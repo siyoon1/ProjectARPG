@@ -11,6 +11,7 @@
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "ProjectARPG/Animation/C_CombatAnim.h"
 #include "../Camera/C_PlayerCameraManager.h"
+#include "Components/CapsuleComponent.h"
 
 
 AC_CombatCharacter::AC_CombatCharacter()
@@ -20,6 +21,12 @@ AC_CombatCharacter::AC_CombatCharacter()
 
 void AC_CombatCharacter::applyHitStop(float fSlowlate, float fDuration)
 {
+	if (m_bHitStopActive)
+		return;
+
+	if (!canAct())
+		return;
+
 	UAnimInstance* pAnim = GetMesh()->GetAnimInstance();
 
 	if (!pAnim)
@@ -32,17 +39,18 @@ void AC_CombatCharacter::applyHitStop(float fSlowlate, float fDuration)
 	if (!pMontage)
 		return;
 
-	GetWorldTimerManager().ClearTimer(m_hitStopTimerHandle);
+	m_bHitStopActive = true;
 
+	
 	m_lastMontage = pMontage;
 
 	m_fOriginalPlayRate = pAnim->Montage_GetPlayRate(pMontage);
 
 
-
 	pAnim->Montage_SetPlayRate(pMontage, fSlowlate);
 	UE_LOG(LogTemp, Warning, TEXT("HitStop start: rate=%.3f duration=%.3f"), fSlowlate, fDuration);
 
+	GetWorldTimerManager().ClearTimer(m_hitStopTimerHandle);
 	GetWorldTimerManager().SetTimer
 	(
 		m_hitStopTimerHandle,
@@ -52,6 +60,7 @@ void AC_CombatCharacter::applyHitStop(float fSlowlate, float fDuration)
 		false
 	);
 
+	
 }
 
 void AC_CombatCharacter::endHitStop()
@@ -69,6 +78,7 @@ void AC_CombatCharacter::endHitStop()
 	UE_LOG(LogTemp, Warning, TEXT("HitStop END: rate=%.3f"), m_fOriginalPlayRate);
 
 	m_lastMontage = nullptr;
+	m_bHitStopActive = false;
 }
 
 void AC_CombatCharacter::Tick(float DeltaTime)
@@ -137,6 +147,38 @@ bool AC_CombatCharacter::isGuard() const
 	return m_bIsGuarding;
 }
 
+bool AC_CombatCharacter::canAct() const
+{
+	if (m_bIsDead)
+		return false;
+
+	if (m_eState == E_CombatState::Die)
+		return false;
+
+	if (m_eState == E_CombatState::Executing)
+		return false;
+
+	if (m_bIsPostureBroken)
+		return false;
+
+	return true;
+}
+
+bool AC_CombatCharacter::isInvincibleAgainst(AActor* pAttacker) const
+{
+	if (m_bIsDead)
+		return true;
+
+	if (m_eState == E_CombatState::Executing)
+		return true;
+
+	// 인살 가능 상태 (HP 0 대기 상태)
+	if (m_bExecutionAvailable)
+		return true;
+
+	return false;
+}
+
 void AC_CombatCharacter::setHp(float fHp)
 {
 	m_fCurrentHp = fHp;
@@ -165,6 +207,9 @@ float AC_CombatCharacter::getMaxPosture() const
 
 void AC_CombatCharacter::startAttackTrace()
 {
+	if (!canAct())
+		return;
+
 	if (m_bIsTracing)
 		return;
 
@@ -185,6 +230,9 @@ void AC_CombatCharacter::stopAttackTrace()
 
 void AC_CombatCharacter::performAttackTrace()
 {
+	if (m_bIsDead)
+		return;
+
 	if (!m_bIsTracing)
 		return;
 
@@ -232,7 +280,6 @@ void AC_CombatCharacter::performAttackTrace()
 			m_fTraceRadius, FQuat::Identity, bHit ? FColor::Green : FColor::Red, false, 0.05f);
 	
 #endif 
-		bool bGuardSuccess = false;
 		bool bAppliedHitStop = false;
 
 		if (bHit)
@@ -255,6 +302,29 @@ void AC_CombatCharacter::performAttackTrace()
 
 				if (pHitActor->GetClass()->ImplementsInterface(UC_CombatInterface::StaticClass()))
 				{
+					bool bValidHit = true;
+
+
+					AC_CombatCharacter* pTarget = Cast<AC_CombatCharacter>(pHitActor);
+
+					if (pTarget)
+					{
+						// 죽은 적 무시
+						if (pTarget->isDead())
+							bValidHit = false;
+
+						// 인살 중 / 무적 상태면 무시 (확장 포인트)
+						if (pTarget->isInvincibleAgainst(this))
+							bValidHit = false;
+					}
+
+					if (!bValidHit)
+					{
+						m_HitActors.Add(pHitActor);
+						continue;
+					}
+
+
 					if (!bAppliedHitStop)
 					{
 						applyHitStop(0.01f, 0.09f);  // 공격자
@@ -278,11 +348,11 @@ void AC_CombatCharacter::performAttackTrace()
 					}
 
 					
+					bool bGuardSuccess = false;
 
-					if (AC_CombatCharacter* pTarget = Cast<AC_CombatCharacter>(pHitActor))
-					{				
-
-						if (pTarget->getCombatState() == E_CombatState::Guard)
+					if (pTarget)
+					{			
+						if (pTarget->m_bIsGuarding == true || pTarget->getCombatState() == E_CombatState::Guard)
 						{
 							bool bFront = pTarget->isGuardingFront(this);
 
@@ -319,17 +389,24 @@ void AC_CombatCharacter::performAttackTrace()
 
 void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker)
 {
-	if (m_fCurrentHp > 0)
-		reduceHp(fDamage);
+	if (isInvincibleAgainst(pAttacker))
+		return;
+
+	reduceHp(fDamage);
+
+	if (m_fCurrentHp <= 0.f)
+	{
+		m_fCurrentHp = 0.f;
+
+		m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
+
+		enterExecutionReady();
+		return;
+	}
+
+	
 
 	m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
-	UE_LOG(LogTemp, Warning, TEXT("TakeDamage: HP %.1f / %.1f"), m_fCurrentHp, m_fMaxHp);
-
-	if (m_fCurrentHp <= 0)
-	{
-		onPostureBroken();
-		m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
-	}
 
 	// Posture 처리
 	if (m_fCurrentPosture > 0.f)
@@ -354,12 +431,15 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 
 	if (!bGuardSuccess)
 	{
-		E_Direction eDir = getHitDirection(pAttacker);
 
-		playHitMontage(eDir);
+		if (!m_bIsPostureBroken)
+		{
+			E_Direction eDir = getHitDirection(pAttacker);
+
+			playHitMontage(eDir);
+		}
 		applyHitStop(0.01f, 0.12f);
 		
-
 	}
 	else if (bGuardSuccess)
 	{
@@ -371,6 +451,9 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 
 void AC_CombatCharacter::onPostureBroken()
 {
+	if (m_bIsDead)
+		return;
+
 	if (m_bIsPostureBroken)
 		return;
 
@@ -386,6 +469,17 @@ void AC_CombatCharacter::onPostureBroken()
 			m_bIsPostureBroken = false;
 
 		}, m_fBrokenDuration, false);
+}
+
+void AC_CombatCharacter::enterExecutionReady()
+{
+	if (m_bExecutionAvailable || m_bIsDead)
+		return;
+
+	m_bExecutionAvailable = true;
+	stopAttackTrace();
+
+	onPostureBroken();
 }
 
 void AC_CombatCharacter::reduceHp(float fDamage)
@@ -577,6 +671,23 @@ void AC_CombatCharacter::BeginPlay()
 	{
 		m_CamMgr = Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager);
 	}
+}
+
+void AC_CombatCharacter::onDeath()
+{
+	if (m_bIsDead)
+		return;
+
+	m_bIsDead = true;
+	m_eState = E_CombatState::Die;
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+}
+
+bool AC_CombatCharacter::isDead() const
+{
+	return m_bIsDead;
 }
 
 

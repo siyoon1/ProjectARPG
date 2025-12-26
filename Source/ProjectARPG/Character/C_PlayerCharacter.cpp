@@ -70,6 +70,16 @@ void AC_PlayerCharacter::BeginPlay()
 
 }
 
+bool AC_PlayerCharacter::isInvincibleAgainst(AActor* pAttacker) const
+{
+	if (m_eState == E_CombatState::Executing)
+	{
+		return true;
+	}
+
+	return Super::isInvincibleAgainst(pAttacker);
+}
+
 void AC_PlayerCharacter::setCombatState(E_CombatState eNewState)
 {
 	Super::setCombatState(eNewState);
