@@ -31,23 +31,35 @@ void AC_EnemyCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	m_DetectCom = GetComponentByClass<UC_DetectComponent>();
+
+	m_pPlayer = Cast< AC_CombatCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
 }
 
 E_EnemyCombatAction AC_EnemyCharacter::decideCombatAction() const
 {
-	APawn* pPlayer = GetWorld()->GetFirstPlayerController()->GetPawn();
-	if (!pPlayer)
+	switch (m_eEnemyTier)
+	{
+	case E_EnemyTier::Weak:
+	case E_EnemyTier::Soldier:
+		return decideWeakCombatAction();
+
+	case E_EnemyTier::MiniBoss:
+		return decideBossCombatAction();
+
+	default:
+		return decideWeakCombatAction();
+	}
+}
+
+E_EnemyCombatAction AC_EnemyCharacter::decideWeakCombatAction() const
+{
+	if (!m_pPlayer)
 		return E_EnemyCombatAction::Guard;
 
-	AC_CombatCharacter* pTarget = Cast<AC_CombatCharacter>(pPlayer);
-	if (!pTarget)
-		return E_EnemyCombatAction::Guard;
-
-	bool bPlayerAttacking = pTarget->getCombatState() == E_CombatState::Attacking;
-	bool bPlayerGuarding = pTarget->getCombatState() == E_CombatState::Guard;
+	bool bPlayerGuarding = m_pPlayer->getCombatState() == E_CombatState::Guard;
 
 	// 1? 플레이어 공격 중 → 대응
-	if (bPlayerAttacking)
+	if (isPlayerAttacking())
 	{
 		if (m_pParryCom && m_pParryCom->isCanParry() && FMath::FRand() < 0.35f)
 			return E_EnemyCombatAction::Parry;
@@ -69,6 +81,25 @@ E_EnemyCombatAction AC_EnemyCharacter::decideCombatAction() const
 	return E_EnemyCombatAction::Guard;
 }
 
+E_EnemyCombatAction AC_EnemyCharacter::decideBossCombatAction() const
+{
+	if (m_bIsPostureBroken)
+		return E_EnemyCombatAction::None;
+
+	if (isPlayerAttacking())
+	{
+		if (FMath::FRand() < 0.6f)
+			return E_EnemyCombatAction::Parry;
+
+		return E_EnemyCombatAction::Guard;
+	}
+
+	if (FMath::FRand() < 0.7f)
+		return E_EnemyCombatAction::Attack;
+
+	return E_EnemyCombatAction::Guard;
+}
+
 E_EnemyAttackType AC_EnemyCharacter::decideAttackType() const
 {
 	float fRan = FMath::FRand();
@@ -80,6 +111,29 @@ E_EnemyAttackType AC_EnemyCharacter::decideAttackType() const
 		return E_EnemyAttackType::Heavy;
 
 	return E_EnemyAttackType::Thrust;
+}
+
+bool AC_EnemyCharacter::isPlayerAttacking() const
+{
+	if (!m_pPlayer)
+		return false;
+
+	if (m_pPlayer->getCombatState() != E_CombatState::Attacking)
+		return false;
+
+	float fDist = FVector::Dist(GetActorLocation(), m_pPlayer->GetActorLocation());
+	if (fDist > m_fAttackRange)
+		return false;
+
+	FVector vPlayerForward = m_pPlayer->GetActorForwardVector();
+	FVector vToEnemy = (GetActorLocation() - m_pPlayer->GetActorLocation()).GetSafeNormal();
+
+	float fDot = FVector::DotProduct(vPlayerForward, vToEnemy);
+
+	if (fDot < 0.5f)
+		return false;
+
+	return true;
 }
 
 void AC_EnemyCharacter::Tick(float DeltaTime)

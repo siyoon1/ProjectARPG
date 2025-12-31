@@ -22,14 +22,6 @@ void UC_EnemyAnim::playAttackByType(E_EnemyAttackType eType)
 	}
 }
 
-void UC_EnemyAnim::playAttackMontage()
-{
-	if (!IsAnyMontagePlaying())
-		Montage_Play(m_pAttackMontage);
-
-	
-}
-
 void UC_EnemyAnim::AnimNotify_EndAttack()
 {
 	if (AC_CombatCharacter* pOwner = Cast<AC_CombatCharacter>(TryGetPawnOwner()))

@@ -7,6 +7,15 @@
 #include "C_EnemyCharacter.generated.h"
 
 UENUM(BlueprintType)
+enum class E_EnemyTier : uint8
+{
+	Weak,
+	Soldier,
+	MiniBoss,
+	Boss
+};
+
+UENUM(BlueprintType)
 enum class E_EnemyCombatAction : uint8
 {
 	None,
@@ -38,17 +47,25 @@ private:
 
 	bool m_bCanbeExcuted = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	E_EnemyTier m_eEnemyTier;
+
 	UPROPERTY()
 	TObjectPtr<class UNiagaraComponent> m_ExecutionVFX;
 
 	UPROPERTY()
 	TObjectPtr<class UC_DetectComponent> m_DetectCom;
 
+	UPROPERTY()
+	AC_CombatCharacter* m_pPlayer{};
+
 
 	bool m_bInCombat = false;
 
 	bool m_bIsExecutingAction = false;
 	bool m_bActionStarted = false;
+
+	float m_fAttackRange = 180.f;
 
 	float m_nextActionTime = 0.f;
 	float m_actionInterval = 0.25f;
@@ -71,8 +88,14 @@ protected:
 	//행동 분기
 	E_EnemyCombatAction decideCombatAction() const;
 
+	E_EnemyCombatAction decideWeakCombatAction() const;
+
+	E_EnemyCombatAction decideBossCombatAction() const;
+
 	//공격 타입 분기
 	E_EnemyAttackType decideAttackType() const;
+
+	bool isPlayerAttacking() const;
 	
 
 public:
