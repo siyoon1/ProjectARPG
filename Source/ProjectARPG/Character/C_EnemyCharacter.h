@@ -6,6 +6,8 @@
 #include "C_CombatCharacter.h"
 #include "C_EnemyCharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossCombatStateChanged, AC_EnemyCharacter*, Boss, bool, bInCombat);
+
 UENUM(BlueprintType)
 enum class E_EnemyTier : uint8
 {
@@ -76,6 +78,10 @@ protected:
 	E_EnemyAttackType m_eCurrentAttackType;
 	E_EnemyCombatAction m_eCurrentAction;
 
+public:
+	UPROPERTY(BlueprintAssignable, Category = "BossStatus")
+	FOnBossCombatStateChanged m_onBossStateChanged;
+
 	
 
 private:
@@ -123,7 +129,7 @@ public:
 
 	void executeCombatAction();
 
-	void setInCombat(bool bEnable);
+	void setInCombat(bool bCombat);
 
 	bool isExecutingAction() const;
 
@@ -136,6 +142,12 @@ public:
 	bool isGuard() const;
 
 	void onParryFinished();
+
+	UFUNCTION(BlueprintCallable)
+	bool isBoss() const;
+
+	//ÀÎ»ì
+	void onExecuted() override;
 
 	//Á×À½
 	void onDeath() override;

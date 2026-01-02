@@ -350,7 +350,7 @@ void UC_ExecutionComponent::onExecutionFinished(UAnimMontage* Montage, bool bInt
 	if (!pOwner)
 		return;
 
-	pVictim->onDeath();
+	pVictim->onExecuted();
 
 	pOwner->EnableInput(nullptr);
 	pOwner->setCombatState(E_CombatState::Idle);

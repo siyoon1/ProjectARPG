@@ -44,6 +44,7 @@ E_EnemyCombatAction AC_EnemyCharacter::decideCombatAction() const
 		return decideWeakCombatAction();
 
 	case E_EnemyTier::MiniBoss:
+	case E_EnemyTier::Boss:
 		return decideBossCombatAction();
 
 	default:
@@ -144,17 +145,14 @@ void AC_EnemyCharacter::Tick(float DeltaTime)
 		return;
 
 	updateCombatAI(DeltaTime);
-
-	if (!m_DetectCom || !m_DetectCom->isDetecting())
-	{
-		setInCombat(false);
-		return;
-	}
 }
 
 void AC_EnemyCharacter::showHpBar(bool bShow)
 {
 	m_wHpBarCom = GetComponentByClass<UWidgetComponent>();
+
+	if (m_eEnemyTier == E_EnemyTier::Boss || m_eEnemyTier == E_EnemyTier::MiniBoss)
+		return;
 
 	if (m_wHpBarCom)
 		m_wHpBarCom->SetVisibility(bShow);
@@ -241,7 +239,7 @@ void AC_EnemyCharacter::executeCombatAction()
 		m_bActionStarted = true;
 		break;
 	case E_EnemyCombatAction::Parry:
-		tryParry(this);
+		IC_CombatInterface::Execute_tryParry(this, this);
 		m_bActionStarted = true;
 		break;
 
@@ -250,9 +248,21 @@ void AC_EnemyCharacter::executeCombatAction()
 	}
 }
 
-void AC_EnemyCharacter::setInCombat(bool bEnable)
+void AC_EnemyCharacter::setInCombat(bool bCombat)
 {
-	m_bInCombat = bEnable;
+	if (m_bInCombat == bCombat)
+		return;
+
+	m_bInCombat = bCombat;
+
+	if (!isBoss())
+	{
+		showHpBar(bCombat);
+	}
+	else
+	{
+		m_onBossStateChanged.Broadcast(this, bCombat);
+	}
 }
 
 bool AC_EnemyCharacter::isExecutingAction() const
@@ -312,6 +322,39 @@ void AC_EnemyCharacter::onParryFinished()
 	m_bIsExecutingAction = false;
 	m_eState = E_CombatState::Idle;
 
+	m_nextActionTime = GetWorld()->GetTimeSeconds() + 0.3f;
+}
+
+bool AC_EnemyCharacter::isBoss() const
+{
+	return m_eEnemyTier == E_EnemyTier::MiniBoss || m_eEnemyTier == E_EnemyTier::Boss;
+}
+
+void AC_EnemyCharacter::onExecuted()
+{
+	Super::onExecuted();
+
+	m_bIsExecutingAction = false;
+	m_bInCombat = true;
+
+	APawn* PlayerPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
+	if (m_DetectCom && PlayerPawn)
+	{
+		m_DetectCom->forceDetect(PlayerPawn);
+	}
+
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		if (AICon->BrainComponent)
+		{
+			AICon->BrainComponent->RestartLogic();
+			UE_LOG(LogTemp, Warning, TEXT("Enemy Executed Finished - Resume AI"));
+		}
+	}
+
+
+
+	
 	m_nextActionTime = GetWorld()->GetTimeSeconds() + 0.3f;
 }
 

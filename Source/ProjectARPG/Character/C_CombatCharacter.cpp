@@ -179,6 +179,39 @@ bool AC_CombatCharacter::isInvincibleAgainst(AActor* pAttacker) const
 	return false;
 }
 
+void AC_CombatCharacter::onExecuted()
+{
+	if (m_bIsDead)
+		return;
+
+	m_CurrentLifeNodes--;
+
+	m_OnLifeNodeChanged.Broadcast(m_CurrentLifeNodes, m_MaxLifeNodes);
+
+	if (m_CurrentLifeNodes <= 0)
+	{
+		onDeath();
+		return;
+	}
+
+	m_bExecutionAvailable = false;
+	m_bIsPostureBroken = false;
+	m_bIsRecoveryDelay = false;
+
+	GetWorldTimerManager().ClearTimer(m_timerHandle_PostureBroken);
+
+	m_fCurrentPosture = m_fMaxPosture;
+	m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
+
+	m_fCurrentHp = m_fMaxHp;
+	m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
+
+	m_eState = E_CombatState::Idle;
+
+	
+	
+}
+
 void AC_CombatCharacter::setHp(float fHp)
 {
 	m_fCurrentHp = fHp;
@@ -643,6 +676,8 @@ void AC_CombatCharacter::BeginPlay()
 	}
 
 	m_fCurrentHp = m_fMaxHp;
+
+	m_CurrentLifeNodes = m_MaxLifeNodes;
 
 	if (!m_pTraceStart)
 	{

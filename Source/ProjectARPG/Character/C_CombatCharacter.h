@@ -9,6 +9,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, fCurrentHp, float, fMaxHp);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPostureChanged, float, fCurrentPosture, float, fMaxPosture);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLifeNodeChanged, int32, nCurrentLifeNode, int32, nMaxLifeNode);
 
 UENUM(BlueprintType)
 enum class E_CombatState : uint8
@@ -131,6 +132,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Status")
 	FOnPostureChanged m_OnPostureChanged;
 
+	UPROPERTY(BlueprintAssignable, Category = "Status")
+	FOnLifeNodeChanged m_OnLifeNodeChanged;
+
 	UPROPERTY()
 	TObjectPtr<class UC_ExecutionComponent> m_pExecutionCom;
 
@@ -176,6 +180,9 @@ public:
 	bool canAct() const;
 
 	virtual bool isInvincibleAgainst(AActor* pAttacker) const;
+
+	// ÀÎ»ì
+	virtual void onExecuted();
 
 	// Á×À½
 	virtual void onDeath();

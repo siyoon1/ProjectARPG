@@ -36,13 +36,13 @@ void UC_FindPatrolPos::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 	{
 		AC_EnemyCharacter* Enemy = Cast<AC_EnemyCharacter>(pEnemy);
 		if (Enemy)
-			Enemy->showHpBar(true);
+			Enemy->setInCombat(true);
 	}
 	else
 	{
 		AC_EnemyCharacter* Enemy = Cast<AC_EnemyCharacter>(pEnemy);
 		if (Enemy)
-			Enemy->showHpBar(false);
+			Enemy->setInCombat(false);
 	}
 	
 
