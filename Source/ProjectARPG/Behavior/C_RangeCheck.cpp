@@ -9,8 +9,6 @@
 
 bool UC_RangeCheck::CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const
 {
-	OwnerComp.GetBlackboardComponent()->SetValueAsFloat(AC_EnemyController::DistKey, 150.f);
-
 	const UBlackboardComponent* pBB = OwnerComp.GetBlackboardComponent();
 	if (!pBB)
 		return false;
@@ -19,14 +17,11 @@ bool UC_RangeCheck::CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp
 	if (!pOwner)
 		return false;
 
-	float fAttackDist = OwnerComp.GetBlackboardComponent()->GetValueAsFloat(AC_EnemyController::DistKey);
-
-
 	AActor* pTarget = Cast<AActor>(pBB->GetValueAsObject(AC_EnemyController::TargetActorKey));
 	if (!pTarget)
 		return false;
 
-	
+	float fAttackDist = OwnerComp.GetBlackboardComponent()->GetValueAsFloat(AC_EnemyController::DistKey);
 
 	float fDist = FVector::Dist(pOwner->GetActorLocation(), pTarget->GetActorLocation());
 

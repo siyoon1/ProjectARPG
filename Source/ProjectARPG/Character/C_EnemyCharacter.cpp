@@ -9,6 +9,8 @@
 #include "ProjectARPG/AI/C_DetectComponent.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "ProjectARPG/ActorComponents/C_ParryComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "BrainComponent.h"
 
 
@@ -26,6 +28,21 @@ void AC_EnemyCharacter::guardForDuration(float fTime)
 	);
 }
 
+void AC_EnemyCharacter::applyCombatProfile()
+{
+	const FS_EnemyCombatProfile* profile = m_CombatProfiles.Find(m_eEnemyTier);
+
+	m_CurrentCombatProfile = *profile;
+
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
+		{
+			BB->SetValueAsFloat(AC_EnemyController::DistKey, m_CurrentCombatProfile.fAttackRange);
+		}
+	}
+}
+
 void AC_EnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -33,69 +50,22 @@ void AC_EnemyCharacter::BeginPlay()
 	m_DetectCom = GetComponentByClass<UC_DetectComponent>();
 
 	m_pPlayer = Cast< AC_CombatCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
+
+	applyCombatProfile();
 }
 
 E_EnemyCombatAction AC_EnemyCharacter::decideCombatAction() const
 {
-	switch (m_eEnemyTier)
-	{
-	case E_EnemyTier::Weak:
-	case E_EnemyTier::Soldier:
-		return decideWeakCombatAction();
+	const FS_EnemyCombatProfile& profile = m_CurrentCombatProfile;
 
-	case E_EnemyTier::MiniBoss:
-	case E_EnemyTier::Boss:
-		return decideBossCombatAction();
-
-	default:
-		return decideWeakCombatAction();
-	}
-}
-
-E_EnemyCombatAction AC_EnemyCharacter::decideWeakCombatAction() const
-{
-	if (!m_pPlayer)
-		return E_EnemyCombatAction::Guard;
-
-	bool bPlayerGuarding = m_pPlayer->getCombatState() == E_CombatState::Guard;
-
-	// 1? 플레이어 공격 중 → 대응
-	if (isPlayerAttacking())
-	{
-		if (m_pParryCom && m_pParryCom->isCanParry() && FMath::FRand() < 0.35f)
-			return E_EnemyCombatAction::Parry;
-
-		return E_EnemyCombatAction::Guard;
-	}
-
-	// 2? 플레이어 가드 중 → 압박
-	if (bPlayerGuarding)
-	{
-		return E_EnemyCombatAction::Attack;
-	}
-
-	// 3? 기본 상태 → 거의 항상 공격
-	if (FMath::FRand() < 0.85f)
-		return E_EnemyCombatAction::Attack;
-
-	// 4? 아주 드물게 숨 고르기
-	return E_EnemyCombatAction::Guard;
-}
-
-E_EnemyCombatAction AC_EnemyCharacter::decideBossCombatAction() const
-{
-	if (m_bIsPostureBroken)
-		return E_EnemyCombatAction::None;
+	float fRan = FMath::FRand();
 
 	if (isPlayerAttacking())
 	{
-		if (FMath::FRand() < 0.6f)
-			return E_EnemyCombatAction::Parry;
-
 		return E_EnemyCombatAction::Guard;
 	}
 
-	if (FMath::FRand() < 0.7f)
+	if (fRan < profile.fAttackProbability)
 		return E_EnemyCombatAction::Attack;
 
 	return E_EnemyCombatAction::Guard;
@@ -103,15 +73,17 @@ E_EnemyCombatAction AC_EnemyCharacter::decideBossCombatAction() const
 
 E_EnemyAttackType AC_EnemyCharacter::decideAttackType() const
 {
+	const FS_EnemyCombatProfile& profile = m_CurrentCombatProfile;
+
 	float fRan = FMath::FRand();
 
-	if (fRan < 0.5f)
-		return E_EnemyAttackType::Light;
+	if (fRan < profile.fThrustRatio)
+		return E_EnemyAttackType::Thrust;
 
 	if (fRan < 0.8f)
 		return E_EnemyAttackType::Heavy;
 
-	return E_EnemyAttackType::Thrust;
+	return E_EnemyAttackType::Light;
 }
 
 bool AC_EnemyCharacter::isPlayerAttacking() const
@@ -238,10 +210,6 @@ void AC_EnemyCharacter::executeCombatAction()
 		guardForDuration(0.6f);
 		m_bActionStarted = true;
 		break;
-	case E_EnemyCombatAction::Parry:
-		IC_CombatInterface::Execute_tryParry(this, this);
-		m_bActionStarted = true;
-		break;
 
 	default:
 		break;
@@ -274,13 +242,19 @@ void AC_EnemyCharacter::endGuard()
 {
 	setGuard(false);
 	m_bIsExecutingAction = false;
-	m_nextActionTime = GetWorld()->GetTimeSeconds() + m_actionInterval;
+
+	const auto* profile = m_CombatProfiles.Find(m_eEnemyTier);
+
+	m_nextActionTime = GetWorld()->GetTimeSeconds() + (profile ? profile->fActionInterval : 0.25f);
 }
 
 void AC_EnemyCharacter::endAttack()
 {
 	m_bIsExecutingAction = false;
-	m_nextActionTime = GetWorld()->GetTimeSeconds() + m_actionInterval;
+
+	const auto* profile = m_CombatProfiles.Find(m_eEnemyTier);
+
+	m_nextActionTime = GetWorld()->GetTimeSeconds() + (profile ? profile->fActionInterval : 0.25f);
 }
 
 void AC_EnemyCharacter::attack()
@@ -288,11 +262,6 @@ void AC_EnemyCharacter::attack()
 	m_bIsExecutingAction = true;
 
 	m_eCurrentAttackType = decideAttackType();
-
-	/*if (auto* AICon = Cast<AAIController>(GetController()))
-	{
-		AICon->StopMovement();
-	}*/
 
 	APawn* target = Cast<APawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
 	if (target)
@@ -337,10 +306,9 @@ void AC_EnemyCharacter::onExecuted()
 	m_bIsExecutingAction = false;
 	m_bInCombat = true;
 
-	APawn* PlayerPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
-	if (m_DetectCom && PlayerPawn)
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
-		m_DetectCom->forceDetect(PlayerPawn);
+		MoveComp->SetMovementMode(MOVE_Walking);
 	}
 
 	if (AAIController* AICon = Cast<AAIController>(GetController()))
@@ -348,12 +316,8 @@ void AC_EnemyCharacter::onExecuted()
 		if (AICon->BrainComponent)
 		{
 			AICon->BrainComponent->RestartLogic();
-			UE_LOG(LogTemp, Warning, TEXT("Enemy Executed Finished - Resume AI"));
 		}
 	}
-
-
-
 	
 	m_nextActionTime = GetWorld()->GetTimeSeconds() + 0.3f;
 }

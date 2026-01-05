@@ -23,7 +23,6 @@ enum class E_EnemyCombatAction : uint8
 	None,
 	Attack,
 	Guard,
-	Parry,
 	Wait
 };
 
@@ -33,6 +32,33 @@ enum class E_EnemyAttackType : uint8
 	Light      UMETA(DisplayName = "Light"),
 	Heavy      UMETA(DisplayName = "Heavy"),
 	Thrust     UMETA(DisplayName = "Thrust")
+};
+
+USTRUCT(BlueprintType)
+struct FS_EnemyCombatProfile
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	float fAttackProbability = 0.7f;
+
+	UPROPERTY(EditAnywhere)
+	float fGuardProbability = 0.3f;
+
+	UPROPERTY(EditAnywhere)
+	float fThrustRatio = 0.2f;
+
+	UPROPERTY(EditAnywhere)
+	float fActionInterval = 0.25f;
+
+	UPROPERTY(EditAnywhere)
+	float fGuardDuration = 0.6f;
+
+	UPROPERTY(EditAnywhere)
+	float fAttackRange = 180.f;
+
+	UPROPERTY(EditAnywhere)
+	bool bCanAutoParry = false;
 };
 
 /**
@@ -70,13 +96,17 @@ private:
 	float m_fAttackRange = 180.f;
 
 	float m_nextActionTime = 0.f;
-	float m_actionInterval = 0.25f;
 
 	FTimerHandle m_guardHandle;
 
 protected:
 	E_EnemyAttackType m_eCurrentAttackType;
 	E_EnemyCombatAction m_eCurrentAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	TMap<E_EnemyTier, FS_EnemyCombatProfile> m_CombatProfiles;
+
+	FS_EnemyCombatProfile m_CurrentCombatProfile;
 
 public:
 	UPROPERTY(BlueprintAssignable, Category = "BossStatus")
@@ -88,15 +118,13 @@ private:
 	// 가드
 	void guardForDuration(float fTime);
 
+	void applyCombatProfile();
+
 protected:
 	void BeginPlay() override;
 
 	//행동 분기
 	E_EnemyCombatAction decideCombatAction() const;
-
-	E_EnemyCombatAction decideWeakCombatAction() const;
-
-	E_EnemyCombatAction decideBossCombatAction() const;
 
 	//공격 타입 분기
 	E_EnemyAttackType decideAttackType() const;
