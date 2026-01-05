@@ -43,8 +43,8 @@ private:
 	bool checkLineOfSight(AC_PlayerCharacter* pPlayer);
 	float getAdjustedDetectDist(AC_PlayerCharacter* pPlayer);
 
-	void canExecute();
-
+	void onTargetDetected(AActor* NewTarget);
+	void onTargetLost();
 
 protected:
 	// Called when the game starts
@@ -53,17 +53,14 @@ protected:
 public:	
 	// Sets default values for this component's properties
 	UC_DetectComponent();
-
-	UFUNCTION()
-	void forceDetect(AActor* pTarget);
-
-	inline AActor* getDetectedTarget() const { return m_DetectedTarget; }
-
+	
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	bool isDetecting() const;
+	inline bool isDetecting() const { return m_bIsDetecting; }
 
-	
+	inline AActor* getDetectedTarget() const { return m_DetectedTarget; }
+
+	void forceDetect(AActor* pTarget);
 };

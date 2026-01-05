@@ -39,6 +39,8 @@ void AC_EnemyCharacter::applyCombatProfile()
 		if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
 		{
 			BB->SetValueAsFloat(AC_EnemyController::DistKey, m_CurrentCombatProfile.fAttackRange);
+			BB->SetValueAsFloat(AC_EnemyController::AttackProbKey, m_CurrentCombatProfile.fAttackProbability);
+			BB->SetValueAsFloat(AC_EnemyController::GuardProbKey, m_CurrentCombatProfile.fGuardProbability);
 		}
 	}
 }
@@ -52,23 +54,8 @@ void AC_EnemyCharacter::BeginPlay()
 	m_pPlayer = Cast< AC_CombatCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
 
 	applyCombatProfile();
-}
 
-E_EnemyCombatAction AC_EnemyCharacter::decideCombatAction() const
-{
-	const FS_EnemyCombatProfile& profile = m_CurrentCombatProfile;
-
-	float fRan = FMath::FRand();
-
-	if (isPlayerAttacking())
-	{
-		return E_EnemyCombatAction::Guard;
-	}
-
-	if (fRan < profile.fAttackProbability)
-		return E_EnemyCombatAction::Attack;
-
-	return E_EnemyCombatAction::Guard;
+	showHpBar(false);
 }
 
 E_EnemyAttackType AC_EnemyCharacter::decideAttackType() const
@@ -113,10 +100,6 @@ void AC_EnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (!m_bInCombat)
-		return;
-
-	updateCombatAI(DeltaTime);
 }
 
 void AC_EnemyCharacter::showHpBar(bool bShow)
@@ -137,6 +120,18 @@ void AC_EnemyCharacter::showExecutionVFX(bool bShow)
 
 	if (m_ExecutionVFX)
 		m_ExecutionVFX->SetVisibility(bShow);
+}
+
+void AC_EnemyCharacter::onCombatStarted()
+{
+	setInCombat(true);
+	showHpBar(true);
+}
+
+void AC_EnemyCharacter::onCombatEnded()
+{
+	setInCombat(false);
+	showHpBar(false);
 }
 
 void AC_EnemyCharacter::setCanBeExecuted(bool bCan)
@@ -171,49 +166,6 @@ void AC_EnemyCharacter::onPostureBroken()
 
 	}
 
-}
-
-void AC_EnemyCharacter::updateCombatAI(float fDelta)
-{
-	if (m_bIsExecutingAction)
-		return;
-
-	if (GetWorld()->GetTimeSeconds() < m_nextActionTime)
-		return;
-
-	executeCombatAction();
-}
-
-void AC_EnemyCharacter::executeCombatAction()
-{
-	if (m_bIsDead)
-		return;
-
-	if (m_bIsPostureBroken)
-		return;
-
-	if (m_bIsExecutingAction)
-		return;
-
-	m_bActionStarted = false;
-
-	E_EnemyCombatAction eAction = decideCombatAction();
-	m_eCurrentAction = eAction;
-
-	switch (eAction)
-	{
-	case E_EnemyCombatAction::Attack:
-		attack();
-		m_bActionStarted = true;
-		break;
-	case E_EnemyCombatAction::Guard:
-		guardForDuration(0.6f);
-		m_bActionStarted = true;
-		break;
-
-	default:
-		break;
-	}
 }
 
 void AC_EnemyCharacter::setInCombat(bool bCombat)
@@ -259,6 +211,9 @@ void AC_EnemyCharacter::endAttack()
 
 void AC_EnemyCharacter::attack()
 {
+	if (m_bIsExecutingAction)
+		return;
+
 	m_bIsExecutingAction = true;
 
 	m_eCurrentAttackType = decideAttackType();

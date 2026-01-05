@@ -29,5 +29,8 @@ public:
 	static const FName StartPosKey;
 	static const FName PatrolPosKey;
 	static const FName DistKey;
+	static const FName IsCombatKey;
+	static const FName AttackProbKey;
+	static const FName GuardProbKey;;
 	
 };

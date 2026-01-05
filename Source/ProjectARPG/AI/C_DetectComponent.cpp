@@ -7,9 +7,49 @@
 #include "Engine/OverlapResult.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
+#include "ProjectARPG/AI/C_EnemyController.h"
+
+// Sets default values for this component's properties
+UC_DetectComponent::UC_DetectComponent()
+{
+	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
+	// off to improve performance if you don't need them.
+	PrimaryComponentTick.bCanEverTick = true;
+
+	// ...
+}
+
+// Called when the game starts
+void UC_DetectComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// ...
+
+	m_pEnemy = Cast<AC_EnemyCharacter>(GetOwner());
+}
+
+// Called every frame
+void UC_DetectComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	m_TimeSinceLastDetect += DeltaTime;
+
+	if (m_TimeSinceLastDetect >= m_DetectInterval)
+	{
+		detectTarget();
+		m_TimeSinceLastDetect = 0.f;
+
+	}
+	// ...
+}
+
+
 
 void UC_DetectComponent::detectTarget()
 {
+	AActor* PrevTarget = m_DetectedTarget;
 	m_DetectedTarget = nullptr;
 
 	AActor* pOwner = GetOwner();
@@ -43,7 +83,13 @@ void UC_DetectComponent::detectTarget()
 	//#endif // DEBUG_DRAW
 
 	if (!bHit)
+	{
+		if (PrevTarget)
+			onTargetLost();
+
 		return;
+	}
+		
 
 	for (const FOverlapResult& Object : listOverlap)
 	{
@@ -69,8 +115,17 @@ void UC_DetectComponent::detectTarget()
 
 		m_DetectedTarget = pPlayer;
 
-		return;
+		break;
 
+	}
+
+	if (!PrevTarget && m_DetectedTarget)
+	{
+		onTargetDetected(m_DetectedTarget);
+	}
+	else if (PrevTarget && !m_DetectedTarget)
+	{
+		onTargetLost();
 	}
 }
 
@@ -152,63 +207,61 @@ float UC_DetectComponent::getAdjustedDetectDist(AC_PlayerCharacter* pPlayer)
 	return fDetectDist;
 }
 
-// Sets default values for this component's properties
-UC_DetectComponent::UC_DetectComponent()
+void UC_DetectComponent::onTargetDetected(AActor* NewTarget)
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
+	m_bIsDetecting = true;
 
-	// ...
-}
+	if (m_pEnemy)
+	{
+		m_pEnemy->onCombatStarted();
+	}
 
-void UC_DetectComponent::forceDetect(AActor* pTarget)
-{
-	m_DetectedTarget = pTarget;
-
-	// AIController 가져오기
 	if (APawn* OwnerPawn = Cast<APawn>(GetOwner()))
 	{
 		if (AAIController* AICon = Cast<AAIController>(OwnerPawn->GetController()))
 		{
 			if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
 			{
-				BB->SetValueAsObject(TEXT("TargetActor"), pTarget);
+				BB->SetValueAsObject(AC_EnemyController::TargetActorKey, NewTarget);
+				BB->SetValueAsBool(AC_EnemyController::IsCombatKey, true);
 			}
 		}
 	}
 }
 
-
-// Called when the game starts
-void UC_DetectComponent::BeginPlay()
+void UC_DetectComponent::onTargetLost()
 {
-	Super::BeginPlay();
+	m_bIsDetecting = false;
 
-	// ...
-	
-	m_pEnemy = Cast<AC_EnemyCharacter>(GetOwner());
-}
-
-
-// Called every frame
-void UC_DetectComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	m_TimeSinceLastDetect += DeltaTime;
-
-	if (m_TimeSinceLastDetect >= m_DetectInterval)
+	if (m_pEnemy)
 	{
-		detectTarget();
-		m_TimeSinceLastDetect = 0.f;
-
+		m_pEnemy->onCombatEnded();
 	}
-	// ...
+
+	if (APawn* OwnerPawn = Cast<APawn>(GetOwner()))
+	{
+		if (AAIController* AICon = Cast<AAIController>(OwnerPawn->GetController()))
+		{
+			if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
+			{
+				BB->ClearValue(AC_EnemyController::TargetActorKey);
+				BB->SetValueAsBool(AC_EnemyController::IsCombatKey, false);
+			}
+		}
+	}
 }
 
-bool UC_DetectComponent::isDetecting() const
+void UC_DetectComponent::forceDetect(AActor* pTarget)
 {
-	return m_bIsDetecting;
+	m_DetectedTarget = pTarget;
+	m_bIsDetecting = true;
+
+	if (m_pEnemy)
+	{
+		m_pEnemy->onCombatStarted();
+	}
 }
+
+
+
 

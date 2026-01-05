@@ -20,10 +20,10 @@ enum class E_EnemyTier : uint8
 UENUM(BlueprintType)
 enum class E_EnemyCombatAction : uint8
 {
-	None,
-	Attack,
-	Guard,
-	Wait
+	None	UMETA(DisplayName = "None"),
+	Attack	UMETA(DisplayName = "Attack"),
+	Guard	UMETA(DisplayName = "Guard"),
+	Wait	UMETA(DisplayName = "Wait")
 };
 
 UENUM(BlueprintType)
@@ -31,8 +31,11 @@ enum class E_EnemyAttackType : uint8
 {
 	Light      UMETA(DisplayName = "Light"),
 	Heavy      UMETA(DisplayName = "Heavy"),
-	Thrust     UMETA(DisplayName = "Thrust")
+	Thrust     UMETA(DisplayName = "Thrust"),
+	Sweep	   UMETA(DisplayName = "Sweep"),
+	GuardBreak UMETA(DisplayName = "GuardBreak")
 };
+
 
 USTRUCT(BlueprintType)
 struct FS_EnemyCombatProfile
@@ -115,16 +118,10 @@ public:
 	
 
 private:
-	// 가드
-	void guardForDuration(float fTime);
-
 	void applyCombatProfile();
 
 protected:
 	void BeginPlay() override;
-
-	//행동 분기
-	E_EnemyCombatAction decideCombatAction() const;
 
 	//공격 타입 분기
 	E_EnemyAttackType decideAttackType() const;
@@ -140,6 +137,9 @@ public:
 
 	void showExecutionVFX(bool bShow);
 
+	void onCombatStarted();
+	void onCombatEnded();
+
 	//인살 관련
 
 	void setCanBeExecuted(bool bCan);
@@ -152,19 +152,18 @@ public:
 
 	void onPostureBroken() override;
 
-	//행동
-	void updateCombatAI(float fDelta);
-
-	void executeCombatAction();
-
 	void setInCombat(bool bCombat);
-
-	bool isExecutingAction() const;
 
 	void endGuard();
 	void endAttack();
 
+	//행동 실행 API
+
 	void attack();
+
+	void guardForDuration(float fTime);
+
+	bool isExecutingAction() const;
 
 	UFUNCTION(BlueprintCallable)
 	bool isGuard() const;
