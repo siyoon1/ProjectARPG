@@ -4,6 +4,7 @@
 #include "C_BTTask_Attack.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 UC_BTTask_Attack::UC_BTTask_Attack()
 {
@@ -24,11 +25,13 @@ EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	if (!pEnemy)
 		return EBTNodeResult::Failed;
 
-	// 이미 다른 행동 중이면 실패
-	if (pEnemy->isExecutingAction())
+	pEnemy->attack();
+
+	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+	if (!BB)
 		return EBTNodeResult::Failed;
 
-	pEnemy->attack();
+	BB->SetValueAsBool(AC_EnemyController::CanAttackKey, false);
 
 	return EBTNodeResult::Succeeded;
 }

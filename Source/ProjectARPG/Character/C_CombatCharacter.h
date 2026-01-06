@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "C_BaseCharacter.h"
 #include "ProjectARPG/Interface/C_CombatInterface.h"
+#include "ProjectARPG/Data/C_AttackData.h"
 #include "C_CombatCharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, fCurrentHp, float, fMaxHp);
@@ -52,8 +53,16 @@ class PROJECTARPG_API AC_CombatCharacter : public AC_BaseCharacter, public IC_Co
 	GENERATED_BODY()
 
 protected:
+	// 현재 상태
 	E_CombatState m_eState = E_CombatState::Idle;
 
+	// 공격 데이터
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack")
+	UDataTable* m_pAttackDataTable{};
+
+	const FS_AttackData* m_pCurrentAttackData = nullptr;
+
+	// 체간 스텟
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
 	UDataTable* m_pPostureStatsTable{};
 
@@ -89,6 +98,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "trace", meta = (AllowPrivateAccess = "true"))
 	float m_fPostureDamage = 0.f;
 
+	bool m_bCurrentAttackUnblockable = false;
+	bool m_bCurrentAttackCanParry = false;
+	float m_fGuardPushBack = 0.f;
+
 	// 생명력 점 (보스용)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 m_MaxLifeNodes = 1;
@@ -102,7 +115,6 @@ protected:
 
 	E_AttackType m_eAttackType = E_AttackType::Normal;
 
-protected:
 	bool m_bIsDead = false;
 	bool m_bExecutionAvailable = false;
 
@@ -163,14 +175,21 @@ protected:
 	void applyHitStop(float fSlowlate, float fDuration);
 
 	void endHitStop();
+
+	
 public:
 	AC_CombatCharacter();
 
 	virtual void Tick(float DeltaTime) override;
 
+	// 상태 set, get
 	virtual void setCombatState(E_CombatState eNewState);
 	E_CombatState getCombatState() const;
 
+	// 공격 데이터
+	void applyAttack(const FS_AttackData& sData);
+	const FS_AttackData* getAttackData(FName RowName) const;
+	const FS_AttackData* getCurrentAttackData() const;
 
 	// 가드
 	bool isGuardingFront(AActor* pAttacker) const;

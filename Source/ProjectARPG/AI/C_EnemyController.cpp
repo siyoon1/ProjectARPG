@@ -13,6 +13,7 @@ const FName AC_EnemyController::DistKey = TEXT("DistanceToTarget");
 const FName AC_EnemyController::IsCombatKey = TEXT("IsInCombat");
 const FName AC_EnemyController::AttackProbKey = TEXT("AttackProb");
 const FName AC_EnemyController::GuardProbKey = TEXT("GuardProb");
+const FName AC_EnemyController::CanAttackKey = TEXT("CanAttack");
 
 AC_EnemyController::AC_EnemyController()
 {

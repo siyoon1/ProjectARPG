@@ -31,6 +31,7 @@ public:
 	static const FName DistKey;
 	static const FName IsCombatKey;
 	static const FName AttackProbKey;
-	static const FName GuardProbKey;;
+	static const FName GuardProbKey;
+	static const FName CanAttackKey;
 	
 };

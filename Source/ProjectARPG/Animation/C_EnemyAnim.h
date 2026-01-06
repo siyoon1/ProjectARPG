@@ -15,21 +15,8 @@ class PROJECTARPG_API UC_EnemyAnim : public UC_CombatAnim
 {
 	GENERATED_BODY()
 
-protected:
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> m_pLightAttackMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> m_pHeavyAttackMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> m_pThrustAttackMontage;
-
 public:
-	void playAttackByType(E_EnemyAttackType eType);
-
-	void playAttackMontage();
+	void playAttackMontage(UAnimMontage* pAttackMontage);
 	UFUNCTION()
 	void AnimNotify_EndAttack();
 };

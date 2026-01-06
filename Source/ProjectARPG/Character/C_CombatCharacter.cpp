@@ -81,6 +81,7 @@ void AC_CombatCharacter::endHitStop()
 	m_bHitStopActive = false;
 }
 
+
 void AC_CombatCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -121,6 +122,48 @@ void AC_CombatCharacter::setCombatState(E_CombatState eNewState)
 E_CombatState AC_CombatCharacter::getCombatState() const
 {
 	return m_eState;
+}
+
+const FS_AttackData* AC_CombatCharacter::getAttackData(FName RowName) const
+{
+	if (!m_pAttackDataTable)
+		return nullptr;
+
+
+	return m_pAttackDataTable->FindRow<FS_AttackData>(RowName, TEXT("getAttackData"));
+}
+
+const FS_AttackData* AC_CombatCharacter::getCurrentAttackData() const
+{
+	return m_pCurrentAttackData;
+}
+
+void AC_CombatCharacter::applyAttack(const FS_AttackData& sData)
+{
+	m_pCurrentAttackData = &sData;
+
+	m_fAttackDamage = sData.fDamage;
+	m_fPostureDamage = sData.fPostureDamage;
+
+	m_bCurrentAttackUnblockable = sData.bUnblockable;
+	m_bCurrentAttackCanParry = sData.bCanParry;
+	m_fGuardPushBack = sData.fGuardPushBack;
+
+	switch (sData.eProperty)
+	{
+	case E_AttackProperty::Normal:
+		m_eAttackType = E_AttackType::Normal;
+		break;
+
+	case E_AttackProperty::Heavy:
+		m_eAttackType = E_AttackType::Normal;
+		break;
+
+	case E_AttackProperty::Thrust:
+	case E_AttackProperty::Sweep:
+		m_eAttackType = E_AttackType::Charge;
+		break;
+	}
 }
 
 bool AC_CombatCharacter::isGuardingFront(AActor* pAttacker) const
@@ -389,11 +432,20 @@ void AC_CombatCharacter::performAttackTrace()
 						{
 							bool bFront = pTarget->isGuardingFront(this);
 
-							if (bFront)
+							if (m_bCurrentAttackUnblockable && bFront)
 							{
+								bGuardSuccess = true;
+
 								fFinalDamage *= 0.1f;
 								fFinalPostureDamage *= 0.5f;
-								bGuardSuccess = true;
+
+								if (m_fGuardPushBack > 0.f)
+								{
+									FVector vDir = (pTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+									vDir.Z = 0.f;
+									pTarget->LaunchCharacter(vDir * m_fGuardPushBack, true, false);
+								}
+								
 							}
 							
 						}

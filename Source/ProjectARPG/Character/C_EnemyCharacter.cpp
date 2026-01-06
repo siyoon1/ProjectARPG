@@ -14,6 +14,19 @@
 #include "BrainComponent.h"
 
 
+void AC_EnemyCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	m_DetectCom = GetComponentByClass<UC_DetectComponent>();
+
+	m_pPlayer = Cast< AC_CombatCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
+
+	applyCombatProfile();
+
+	showHpBar(false);
+}
+
 void AC_EnemyCharacter::guardForDuration(float fTime)
 {
 	m_bIsExecutingAction = true;
@@ -32,45 +45,136 @@ void AC_EnemyCharacter::applyCombatProfile()
 {
 	const FS_EnemyCombatProfile* profile = m_CombatProfiles.Find(m_eEnemyTier);
 
+	if (!profile)
+		return;
+
 	m_CurrentCombatProfile = *profile;
 
 	if (AAIController* AICon = Cast<AAIController>(GetController()))
 	{
 		if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
 		{
-			BB->SetValueAsFloat(AC_EnemyController::DistKey, m_CurrentCombatProfile.fAttackRange);
+			BB->SetValueAsFloat(AC_EnemyController::DistKey, m_CurrentCombatProfile.fPreferredRange);
 			BB->SetValueAsFloat(AC_EnemyController::AttackProbKey, m_CurrentCombatProfile.fAttackProbability);
 			BB->SetValueAsFloat(AC_EnemyController::GuardProbKey, m_CurrentCombatProfile.fGuardProbability);
 		}
 	}
 }
 
-void AC_EnemyCharacter::BeginPlay()
+void AC_EnemyCharacter::getAttackCandidates(TArray<FName>& outRows) const
 {
-	Super::BeginPlay();
+	outRows.Empty();
 
-	m_DetectCom = GetComponentByClass<UC_DetectComponent>();
+	if (!m_pAttackDataTable || !m_pPlayer)
+		return;
 
-	m_pPlayer = Cast< AC_CombatCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
 
-	applyCombatProfile();
+	for (const auto& row : m_pAttackDataTable->GetRowMap())
+	{
+		const FS_AttackData* pData = (FS_AttackData*)row.Value;
+		if (!pData)
+			continue;
 
-	showHpBar(false);
+		outRows.Add(row.Key);
+	}
 }
 
-E_EnemyAttackType AC_EnemyCharacter::decideAttackType() const
+FName AC_EnemyCharacter::selectAttackRow() const
 {
+	TArray<FName> candidates{};
+
+	getAttackCandidates(candidates);
+
+	if (candidates.Num() == 0)
+		return NAME_None;
+
 	const FS_EnemyCombatProfile& profile = m_CurrentCombatProfile;
 
-	float fRan = FMath::FRand();
+	TArray<float> fWeights{};
+	float fTotal = 0.f;
 
-	if (fRan < profile.fThrustRatio)
-		return E_EnemyAttackType::Thrust;
+	for (FName rowName : candidates)
+	{
+		const FS_AttackData* pData = getAttackData(rowName);
+		if (!pData)
+		{
+			fWeights.Add(0.f);
+			continue;
+		}
 
-	if (fRan < 0.8f)
-		return E_EnemyAttackType::Heavy;
+		float fWeight = 1.f;
 
-	return E_EnemyAttackType::Light;
+		switch (pData->eProperty)
+		{
+		case E_AttackProperty::Thrust:
+			fWeight = profile.fThrustWeight;
+			break;
+
+		case E_AttackProperty::Heavy:
+			fWeight = profile.fHeavyWeight;
+			break;
+
+		default:
+			fWeight = 1.f;
+			break;
+		}
+
+		fWeights.Add(fWeight);
+		fTotal += fWeight;
+	}
+
+	float fPick = FMath::FRandRange(0.f, fTotal);
+	float fAcc = 0.f;
+
+	for (int32 i = 0; i < candidates.Num(); ++i)
+	{
+		fAcc += fWeights[i];
+		if (fPick <= fAcc)
+			return candidates[i];
+	}
+
+	return candidates.Last();
+}
+
+void AC_EnemyCharacter::attack()
+{
+	if (m_bIsExecutingAction)
+		return;
+
+	m_bIsExecutingAction = true;
+
+	if (m_pPlayer)
+	{
+		FVector dir = m_pPlayer->GetActorLocation() - GetActorLocation();
+		dir.Z = 0;
+		SetActorRotation(dir.Rotation());
+	}
+
+	if (UAnimInstance* pAnim = GetMesh()->GetAnimInstance())
+	{
+		if (UC_EnemyAnim* pEnemyAnim = Cast<UC_EnemyAnim>(pAnim))
+		{
+			pEnemyAnim->playAttackMontage(m_pCurrentAttackData->pMontage);
+		}
+	}
+}
+
+bool AC_EnemyCharacter::decideNextAttack()
+{
+	UE_LOG(LogTemp, Warning, TEXT("DecideAttack CALLED"));
+
+	FName row = selectAttackRow();
+	if (row.IsNone())
+		return false;
+
+	const FS_AttackData* pData = getAttackData(row);
+	if (!pData)
+		return false;
+
+	m_CurrentAttackRow = row;
+	m_pCurrentAttackData = pData;
+
+	return true;
 }
 
 bool AC_EnemyCharacter::isPlayerAttacking() const
@@ -81,8 +185,9 @@ bool AC_EnemyCharacter::isPlayerAttacking() const
 	if (m_pPlayer->getCombatState() != E_CombatState::Attacking)
 		return false;
 
+
 	float fDist = FVector::Dist(GetActorLocation(), m_pPlayer->GetActorLocation());
-	if (fDist > m_fAttackRange)
+	if (fDist > m_CurrentCombatProfile.fPreferredRange)
 		return false;
 
 	FVector vPlayerForward = m_pPlayer->GetActorForwardVector();
@@ -132,6 +237,31 @@ void AC_EnemyCharacter::onCombatEnded()
 {
 	setInCombat(false);
 	showHpBar(false);
+}
+
+float AC_EnemyCharacter::getAttackMinRange() const
+{
+	return m_pCurrentAttackData ? m_pCurrentAttackData->fMinRange : m_CurrentCombatProfile.fPreferredRange * 0.7f;
+}
+
+float AC_EnemyCharacter::getAttackMaxRange() const
+{
+	return m_pCurrentAttackData ? m_pCurrentAttackData->fRange : m_CurrentCombatProfile.fPreferredRange;
+}
+
+float AC_EnemyCharacter::getAttackIdealRange() const
+{
+	return m_pCurrentAttackData ? m_pCurrentAttackData->fIdealRange : m_CurrentCombatProfile.fPreferredRange;
+}
+
+float AC_EnemyCharacter::getNextActionTime() const
+{
+	return m_nextActionTime;
+}
+
+FS_EnemyCombatProfile& AC_EnemyCharacter::getCombatProfile()
+{
+	return m_CurrentCombatProfile;
 }
 
 void AC_EnemyCharacter::setCanBeExecuted(bool bCan)
@@ -207,33 +337,6 @@ void AC_EnemyCharacter::endAttack()
 	const auto* profile = m_CombatProfiles.Find(m_eEnemyTier);
 
 	m_nextActionTime = GetWorld()->GetTimeSeconds() + (profile ? profile->fActionInterval : 0.25f);
-}
-
-void AC_EnemyCharacter::attack()
-{
-	if (m_bIsExecutingAction)
-		return;
-
-	m_bIsExecutingAction = true;
-
-	m_eCurrentAttackType = decideAttackType();
-
-	APawn* target = Cast<APawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
-	if (target)
-	{
-		FVector toTarget = (target->GetActorLocation() - GetActorLocation());
-		toTarget.Z = 0.f; // 상하 무시
-		FRotator lookRot = toTarget.Rotation();
-		SetActorRotation(lookRot);
-	}
-
-	if (UAnimInstance* pAnim = GetMesh()->GetAnimInstance())
-	{
-		if (UC_EnemyAnim* pEnemyAnim = Cast<UC_EnemyAnim>(pAnim))
-		{
-			pEnemyAnim->playAttackByType(m_eCurrentAttackType);
-		}
-	}
 }
 
 bool AC_EnemyCharacter::isGuard() const

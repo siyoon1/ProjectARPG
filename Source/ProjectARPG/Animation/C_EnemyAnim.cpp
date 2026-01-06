@@ -4,22 +4,12 @@
 #include "C_EnemyAnim.h"
 #include "C_EnemyAnim.h"
 
-void UC_EnemyAnim::playAttackByType(E_EnemyAttackType eType)
+void UC_EnemyAnim::playAttackMontage(UAnimMontage* pAttackMontage)
 {
-	switch (eType)
-	{
-	case E_EnemyAttackType::Light:
-		Montage_Play(m_pLightAttackMontage);
-		break;
+	if (!pAttackMontage)
+		return;
 
-	case E_EnemyAttackType::Heavy:
-		Montage_Play(m_pHeavyAttackMontage);
-		break;
-
-	case E_EnemyAttackType::Thrust:
-		Montage_Play(m_pThrustAttackMontage);
-		break;
-	}
+	Montage_Play(pAttackMontage);
 }
 
 void UC_EnemyAnim::AnimNotify_EndAttack()

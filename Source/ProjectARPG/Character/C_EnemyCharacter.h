@@ -26,16 +26,6 @@ enum class E_EnemyCombatAction : uint8
 	Wait	UMETA(DisplayName = "Wait")
 };
 
-UENUM(BlueprintType)
-enum class E_EnemyAttackType : uint8
-{
-	Light      UMETA(DisplayName = "Light"),
-	Heavy      UMETA(DisplayName = "Heavy"),
-	Thrust     UMETA(DisplayName = "Thrust"),
-	Sweep	   UMETA(DisplayName = "Sweep"),
-	GuardBreak UMETA(DisplayName = "GuardBreak")
-};
-
 
 USTRUCT(BlueprintType)
 struct FS_EnemyCombatProfile
@@ -49,7 +39,10 @@ struct FS_EnemyCombatProfile
 	float fGuardProbability = 0.3f;
 
 	UPROPERTY(EditAnywhere)
-	float fThrustRatio = 0.2f;
+	float fThrustWeight = 0.2f;
+
+	UPROPERTY(EditAnywhere)
+	float fHeavyWeight = 0.3f;
 
 	UPROPERTY(EditAnywhere)
 	float fActionInterval = 0.25f;
@@ -58,10 +51,7 @@ struct FS_EnemyCombatProfile
 	float fGuardDuration = 0.6f;
 
 	UPROPERTY(EditAnywhere)
-	float fAttackRange = 180.f;
-
-	UPROPERTY(EditAnywhere)
-	bool bCanAutoParry = false;
+	float fPreferredRange = 180.f;
 };
 
 /**
@@ -92,19 +82,14 @@ private:
 
 
 	bool m_bInCombat = false;
-
 	bool m_bIsExecutingAction = false;
-	bool m_bActionStarted = false;
-
-	float m_fAttackRange = 180.f;
-
 	float m_nextActionTime = 0.f;
 
 	FTimerHandle m_guardHandle;
 
 protected:
-	E_EnemyAttackType m_eCurrentAttackType;
 	E_EnemyCombatAction m_eCurrentAction;
+	FName m_CurrentAttackRow;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	TMap<E_EnemyTier, FS_EnemyCombatProfile> m_CombatProfiles;
@@ -120,17 +105,20 @@ public:
 private:
 	void applyCombatProfile();
 
+	void getAttackCandidates(TArray<FName>& outRows) const;
+	FName selectAttackRow() const;
+
 protected:
 	void BeginPlay() override;
 
-	//공격 타입 분기
-	E_EnemyAttackType decideAttackType() const;
 
+	
 	bool isPlayerAttacking() const;
 	
 
 public:
 	void Tick(float DeltaTime) override;
+
 
 	// UI 관련
 	void showHpBar(bool bShow);
@@ -139,6 +127,12 @@ public:
 
 	void onCombatStarted();
 	void onCombatEnded();
+
+	float getAttackMinRange() const;
+	float getAttackMaxRange() const;
+	float getAttackIdealRange() const;
+	float getNextActionTime() const;
+	FS_EnemyCombatProfile& getCombatProfile();
 
 	//인살 관련
 
@@ -159,7 +153,9 @@ public:
 
 	//행동 실행 API
 
+	bool decideNextAttack();
 	void attack();
+
 
 	void guardForDuration(float fTime);
 
