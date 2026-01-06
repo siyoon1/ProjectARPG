@@ -9,6 +9,7 @@
 UC_BTTask_Attack::UC_BTTask_Attack()
 {
 	NodeName = TEXT("Attack");
+	bCreateNodeInstance = true;
 }
 
 EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -25,13 +26,37 @@ EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	if (!pEnemy)
 		return EBTNodeResult::Failed;
 
-	pEnemy->attack();
-
 	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
 	if (!BB)
 		return EBTNodeResult::Failed;
 
-	BB->SetValueAsBool(AC_EnemyController::CanAttackKey, false);
+	CachedOwnerComp = &OwnerComp;
 
-	return EBTNodeResult::Succeeded;
+	FName Row = BB->GetValueAsName(AC_EnemyController::SelectAttackKey);
+
+	const FS_AttackData* pData = pEnemy->getAttackData(Row);
+
+	if (!pData)
+		return EBTNodeResult::Failed;
+
+	pEnemy->m_onAttackFinished.AddUObject(this, &ThisClass::onAttackEnded);
+	pEnemy->attack(pData);
+
+	return EBTNodeResult::InProgress;
+}
+
+void UC_BTTask_Attack::onAttackEnded()
+{
+	if (!CachedOwnerComp)
+		return;
+
+	if (AAIController* AICon = CachedOwnerComp->GetAIOwner())
+	{
+		if (AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(AICon->GetPawn()))
+		{
+			pEnemy->m_onAttackFinished.RemoveAll(this);
+		}
+	}
+
+	FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 }

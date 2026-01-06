@@ -41,4 +41,15 @@ void UC_BTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 
 	BB->SetValueAsObject(AC_EnemyController::TargetActorKey, pTarget);
 	BB->SetValueAsBool(AC_EnemyController::IsCombatKey, pTarget != nullptr);
+
+	if (pTarget)
+	{
+		const float fDist = FVector::Dist(pOwner->GetActorLocation(), pTarget->GetActorLocation());
+
+		BB->SetValueAsFloat(AC_EnemyController::DistKey, fDist);
+	}
+	else
+	{
+		BB->SetValueAsFloat(AC_EnemyController::DistKey, -1.f);
+	}
 }

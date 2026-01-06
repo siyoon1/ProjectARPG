@@ -50,52 +50,50 @@ void AC_EnemyCharacter::applyCombatProfile()
 
 	m_CurrentCombatProfile = *profile;
 
-	if (AAIController* AICon = Cast<AAIController>(GetController()))
-	{
-		if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
-		{
-			BB->SetValueAsFloat(AC_EnemyController::DistKey, m_CurrentCombatProfile.fPreferredRange);
-			BB->SetValueAsFloat(AC_EnemyController::AttackProbKey, m_CurrentCombatProfile.fAttackProbability);
-			BB->SetValueAsFloat(AC_EnemyController::GuardProbKey, m_CurrentCombatProfile.fGuardProbability);
-		}
-	}
 }
 
-void AC_EnemyCharacter::getAttackCandidates(TArray<FName>& outRows) const
+void AC_EnemyCharacter::getAttackCandidates(float fDist,TArray<FName>& OutCandidates) const
 {
-	outRows.Empty();
+	OutCandidates.Empty();
 
-	if (!m_pAttackDataTable || !m_pPlayer)
+	if (!m_pAttackDataTable)
 		return;
 
-
-	for (const auto& row : m_pAttackDataTable->GetRowMap())
+	for (const auto& Row : m_pAttackDataTable->GetRowMap())
 	{
-		const FS_AttackData* pData = (FS_AttackData*)row.Value;
+		FS_AttackData* pData = m_pAttackDataTable->FindRow<FS_AttackData>(Row.Key, TEXT("getAttackCandidates"));
+
 		if (!pData)
 			continue;
 
-		outRows.Add(row.Key);
+		if (fDist > pData->fRange)
+			continue;
+
+		OutCandidates.Add(Row.Key);
 	}
+
+	
 }
 
-FName AC_EnemyCharacter::selectAttackRow() const
+FName AC_EnemyCharacter::selectAttack(const TArray<FName>& Candidates) const
 {
-	TArray<FName> candidates{};
-
-	getAttackCandidates(candidates);
-
-	if (candidates.Num() == 0)
+	if (Candidates.Num() == 0)
 		return NAME_None;
+
 
 	const FS_EnemyCombatProfile& profile = m_CurrentCombatProfile;
 
 	TArray<float> fWeights{};
 	float fTotal = 0.f;
 
-	for (FName rowName : candidates)
+	for (FName Row : Candidates)
 	{
-		const FS_AttackData* pData = getAttackData(rowName);
+		const FS_AttackData* pData = getAttackData(Row);
+
+		UE_LOG(LogTemp, Warning, TEXT("Row=%s pData=%s"),
+			*Row.ToString(),
+			pData ? TEXT("OK") : TEXT("NULL"));
+
 		if (!pData)
 		{
 			fWeights.Add(0.f);
@@ -109,39 +107,64 @@ FName AC_EnemyCharacter::selectAttackRow() const
 		case E_AttackProperty::Thrust:
 			fWeight = profile.fThrustWeight;
 			break;
-
 		case E_AttackProperty::Heavy:
 			fWeight = profile.fHeavyWeight;
 			break;
-
 		default:
 			fWeight = 1.f;
 			break;
 		}
+	
 
 		fWeights.Add(fWeight);
 		fTotal += fWeight;
 	}
 
+	if (fTotal <= 0.f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TotalWeight == 0, fallback"));
+		return Candidates[0];
+	}
+
 	float fPick = FMath::FRandRange(0.f, fTotal);
 	float fAcc = 0.f;
 
-	for (int32 i = 0; i < candidates.Num(); ++i)
+	for (int32 i = 0; i < Candidates.Num(); ++i)
 	{
 		fAcc += fWeights[i];
 		if (fPick <= fAcc)
-			return candidates[i];
+			return Candidates[i];
 	}
 
-	return candidates.Last();
+	return Candidates.Last();
 }
 
-void AC_EnemyCharacter::attack()
+bool AC_EnemyCharacter::decideNextAttack(float fDist, FName& OutRow)
 {
-	if (m_bIsExecutingAction)
-		return;
+	TArray<FName> Candidates{};
+	getAttackCandidates(fDist, Candidates);
+
+	UE_LOG(LogTemp, Warning, TEXT("Candidates Num = %d"), Candidates.Num());
+
+	if (Candidates.Num() == 0)
+		return false;
+
+	FName SelectedRow = selectAttack(Candidates);
+	if (SelectedRow.IsNone())
+		return false;
+
+	OutRow = SelectedRow;
+
+	return true;
+}
+
+bool AC_EnemyCharacter::attack(const FS_AttackData* pAttackData)
+{
+	if (!pAttackData || m_bIsExecutingAction)
+		return false;
 
 	m_bIsExecutingAction = true;
+	m_pCurrentAttackData = pAttackData;
 
 	if (m_pPlayer)
 	{
@@ -154,25 +177,9 @@ void AC_EnemyCharacter::attack()
 	{
 		if (UC_EnemyAnim* pEnemyAnim = Cast<UC_EnemyAnim>(pAnim))
 		{
-			pEnemyAnim->playAttackMontage(m_pCurrentAttackData->pMontage);
+			pEnemyAnim->playAttackMontage(pAttackData->pMontage);
 		}
 	}
-}
-
-bool AC_EnemyCharacter::decideNextAttack()
-{
-	UE_LOG(LogTemp, Warning, TEXT("DecideAttack CALLED"));
-
-	FName row = selectAttackRow();
-	if (row.IsNone())
-		return false;
-
-	const FS_AttackData* pData = getAttackData(row);
-	if (!pData)
-		return false;
-
-	m_CurrentAttackRow = row;
-	m_pCurrentAttackData = pData;
 
 	return true;
 }
@@ -337,6 +344,8 @@ void AC_EnemyCharacter::endAttack()
 	const auto* profile = m_CombatProfiles.Find(m_eEnemyTier);
 
 	m_nextActionTime = GetWorld()->GetTimeSeconds() + (profile ? profile->fActionInterval : 0.25f);
+
+	m_onAttackFinished.Broadcast();
 }
 
 bool AC_EnemyCharacter::isGuard() const

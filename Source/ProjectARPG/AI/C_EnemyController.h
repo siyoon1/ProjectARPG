@@ -33,5 +33,5 @@ public:
 	static const FName AttackProbKey;
 	static const FName GuardProbKey;
 	static const FName CanAttackKey;
-	
+	static const FName SelectAttackKey;
 };

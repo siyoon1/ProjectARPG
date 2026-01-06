@@ -7,6 +7,7 @@
 #include "C_EnemyCharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossCombatStateChanged, AC_EnemyCharacter*, Boss, bool, bInCombat);
+DECLARE_MULTICAST_DELEGATE(FOnAttackFinished);
 
 UENUM(BlueprintType)
 enum class E_EnemyTier : uint8
@@ -100,13 +101,15 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "BossStatus")
 	FOnBossCombatStateChanged m_onBossStateChanged;
 
+	FOnAttackFinished m_onAttackFinished;
+
 	
 
 private:
 	void applyCombatProfile();
 
-	void getAttackCandidates(TArray<FName>& outRows) const;
-	FName selectAttackRow() const;
+	void getAttackCandidates(float fDist, TArray<FName>& OutCandidates) const;
+	FName selectAttack(const TArray<FName>& Candidates) const;
 
 protected:
 	void BeginPlay() override;
@@ -152,9 +155,8 @@ public:
 	void endAttack();
 
 	//행동 실행 API
-
-	bool decideNextAttack();
-	void attack();
+	bool decideNextAttack(float fDist, FName& OutRow);
+	bool attack(const FS_AttackData* pAttackData);
 
 
 	void guardForDuration(float fTime);

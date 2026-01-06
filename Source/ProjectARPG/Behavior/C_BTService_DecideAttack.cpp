@@ -10,26 +10,5 @@ void UC_BTService_DecideAttack::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-	AAIController* AICon = OwnerComp.GetAIOwner();
-	if (!AICon)
-		return;
-
-	AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(AICon->GetPawn());
-	if (!pEnemy)
-		return;
-
-	if (pEnemy->isExecutingAction())
-		return;
-
-	if (GetWorld()->GetTimeSeconds() < pEnemy->getNextActionTime())
-		return;
-
-	if (!pEnemy->decideNextAttack())
-		return;
-
-	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-	if (!BB)
-		return;
-
-	BB->SetValueAsBool(AC_EnemyController::CanAttackKey, true);
+	
 }

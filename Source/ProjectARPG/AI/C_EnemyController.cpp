@@ -14,6 +14,7 @@ const FName AC_EnemyController::IsCombatKey = TEXT("IsInCombat");
 const FName AC_EnemyController::AttackProbKey = TEXT("AttackProb");
 const FName AC_EnemyController::GuardProbKey = TEXT("GuardProb");
 const FName AC_EnemyController::CanAttackKey = TEXT("CanAttack");
+const FName AC_EnemyController::SelectAttackKey = TEXT("SelectAttack");
 
 AC_EnemyController::AC_EnemyController()
 {
