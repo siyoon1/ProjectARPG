@@ -4,21 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "C_BTTask_MoveToAttackRange.generated.h"
+#include "C_BTTask_StepBack.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTARPG_API UC_BTTask_MoveToAttackRange : public UBTTaskNode
+class PROJECTARPG_API UC_BTTask_StepBack : public UBTTaskNode
 {
 	GENERATED_BODY()
 
 public:
-	UC_BTTask_MoveToAttackRange();
+	UC_BTTask_StepBack();
 
+protected:
 	virtual EBTNodeResult::Type ExecuteTask(
 		UBehaviorTreeComponent& OwnerComp,
-		uint8* NodeMemory) override;
-
+		uint8* NodeMemory
+	) override;
+	
 };

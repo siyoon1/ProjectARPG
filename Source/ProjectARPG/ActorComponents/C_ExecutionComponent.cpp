@@ -5,6 +5,7 @@
 #include "ProjectARPG/Character/C_CombatCharacter.h"
 #include "ProjectARPG/Character/C_PlayerCharacter.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
+#include "ProjectARPG/AI/C_EnemyController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../Camera/C_PlayerCameraManager.h"
 #include "Components/SphereComponent.h"
@@ -352,8 +353,14 @@ void UC_ExecutionComponent::onExecutionFinished(UAnimMontage* Montage, bool bInt
 
 	pVictim->onExecuted();
 
+	if (AC_EnemyController* AICon = Cast<AC_EnemyController>(pVictim->GetController()))
+	{
+		AICon->executionFinishied(pOwner);
+	}
+
 	pOwner->EnableInput(nullptr);
 	pOwner->setCombatState(E_CombatState::Idle);
 
+	
 }
 

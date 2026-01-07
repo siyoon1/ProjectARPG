@@ -5,6 +5,7 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardData.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "ProjectARPG/Character/C_CombatCharacter.h"
 
 const FName AC_EnemyController::TargetActorKey = TEXT("TargetActor");
 const FName AC_EnemyController::StartPosKey = TEXT("StartPos");
@@ -13,8 +14,9 @@ const FName AC_EnemyController::DistKey = TEXT("DistanceToTarget");
 const FName AC_EnemyController::IsCombatKey = TEXT("IsInCombat");
 const FName AC_EnemyController::AttackProbKey = TEXT("AttackProb");
 const FName AC_EnemyController::GuardProbKey = TEXT("GuardProb");
-const FName AC_EnemyController::CanAttackKey = TEXT("CanAttack");
 const FName AC_EnemyController::SelectAttackKey = TEXT("SelectAttack");
+const FName AC_EnemyController::AttackMoveLocationKey = TEXT("AttackMovePos");
+const FName AC_EnemyController::AIActionKey = TEXT("AIAction");
 
 AC_EnemyController::AC_EnemyController()
 {
@@ -45,5 +47,27 @@ void AC_EnemyController::OnPossess(APawn* InPawn)
 		{
 			Blackboard->SetValueAsVector(StartPosKey, InPawn->GetActorLocation());
 		}
+	}
+
+	
+}
+
+void AC_EnemyController::executionFinishied(AC_CombatCharacter* pTarget)
+{
+	StopMovement();
+
+	if (UBlackboardComponent* BB = GetBlackboardComponent())
+	{
+		BB->ClearValue(AC_EnemyController::PatrolPosKey);
+		BB->ClearValue(AC_EnemyController::AttackMoveLocationKey);
+
+
+		BB->SetValueAsBool(AC_EnemyController::IsCombatKey, true);
+		BB->SetValueAsObject(AC_EnemyController::TargetActorKey, pTarget);
+
+	}
+	if (BrainComponent)
+	{
+		BrainComponent->RestartLogic();
 	}
 }

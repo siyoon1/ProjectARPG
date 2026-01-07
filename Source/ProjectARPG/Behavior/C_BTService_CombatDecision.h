@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTService.h"
-#include "C_BTService_DecideAttack.generated.h"
+#include "C_BTService_CombatDecision.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTARPG_API UC_BTService_DecideAttack : public UBTService
+class PROJECTARPG_API UC_BTService_CombatDecision : public UBTService
 {
 	GENERATED_BODY()
 

@@ -25,6 +25,9 @@ public:
 
 	virtual void OnPossess(APawn* InPawn) override;
 
+	void executionFinishied(class AC_CombatCharacter* pTarget);
+
+public:
 	static const FName TargetActorKey;
 	static const FName StartPosKey;
 	static const FName PatrolPosKey;
@@ -32,6 +35,7 @@ public:
 	static const FName IsCombatKey;
 	static const FName AttackProbKey;
 	static const FName GuardProbKey;
-	static const FName CanAttackKey;
 	static const FName SelectAttackKey;
+	static const FName AttackMoveLocationKey;
+	static const FName AIActionKey;
 };

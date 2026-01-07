@@ -114,14 +114,13 @@ private:
 protected:
 	void BeginPlay() override;
 
-
-	
 	bool isPlayerAttacking() const;
 	
 
 public:
 	void Tick(float DeltaTime) override;
 
+	void playStepBack();
 
 	// UI ฐüทร
 	void showHpBar(bool bShow);
@@ -165,6 +164,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool isGuard() const;
+
+	UFUNCTION(BlueprintCallable)
+	bool isCombat() const;
 
 	void onParryFinished();
 

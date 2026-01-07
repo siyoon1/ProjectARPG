@@ -14,8 +14,12 @@ UCLASS()
 class PROJECTARPG_API UC_EnemyAnim : public UC_CombatAnim
 {
 	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UAnimMontage* m_StepBackMontage;
 
 public:
+	void playStepBackMontage();
 	void playAttackMontage(UAnimMontage* pAttackMontage);
 	UFUNCTION()
 	void AnimNotify_EndAttack();

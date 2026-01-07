@@ -34,14 +34,10 @@ void UC_DetectComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	m_TimeSinceLastDetect += DeltaTime;
 
-	if (m_TimeSinceLastDetect >= m_DetectInterval)
-	{
-		detectTarget();
-		m_TimeSinceLastDetect = 0.f;
+	detectTarget();
 
-	}
+
 	// ...
 }
 
@@ -145,26 +141,37 @@ bool UC_DetectComponent::checkFOV(AC_PlayerCharacter* pPlayer)
 
 	float fDot = FVector::DotProduct(pOwner->GetActorForwardVector(), vToTarget);
 
-	float fMinDot = m_MinDotThreshold;
+	float fMinDot = m_bIsDetecting ? 0.0f : 0.5f;
 
 	if (pPlayer->isCrouch())
 	{
 		fMinDot = 0.7f;
 	}
 
+	float fDist = FVector::Dist(pPlayer->GetActorLocation(), pOwner->GetActorLocation());
+
 	if (fDot >= fMinDot)
+		return true;
+
+	if (fDot < -0.2f && fDist < m_DetectDist * 0.2f)
 		return true;
 
 	if (fDot >= -0.8f)
 	{
-		float fDist = FVector::Dist(pPlayer->GetActorLocation(), pOwner->GetActorLocation());
-		if (fDist < m_DetectDist * 0.6f)
+		if (fDist < m_DetectDist * 0.4f)
 			return true;
 	}
 
-
-
 	
+
+	DrawDebugLine(
+		GetWorld(),
+		pOwner->GetActorLocation(),
+		pOwner->GetActorLocation() + pOwner->GetActorForwardVector() * 500.f,
+		FColor::Green,
+		false,
+		0.1f
+	);
 
 	return false;
 }
@@ -211,21 +218,14 @@ void UC_DetectComponent::onTargetDetected(AActor* NewTarget)
 {
 	m_bIsDetecting = true;
 
+	if (AAIController* AICon = Cast<AAIController>(m_pEnemy->GetController()))
+	{
+		AICon->StopMovement();
+	}
+
 	if (m_pEnemy)
 	{
 		m_pEnemy->onCombatStarted();
-	}
-
-	if (APawn* OwnerPawn = Cast<APawn>(GetOwner()))
-	{
-		if (AAIController* AICon = Cast<AAIController>(OwnerPawn->GetController()))
-		{
-			if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
-			{
-				BB->SetValueAsObject(AC_EnemyController::TargetActorKey, NewTarget);
-				BB->SetValueAsBool(AC_EnemyController::IsCombatKey, true);
-			}
-		}
 	}
 }
 
@@ -236,18 +236,6 @@ void UC_DetectComponent::onTargetLost()
 	if (m_pEnemy)
 	{
 		m_pEnemy->onCombatEnded();
-	}
-
-	if (APawn* OwnerPawn = Cast<APawn>(GetOwner()))
-	{
-		if (AAIController* AICon = Cast<AAIController>(OwnerPawn->GetController()))
-		{
-			if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
-			{
-				BB->ClearValue(AC_EnemyController::TargetActorKey);
-				BB->SetValueAsBool(AC_EnemyController::IsCombatKey, false);
-			}
-		}
 	}
 }
 

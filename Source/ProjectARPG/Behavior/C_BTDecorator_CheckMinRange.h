@@ -4,19 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTDecorator.h"
-#include "C_BTDecorator_CanAttack.generated.h"
+#include "C_BTDecorator_CheckMinRange.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTARPG_API UC_BTDecorator_CanAttack : public UBTDecorator
+class PROJECTARPG_API UC_BTDecorator_CheckMinRange : public UBTDecorator
 {
 	GENERATED_BODY()
 
-
 public:
-	UC_BTDecorator_CanAttack();
+	UC_BTDecorator_CheckMinRange();
 
 protected:
 	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;

@@ -214,6 +214,16 @@ void AC_EnemyCharacter::Tick(float DeltaTime)
 
 }
 
+void AC_EnemyCharacter::playStepBack()
+{
+	m_bIsExecutingAction = true;
+
+	if (UC_EnemyAnim* pAnim = Cast< UC_EnemyAnim>(GetMesh()->GetAnimInstance()))
+	{
+		pAnim->playStepBackMontage();
+	}
+}
+
 void AC_EnemyCharacter::showHpBar(bool bShow)
 {
 	m_wHpBarCom = GetComponentByClass<UWidgetComponent>();
@@ -353,6 +363,11 @@ bool AC_EnemyCharacter::isGuard() const
 	return m_bIsGuarding;
 }
 
+bool AC_EnemyCharacter::isCombat() const
+{
+	return m_bInCombat;
+}
+
 void AC_EnemyCharacter::onParryFinished()
 {
 	m_bIsExecutingAction = false;
@@ -372,21 +387,14 @@ void AC_EnemyCharacter::onExecuted()
 
 	m_bIsExecutingAction = false;
 	m_bInCombat = true;
+	m_bCanbeExcuted = false;
 
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
 		MoveComp->SetMovementMode(MOVE_Walking);
 	}
 
-	if (AAIController* AICon = Cast<AAIController>(GetController()))
-	{
-		if (AICon->BrainComponent)
-		{
-			AICon->BrainComponent->RestartLogic();
-		}
-	}
-	
-	m_nextActionTime = GetWorld()->GetTimeSeconds() + 0.3f;
+	m_nextActionTime = GetWorld()->GetTimeSeconds() + 0.1f;
 }
 
 void AC_EnemyCharacter::onDeath()
