@@ -74,8 +74,18 @@ void UC_BTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	if (!pEnemy)
 		return;
 
-	float fIdealRange = pEnemy->getAttackIdealRange();
+	FName AttackRow = BB->GetValueAsName(AC_EnemyController::SelectAttackKey);
 
+	float fIdealRange = pEnemy->getCombatProfile().fPreferredRange;
+
+	if (!AttackRow.IsNone())
+	{
+		if (const FS_AttackData* Data = pEnemy->getAttackData(AttackRow))
+		{
+			fIdealRange = Data->fIdealRange;
+		}
+	}
+	
 	FVector vMoveLoc = vTargetLoc + vDir * fIdealRange;
 
 	BB->SetValueAsVector(AC_EnemyController::AttackMoveLocationKey, vMoveLoc);

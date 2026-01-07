@@ -14,6 +14,10 @@ class PROJECTARPG_API UC_BTTask_Guard : public UBTTaskNode
 {
 	GENERATED_BODY()
 
+private:
+	UPROPERTY()
+	UBehaviorTreeComponent* CachedOwnerComp = nullptr;
+
 public:
 	UC_BTTask_Guard();
 
@@ -22,5 +26,7 @@ protected:
 		UBehaviorTreeComponent& OwnerComp,
 		uint8* NodeMemory
 	) override;
+
+	void onGuardFinished();
 	
 };

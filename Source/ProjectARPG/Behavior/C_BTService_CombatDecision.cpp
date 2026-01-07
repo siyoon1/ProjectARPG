@@ -24,28 +24,33 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	if (!BB)
 		return;
 
-	if (pEnemy->isExecutingAction())
+	if (!pEnemy->canDecideAction())
 		return;
 
-	if (GetWorld()->GetTimeSeconds() < pEnemy->getNextActionTime())
+	if (BB->GetValueAsEnum(AC_EnemyController::AIActionKey) !=
+		static_cast<uint8>(E_EnemyCombatAction::None))
 		return;
 
 	const FS_EnemyCombatProfile& profile = pEnemy->getCombatProfile();
 
 	float fRan = FMath::FRand();
 
+	E_EnemyCombatAction NextAction = E_EnemyCombatAction::None;
+
 	if (fRan <= profile.fAttackProbability)
 	{
-		BB->SetValueAsEnum(AC_EnemyController::AIActionKey, static_cast<uint8>(E_EnemyCombatAction::Attack));
+		NextAction = E_EnemyCombatAction::Attack;
 	}
-	else if (fRan <= profile.fAttackProbability + profile.fGuardProbability)
+	else if (fRan <=
+		profile.fAttackProbability + profile.fGuardProbability)
 	{
-		BB->SetValueAsEnum(AC_EnemyController::AIActionKey, static_cast<uint8>(E_EnemyCombatAction::Guard));
+		NextAction = E_EnemyCombatAction::Guard;
 	}
-	else
-	{
-		BB->SetValueAsEnum(AC_EnemyController::AIActionKey, static_cast<uint8>(E_EnemyCombatAction::None));
-	}
+
+	BB->SetValueAsEnum(
+		AC_EnemyController::AIActionKey,
+		static_cast<uint8>(NextAction)
+	);
 
 	
 }

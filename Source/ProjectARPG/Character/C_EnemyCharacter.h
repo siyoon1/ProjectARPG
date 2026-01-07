@@ -8,6 +8,8 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossCombatStateChanged, AC_EnemyCharacter*, Boss, bool, bInCombat);
 DECLARE_MULTICAST_DELEGATE(FOnAttackFinished);
+DECLARE_MULTICAST_DELEGATE(FOnStepBackFinished);
+DECLARE_MULTICAST_DELEGATE(FOnGuardFinished);
 
 UENUM(BlueprintType)
 enum class E_EnemyTier : uint8
@@ -27,6 +29,13 @@ enum class E_EnemyCombatAction : uint8
 	Wait	UMETA(DisplayName = "Wait")
 };
 
+UENUM(BlueprintType)
+enum class E_EnemyActionState : uint8
+{
+	Idle,     
+	Executing,  
+	Cooldown    
+};
 
 USTRUCT(BlueprintType)
 struct FS_EnemyCombatProfile
@@ -67,8 +76,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Widget", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UWidgetComponent> m_wHpBarCom;
 
-	bool m_bCanbeExcuted = false;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	E_EnemyTier m_eEnemyTier;
 
@@ -81,28 +88,38 @@ private:
 	UPROPERTY()
 	AC_CombatCharacter* m_pPlayer{};
 
-
+	bool m_bCanbeExcuted = false;
 	bool m_bInCombat = false;
 	bool m_bIsExecutingAction = false;
 	float m_nextActionTime = 0.f;
 
 	FTimerHandle m_guardHandle;
+	FTimerHandle m_actionCooldownHandle;
 
 protected:
 	E_EnemyCombatAction m_eCurrentAction;
 	FName m_CurrentAttackRow;
 
+	UPROPERTY()
+	E_EnemyActionState m_ActionState = E_EnemyActionState::Idle;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	TMap<E_EnemyTier, FS_EnemyCombatProfile> m_CombatProfiles;
 
+	UPROPERTY()
+	TMap<FName, FS_AttackRuntimeState> m_AttackStates;
+
 	FS_EnemyCombatProfile m_CurrentCombatProfile;
+
+	
 
 public:
 	UPROPERTY(BlueprintAssignable, Category = "BossStatus")
 	FOnBossCombatStateChanged m_onBossStateChanged;
 
 	FOnAttackFinished m_onAttackFinished;
-
+	FOnStepBackFinished m_onStepBackFinished;
+	FOnGuardFinished m_onGuardFinished;
 	
 
 private:
@@ -110,6 +127,8 @@ private:
 
 	void getAttackCandidates(float fDist, TArray<FName>& OutCandidates) const;
 	FName selectAttack(const TArray<FName>& Candidates) const;
+	bool canUseAttack(FName Row) const;
+	float getDistanceToTarget() const;
 
 protected:
 	void BeginPlay() override;
@@ -119,8 +138,6 @@ protected:
 
 public:
 	void Tick(float DeltaTime) override;
-
-	void playStepBack();
 
 	// UI 관련
 	void showHpBar(bool bShow);
@@ -150,15 +167,26 @@ public:
 
 	void setInCombat(bool bCombat);
 
-	void endGuard();
-	void endAttack();
+	
 
 	//행동 실행 API
+	bool canDecideAction() const;
+	void beginAction();
+	void finishAction(float fCooldown);
+	void onActionCooldownFinished();
+	bool isAttackInRange(const FS_AttackData& Data, float Distance) const;
+
+	
 	bool decideNextAttack(float fDist, FName& OutRow);
+
 	bool attack(const FS_AttackData* pAttackData);
+	bool guardForDuration(float fTime);
+	bool playStepBack();
 
-
-	void guardForDuration(float fTime);
+	// 행동 종료
+	void endStepBack();
+	void endGuard();
+	void endAttack();
 
 	bool isExecutingAction() const;
 

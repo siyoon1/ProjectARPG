@@ -14,35 +14,41 @@ UC_BTTask_Attack::UC_BTTask_Attack()
 
 EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	Super::ExecuteTask(OwnerComp, NodeMemory);
+    CachedOwnerComp = &OwnerComp;
 
-	AAIController* AICon = OwnerComp.GetAIOwner();
-	if (!AICon)
-		return EBTNodeResult::Failed;
+    AAIController* AICon = OwnerComp.GetAIOwner();
+    if (!AICon)
+        return EBTNodeResult::Failed;
 
-	AC_EnemyCharacter* pEnemy =
-		Cast<AC_EnemyCharacter>(AICon->GetPawn());
+    AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(AICon->GetPawn());
+    if (!pEnemy)
+        return EBTNodeResult::Failed;
 
-	if (!pEnemy)
-		return EBTNodeResult::Failed;
+    UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+    if (!BB)
+        return EBTNodeResult::Failed;
 
-	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-	if (!BB)
-		return EBTNodeResult::Failed;
+    const FName AttackRow =
+        BB->GetValueAsName(AC_EnemyController::SelectAttackKey);
 
-	CachedOwnerComp = &OwnerComp;
+    const FS_AttackData* pData = pEnemy->getAttackData(AttackRow);
+    if (!pData)
+        return EBTNodeResult::Failed;
 
-	FName Row = BB->GetValueAsName(AC_EnemyController::SelectAttackKey);
+    // 안전: 기존 바인딩 제거
+    pEnemy->m_onAttackFinished.RemoveAll(this);
+    pEnemy->m_onAttackFinished.AddUObject(
+        this,
+        &UC_BTTask_Attack::onAttackEnded
+    );
 
-	const FS_AttackData* pData = pEnemy->getAttackData(Row);
+    bool bStarted = pEnemy->attack(pData);
+    if (!bStarted)
+    {
+        return EBTNodeResult::Failed;
+    }
 
-	if (!pData)
-		return EBTNodeResult::Failed;
-
-	pEnemy->m_onAttackFinished.AddUObject(this, &ThisClass::onAttackEnded);
-	pEnemy->attack(pData);
-
-	return EBTNodeResult::InProgress;
+    return EBTNodeResult::InProgress;
 }
 
 void UC_BTTask_Attack::onAttackEnded()
@@ -50,13 +56,25 @@ void UC_BTTask_Attack::onAttackEnded()
 	if (!CachedOwnerComp)
 		return;
 
-	if (AAIController* AICon = CachedOwnerComp->GetAIOwner())
-	{
-		if (AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(AICon->GetPawn()))
-		{
-			pEnemy->m_onAttackFinished.RemoveAll(this);
-		}
-	}
+    UBlackboardComponent* BB =
+        CachedOwnerComp->GetBlackboardComponent();
+
+    if (BB)
+    {
+        BB->SetValueAsEnum(
+            AC_EnemyController::AIActionKey,
+            static_cast<uint8>(E_EnemyCombatAction::None)
+        );
+    }
+
+    if (AAIController* AICon = CachedOwnerComp->GetAIOwner())
+    {
+        if (AC_EnemyCharacter* Enemy =
+            Cast<AC_EnemyCharacter>(AICon->GetPawn()))
+        {
+            Enemy->m_onAttackFinished.RemoveAll(this);
+        }
+    }
 
 	FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 }

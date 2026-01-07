@@ -126,6 +126,9 @@ E_CombatState AC_CombatCharacter::getCombatState() const
 
 const FS_AttackData* AC_CombatCharacter::getAttackData(FName RowName) const
 {
+	if (RowName.IsNone())
+		return nullptr;
+
 	if (!m_pAttackDataTable)
 		return nullptr;
 

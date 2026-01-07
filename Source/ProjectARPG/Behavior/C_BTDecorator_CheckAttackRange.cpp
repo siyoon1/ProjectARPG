@@ -13,34 +13,26 @@ UC_BTDecorator_CheckAttackRange::UC_BTDecorator_CheckAttackRange()
 
 bool UC_BTDecorator_CheckAttackRange::CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const
 {
-	AAIController* AICon = OwnerComp.GetAIOwner();
-	if (!AICon)
-		return false;
-
-	AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(AICon->GetPawn());
-
-	if (!pEnemy)
-		return false;
-
 	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-
 	if (!BB)
 		return false;
 
-	FName SelectedAttackRow = BB->GetValueAsName(AC_EnemyController::SelectAttackKey);
-	const FS_AttackData* pData = pEnemy->getAttackData(SelectedAttackRow);
+	float Dist = BB->GetValueAsFloat(AC_EnemyController::DistKey);
+	FName AttackRow = BB->GetValueAsName(AC_EnemyController::SelectAttackKey);
 
-	if (!pData)
+	if (AttackRow.IsNone())
 		return false;
 
-	AActor* pTarget = Cast<AActor>(BB->GetValueAsObject(AC_EnemyController::TargetActorKey));
-	if (!pTarget)
+	AAIController* AICon = OwnerComp.GetAIOwner();
+	AC_EnemyCharacter* Enemy =
+		Cast<AC_EnemyCharacter>(AICon->GetPawn());
+
+	if (!Enemy)
 		return false;
 
-	const float fDist = BB->GetValueAsFloat(AC_EnemyController::DistKey);
+	const FS_AttackData* Data = Enemy->getAttackData(AttackRow);
+	if (!Data)
+		return false;
 
-	if (pEnemy->isExecutingAction())
-		return true;
-
-	return fDist >= pData->fMinRange && fDist <= pData->fRange;
+	return Enemy->isAttackInRange(*Data, Dist);
 }

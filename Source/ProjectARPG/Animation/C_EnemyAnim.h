@@ -21,6 +21,4 @@ public:
 public:
 	void playStepBackMontage();
 	void playAttackMontage(UAnimMontage* pAttackMontage);
-	UFUNCTION()
-	void AnimNotify_EndAttack();
 };

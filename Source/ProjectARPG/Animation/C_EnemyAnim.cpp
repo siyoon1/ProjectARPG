@@ -19,14 +19,3 @@ void UC_EnemyAnim::playAttackMontage(UAnimMontage* pAttackMontage)
 
 	Montage_Play(pAttackMontage);
 }
-
-void UC_EnemyAnim::AnimNotify_EndAttack()
-{
-	if (AC_CombatCharacter* pOwner = Cast<AC_CombatCharacter>(TryGetPawnOwner()))
-	{
-		if (AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(pOwner))
-		{
-			pEnemy->endAttack();
-		}
-	}
-}
