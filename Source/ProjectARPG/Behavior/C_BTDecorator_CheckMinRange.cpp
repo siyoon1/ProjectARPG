@@ -13,26 +13,21 @@ UC_BTDecorator_CheckMinRange::UC_BTDecorator_CheckMinRange()
 
 bool UC_BTDecorator_CheckMinRange::CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const
 {
-	AAIController* AICon = OwnerComp.GetAIOwner();
-	if (!AICon)
-		return false;
+    AAIController* AICon = OwnerComp.GetAIOwner();
+    if (!AICon)
+        return false;
 
-	AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(AICon->GetPawn());
+    AC_EnemyCharacter* Enemy =
+        Cast<AC_EnemyCharacter>(AICon->GetPawn());
+    if (!Enemy)
+        return false;
 
-	if (!pEnemy)
-		return false;
+    UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+    if (!BB)
+        return false;
 
-	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+    const float Dist =
+        BB->GetValueAsFloat(AC_EnemyController::DistKey);
 
-	if (!BB)
-		return false;
-
-	FName SelectedAttackRow = BB->GetValueAsName(AC_EnemyController::SelectAttackKey);
-	const FS_AttackData* pData = pEnemy->getAttackData(SelectedAttackRow);
-	if (!pData)
-		return false;
-
-	const float fDist = BB->GetValueAsFloat(AC_EnemyController::DistKey);
-
-	return fDist < pData->fMinRange;
+    return !Enemy->canConsiderAttack(Dist);
 }

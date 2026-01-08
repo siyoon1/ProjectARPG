@@ -32,10 +32,9 @@ public:
 	static const FName StartPosKey;
 	static const FName PatrolPosKey;
 	static const FName DistKey;
-	static const FName IsCombatKey;
-	static const FName AttackProbKey;
-	static const FName GuardProbKey;
+	static const FName IntentLockedKey;
 	static const FName SelectAttackKey;
 	static const FName AttackMoveLocationKey;
-	static const FName AIActionKey;
+	static const FName IntentKey;
+	static const FName LastIntentKey;
 };

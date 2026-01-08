@@ -150,9 +150,6 @@ bool UC_ExecutionComponent::canStealthExecute(AC_EnemyCharacter* pEnemy) const
 	if (!pEnemy || !m_pOwnerPlayer)
 		return false;
 
-	if (!m_pOwnerPlayer->GetCharacterMovement()->IsCrouching())
-		return false;
-
 	if (pEnemy->isAnawareOfPlayer())
 		return false;
 

@@ -43,14 +43,15 @@ void UC_BTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	if (!pTarget)
 	{
 		BB->ClearValue(AC_EnemyController::TargetActorKey);
-		BB->SetValueAsBool(AC_EnemyController::IsCombatKey, false);
 		BB->SetValueAsFloat(AC_EnemyController::DistKey, -1.f);
 		return;
 	}
 
-
-	BB->SetValueAsObject(AC_EnemyController::TargetActorKey, pTarget);
-	BB->SetValueAsBool(AC_EnemyController::IsCombatKey, true);
+	if (DetectComp->isDetecting())
+	{
+		BB->SetValueAsObject(AC_EnemyController::TargetActorKey, pTarget);
+	}
+	
 
 
 	if (pTarget)
@@ -63,30 +64,4 @@ void UC_BTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	{
 		BB->SetValueAsFloat(AC_EnemyController::DistKey, -1.f);
 	}
-
-	FVector vEnemyLoc = pOwner->GetActorLocation();
-	FVector vTargetLoc = pTarget->GetActorLocation();
-
-	FVector vDir = (vEnemyLoc - vTargetLoc).GetSafeNormal();
-
-	AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(pOwner);
-
-	if (!pEnemy)
-		return;
-
-	FName AttackRow = BB->GetValueAsName(AC_EnemyController::SelectAttackKey);
-
-	float fIdealRange = pEnemy->getCombatProfile().fPreferredRange;
-
-	if (!AttackRow.IsNone())
-	{
-		if (const FS_AttackData* Data = pEnemy->getAttackData(AttackRow))
-		{
-			fIdealRange = Data->fIdealRange;
-		}
-	}
-	
-	FVector vMoveLoc = vTargetLoc + vDir * fIdealRange;
-
-	BB->SetValueAsVector(AC_EnemyController::AttackMoveLocationKey, vMoveLoc);
 }

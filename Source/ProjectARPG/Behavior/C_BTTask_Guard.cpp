@@ -10,13 +10,18 @@ UC_BTTask_Guard::UC_BTTask_Guard()
 {
 	NodeName = TEXT("Guard");
 	bCreateNodeInstance = true;
+    bNotifyTick = true;
 }
 
 EBTNodeResult::Type UC_BTTask_Guard::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	Super::ExecuteTask(OwnerComp, NodeMemory);
+    Super::ExecuteTask(OwnerComp, NodeMemory);
 
-	CachedOwnerComp = &OwnerComp;
+    CachedOwnerComp = &OwnerComp;
+
+    UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+    if (!BB)
+        return EBTNodeResult::Failed;
 
     AAIController* AICon = OwnerComp.GetAIOwner();
     if (!AICon)
@@ -30,42 +35,43 @@ EBTNodeResult::Type UC_BTTask_Guard::ExecuteTask(UBehaviorTreeComponent& OwnerCo
     const FS_EnemyCombatProfile& Profile =
         Enemy->getCombatProfile();
 
-    Enemy->m_onGuardFinished.RemoveAll(this);
-    Enemy->m_onGuardFinished.AddUObject(
-        this,
-        &UC_BTTask_Guard::onGuardFinished
-    );
 
-    if (!Enemy->guardForDuration(Profile.fGuardDuration))
+    if (!Enemy->startGuard())
+    {
         return EBTNodeResult::Failed;
+    }
+
+    BB->SetValueAsBool(
+        AC_EnemyController::IntentLockedKey,
+        true);
 
     return EBTNodeResult::InProgress;
 }
 
-void UC_BTTask_Guard::onGuardFinished()
+void UC_BTTask_Guard::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
-    if (!CachedOwnerComp)
+    AAIController* AICon = OwnerComp.GetAIOwner();
+    if (!AICon)
         return;
 
-    UBlackboardComponent* BB =
-        CachedOwnerComp->GetBlackboardComponent();
+    AC_EnemyCharacter* Enemy =
+        Cast<AC_EnemyCharacter>(AICon->GetPawn());
+    if (!Enemy)
+        return;
 
-    if (BB)
+    if (!Enemy->canReleaseGuard())
+        return;
+
+    Enemy->endGuard();
+
+    if (UBlackboardComponent* BB =
+        OwnerComp.GetBlackboardComponent())
     {
-        BB->SetValueAsEnum(
-            AC_EnemyController::AIActionKey,
-            static_cast<uint8>(E_EnemyCombatAction::None)
-        );
+        BB->SetValueAsBool(
+            AC_EnemyController::IntentLockedKey,
+            false);
     }
 
-    if (AAIController* AICon = CachedOwnerComp->GetAIOwner())
-    {
-        if (AC_EnemyCharacter* Enemy =
-            Cast<AC_EnemyCharacter>(AICon->GetPawn()))
-        {
-            Enemy->m_onGuardFinished.RemoveAll(this);
-        }
-    }
-
-    FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
+    FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 }
+

@@ -11,12 +11,11 @@ const FName AC_EnemyController::TargetActorKey = TEXT("TargetActor");
 const FName AC_EnemyController::StartPosKey = TEXT("StartPos");
 const FName AC_EnemyController::PatrolPosKey = TEXT("PatrolPos");
 const FName AC_EnemyController::DistKey = TEXT("DistanceToTarget");
-const FName AC_EnemyController::IsCombatKey = TEXT("IsInCombat");
-const FName AC_EnemyController::AttackProbKey = TEXT("AttackProb");
-const FName AC_EnemyController::GuardProbKey = TEXT("GuardProb");
+const FName AC_EnemyController::IntentLockedKey = TEXT("bIntentLocked");
 const FName AC_EnemyController::SelectAttackKey = TEXT("SelectAttack");
 const FName AC_EnemyController::AttackMoveLocationKey = TEXT("AttackMovePos");
-const FName AC_EnemyController::AIActionKey = TEXT("AIAction");
+const FName AC_EnemyController::IntentKey = TEXT("Intent");
+const FName AC_EnemyController::LastIntentKey = TEXT("LastIntent");
 
 AC_EnemyController::AC_EnemyController()
 {
@@ -62,7 +61,6 @@ void AC_EnemyController::executionFinishied(AC_CombatCharacter* pTarget)
 		BB->ClearValue(AC_EnemyController::AttackMoveLocationKey);
 
 
-		BB->SetValueAsBool(AC_EnemyController::IsCombatKey, true);
 		BB->SetValueAsObject(AC_EnemyController::TargetActorKey, pTarget);
 
 	}

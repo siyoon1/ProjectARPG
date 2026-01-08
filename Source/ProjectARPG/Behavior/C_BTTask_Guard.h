@@ -27,6 +27,10 @@ protected:
 		uint8* NodeMemory
 	) override;
 
-	void onGuardFinished();
+	virtual void TickTask(
+		UBehaviorTreeComponent& OwnerComp,
+		uint8* NodeMemory,
+		float DeltaSeconds) override;
+
 	
 };

@@ -20,6 +20,5 @@ bool UC_BTDecorator_IsInCombat::CalculateRawConditionValue(UBehaviorTreeComponen
 	if (!BB)
 		return false;
 
-
-	return BB->GetValueAsBool(AC_EnemyController::IsCombatKey);
+	return false;
 }

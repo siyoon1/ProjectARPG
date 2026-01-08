@@ -21,12 +21,13 @@ enum class E_EnemyTier : uint8
 };
 
 UENUM(BlueprintType)
-enum class E_EnemyCombatAction : uint8
+enum class E_CombatIntent : uint8
 {
-	None	UMETA(DisplayName = "None"),
-	Attack	UMETA(DisplayName = "Attack"),
-	Guard	UMETA(DisplayName = "Guard"),
-	Wait	UMETA(DisplayName = "Wait")
+	None,
+	Attack,
+	Guard,
+	Reposition,
+	Chase
 };
 
 UENUM(BlueprintType)
@@ -58,7 +59,13 @@ struct FS_EnemyCombatProfile
 	float fActionInterval = 0.25f;
 
 	UPROPERTY(EditAnywhere)
-	float fGuardDuration = 0.6f;
+	float fGuardMinTime = 0.6f;
+
+	UPROPERTY(EditAnywhere)
+	float fGuardMaxTime = 1.8f;
+
+	UPROPERTY(EditAnywhere)
+	float fGuardReleaseDelay = 0.3f;
 
 	UPROPERTY(EditAnywhere)
 	float fPreferredRange = 180.f;
@@ -89,15 +96,17 @@ private:
 	AC_CombatCharacter* m_pPlayer{};
 
 	bool m_bCanbeExcuted = false;
+	bool m_bIsGuarding = false;
 	bool m_bInCombat = false;
 	bool m_bIsExecutingAction = false;
+	float m_fGuardStartTime = 0.f;
 	float m_nextActionTime = 0.f;
 
 	FTimerHandle m_guardHandle;
 	FTimerHandle m_actionCooldownHandle;
 
 protected:
-	E_EnemyCombatAction m_eCurrentAction;
+	E_CombatIntent m_CombatIntent;
 	FName m_CurrentAttackRow;
 
 	UPROPERTY()
@@ -128,12 +137,13 @@ private:
 	void getAttackCandidates(float fDist, TArray<FName>& OutCandidates) const;
 	FName selectAttack(const TArray<FName>& Candidates) const;
 	bool canUseAttack(FName Row) const;
-	float getDistanceToTarget() const;
+	
+
+
+
 
 protected:
 	void BeginPlay() override;
-
-	bool isPlayerAttacking() const;
 	
 
 public:
@@ -174,19 +184,28 @@ public:
 	void beginAction();
 	void finishAction(float fCooldown);
 	void onActionCooldownFinished();
-	bool isAttackInRange(const FS_AttackData& Data, float Distance) const;
 
-	
+	bool isAttackInRange(const FS_AttackData& Data, float Distance) const;
+	bool isPlayerAttacking() const;
+	bool canConsiderAttack(float fDist) const;
+	float getDistanceToTarget() const;
 	bool decideNextAttack(float fDist, FName& OutRow);
 
 	bool attack(const FS_AttackData* pAttackData);
-	bool guardForDuration(float fTime);
-	bool playStepBack();
-
-	// 행동 종료
-	void endStepBack();
-	void endGuard();
 	void endAttack();
+
+	bool isPlayerThreatening() const;
+
+	bool playStepBack();
+	void endStepBack();
+
+	bool startGuard();
+	bool canReleaseGuard() const;
+	void endGuard();
+
+	bool guardForDuration(float fTime);
+
+	
 
 	bool isExecutingAction() const;
 

@@ -175,6 +175,46 @@ bool AC_EnemyCharacter::canUseAttack(FName Row) const
 	return true;
 }
 
+bool AC_EnemyCharacter::startGuard()
+{
+	if (m_bIsGuarding)
+		return false;
+
+	setGuard(true);
+
+	m_bIsGuarding = true;
+
+	m_fGuardStartTime = GetWorld()->GetTimeSeconds();
+
+	return true;
+}
+
+bool AC_EnemyCharacter::canReleaseGuard() const
+{
+	const float fNow = GetWorld()->GetTimeSeconds();
+	const float fElapsed = fNow - m_fGuardStartTime;
+
+	if (fElapsed < m_CurrentCombatProfile.fGuardMinTime)
+		return false;
+
+	if (fElapsed >= m_CurrentCombatProfile.fGuardMaxTime)
+		return true;
+
+	if (isPlayerThreatening())
+		return false;
+
+	return true;
+}
+
+void AC_EnemyCharacter::endGuard()
+{
+	setGuard(false);
+	m_bIsGuarding = false;
+
+	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
+	finishAction(Cooldown);
+}
+
 bool AC_EnemyCharacter::isAttackInRange(const FS_AttackData& Data, float fDistance) const
 {
 	if (fDistance < Data.fMinRange)
@@ -184,14 +224,6 @@ bool AC_EnemyCharacter::isAttackInRange(const FS_AttackData& Data, float fDistan
 		return false;
 
 	return true;
-}
-
-float AC_EnemyCharacter::getDistanceToTarget() const
-{
-	if (!m_pPlayer)
-		return 0.f;
-
-	return FVector::Dist(GetActorLocation(), m_pPlayer->GetActorLocation());
 }
 
 bool AC_EnemyCharacter::canDecideAction() const
@@ -288,6 +320,19 @@ bool AC_EnemyCharacter::isPlayerAttacking() const
 	return true;
 }
 
+bool AC_EnemyCharacter::canConsiderAttack(float fDist) const
+{
+	return fDist <= getAttackMaxRange() * 1.1f;
+}
+
+float AC_EnemyCharacter::getDistanceToTarget() const
+{
+	if (!m_pPlayer)
+		return 0.f;
+
+	return FVector::Dist(GetActorLocation(), m_pPlayer->GetActorLocation());
+}
+
 void AC_EnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -317,15 +362,6 @@ void AC_EnemyCharacter::endStepBack()
 	m_onStepBackFinished.Broadcast();
 }
 
-void AC_EnemyCharacter::endGuard()
-{
-	setGuard(false);
-	
-	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
-	finishAction(Cooldown);
-
-	m_onGuardFinished.Broadcast();
-}
 
 void AC_EnemyCharacter::endAttack()
 {
@@ -333,6 +369,34 @@ void AC_EnemyCharacter::endAttack()
 	finishAction(Cooldown);
 
 	m_onAttackFinished.Broadcast();
+}
+
+bool AC_EnemyCharacter::isPlayerThreatening() const
+{
+	if (!m_pPlayer)
+		return false;
+
+	if (m_pPlayer->getCombatState() != E_CombatState::Attacking)
+		return false;
+
+	const float Dist =
+		FVector::Dist(GetActorLocation(), m_pPlayer->GetActorLocation());
+
+	if (Dist > m_CurrentCombatProfile.fPreferredRange * 1.1f)
+		return false;
+
+	const FVector ToEnemy =
+		(GetActorLocation() - m_pPlayer->GetActorLocation()).GetSafeNormal();
+
+	const float Dot =
+		FVector::DotProduct(m_pPlayer->GetActorForwardVector(), ToEnemy);
+
+	if (Dot < 0.6f)
+		return false;
+
+
+
+	return true;
 }
 
 void AC_EnemyCharacter::showHpBar(bool bShow)

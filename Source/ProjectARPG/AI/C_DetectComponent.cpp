@@ -137,43 +137,21 @@ bool UC_DetectComponent::checkDist(AC_PlayerCharacter* pPlayer)
 bool UC_DetectComponent::checkFOV(AC_PlayerCharacter* pPlayer)
 {
 	AActor* pOwner = GetOwner();
-	FVector vToTarget = (pPlayer->GetActorLocation() - pOwner->GetActorLocation()).GetSafeNormal();
 
-	float fDot = FVector::DotProduct(pOwner->GetActorForwardVector(), vToTarget);
+	FVector vToTarget =
+		(pPlayer->GetActorLocation() - pOwner->GetActorLocation()).GetSafeNormal();
 
-	float fMinDot = m_bIsDetecting ? 0.0f : 0.5f;
+	float fDot =
+		FVector::DotProduct(pOwner->GetActorForwardVector(), vToTarget);
 
+	// 기본 전방 시야
+	float fMinDot = m_bIsDetecting ? 0.2f : 0.5f;
+
+	// 웅크리면 더 빡세게
 	if (pPlayer->isCrouch())
-	{
-		fMinDot = 0.7f;
-	}
+		fMinDot += 0.15f;
 
-	float fDist = FVector::Dist(pPlayer->GetActorLocation(), pOwner->GetActorLocation());
-
-	if (fDot >= fMinDot)
-		return true;
-
-	if (fDot < -0.2f && fDist < m_DetectDist * 0.2f)
-		return true;
-
-	if (fDot >= -0.8f)
-	{
-		if (fDist < m_DetectDist * 0.4f)
-			return true;
-	}
-
-	
-
-	DrawDebugLine(
-		GetWorld(),
-		pOwner->GetActorLocation(),
-		pOwner->GetActorLocation() + pOwner->GetActorForwardVector() * 500.f,
-		FColor::Green,
-		false,
-		0.1f
-	);
-
-	return false;
+	return fDot >= fMinDot;
 }
 
 bool UC_DetectComponent::checkLineOfSight(AC_PlayerCharacter* pPlayer)

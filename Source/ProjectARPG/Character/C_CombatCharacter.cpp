@@ -435,7 +435,7 @@ void AC_CombatCharacter::performAttackTrace()
 						{
 							bool bFront = pTarget->isGuardingFront(this);
 
-							if (m_bCurrentAttackUnblockable && bFront)
+							if (bFront)
 							{
 								bGuardSuccess = true;
 

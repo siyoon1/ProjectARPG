@@ -23,7 +23,7 @@ EBTNodeResult::Type UC_BTTask_SelectAttack::ExecuteTask(UBehaviorTreeComponent& 
 	if (!pEnemy)
 		return EBTNodeResult::Failed;
 
-	if (pEnemy->isExecutingAction())
+	if (!pEnemy->canDecideAction())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Fail: isExecutingAction"));
 		return EBTNodeResult::Failed;
@@ -50,8 +50,6 @@ EBTNodeResult::Type UC_BTTask_SelectAttack::ExecuteTask(UBehaviorTreeComponent& 
 		return EBTNodeResult::Failed;
 
 	BB->SetValueAsName(AC_EnemyController::SelectAttackKey, SelectedRow);
-
-	UE_LOG(LogTemp, Warning, TEXT("SelectedRow Set = %s"), *SelectedRow.ToString());
 
 	return EBTNodeResult::Succeeded;
 }

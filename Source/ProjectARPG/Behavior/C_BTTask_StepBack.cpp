@@ -19,6 +19,10 @@ EBTNodeResult::Type UC_BTTask_StepBack::ExecuteTask(UBehaviorTreeComponent& Owne
 
     CachedOwnerComp = &OwnerComp;
 
+    UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+    if (!BB)
+        return EBTNodeResult::Failed;
+
     AAIController* AICon = OwnerComp.GetAIOwner();
     if (!AICon)
         return EBTNodeResult::Failed;
@@ -36,7 +40,15 @@ EBTNodeResult::Type UC_BTTask_StepBack::ExecuteTask(UBehaviorTreeComponent& Owne
     );
 
     if (!Enemy->playStepBack())
+    {
+        BB->SetValueAsEnum(AC_EnemyController::IntentKey, (uint8)E_CombatIntent::None);
+        BB->SetValueAsBool(AC_EnemyController::IntentLockedKey, false);
         return EBTNodeResult::Failed;
+    }
+
+    BB->SetValueAsBool(
+        AC_EnemyController::IntentLockedKey,
+        true);
 
     return EBTNodeResult::InProgress;
 }
@@ -49,22 +61,36 @@ void UC_BTTask_StepBack::onStepBackFinished()
     UBlackboardComponent* BB =
         CachedOwnerComp->GetBlackboardComponent();
 
-    if (BB)
-    {
-        BB->SetValueAsEnum(
-            AC_EnemyController::AIActionKey,
-            static_cast<uint8>(E_EnemyCombatAction::None)
-        );
-    }
-
     if (AAIController* AICon = CachedOwnerComp->GetAIOwner())
     {
         if (AC_EnemyCharacter* Enemy =
             Cast<AC_EnemyCharacter>(AICon->GetPawn()))
         {
             Enemy->m_onStepBackFinished.RemoveAll(this);
+
+            const float Dist =
+                BB->GetValueAsFloat(AC_EnemyController::DistKey);
+
+            // ? 핵심: 이제 공격 가능하면 Intent 초기화
+            if (Enemy->canConsiderAttack(Dist))
+            {
+                BB->SetValueAsEnum(
+                    AC_EnemyController::IntentKey,
+                    (uint8)E_CombatIntent::None);
+
+                BB->SetValueAsEnum(
+                    AC_EnemyController::LastIntentKey,
+                    (uint8)E_CombatIntent::None);
+            }
+
         }
     }
+
+    BB->SetValueAsBool(
+        AC_EnemyController::IntentLockedKey,
+        false);
+
+
 
     FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 }

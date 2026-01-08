@@ -28,6 +28,7 @@ EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerC
     if (!BB)
         return EBTNodeResult::Failed;
 
+
     const FName AttackRow =
         BB->GetValueAsName(AC_EnemyController::SelectAttackKey);
 
@@ -45,8 +46,13 @@ EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerC
     bool bStarted = pEnemy->attack(pData);
     if (!bStarted)
     {
+        BB->SetValueAsBool(AC_EnemyController::IntentLockedKey, false);
         return EBTNodeResult::Failed;
     }
+
+    BB->SetValueAsBool(
+        AC_EnemyController::IntentLockedKey,
+        true);
 
     return EBTNodeResult::InProgress;
 }
@@ -59,13 +65,6 @@ void UC_BTTask_Attack::onAttackEnded()
     UBlackboardComponent* BB =
         CachedOwnerComp->GetBlackboardComponent();
 
-    if (BB)
-    {
-        BB->SetValueAsEnum(
-            AC_EnemyController::AIActionKey,
-            static_cast<uint8>(E_EnemyCombatAction::None)
-        );
-    }
 
     if (AAIController* AICon = CachedOwnerComp->GetAIOwner())
     {
@@ -75,6 +74,10 @@ void UC_BTTask_Attack::onAttackEnded()
             Enemy->m_onAttackFinished.RemoveAll(this);
         }
     }
+
+    BB->SetValueAsBool(
+        AC_EnemyController::IntentLockedKey,
+        false);
 
 	FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 }
