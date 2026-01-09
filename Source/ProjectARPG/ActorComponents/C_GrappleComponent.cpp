@@ -34,9 +34,6 @@ void UC_GrappleComponent::endPull()
 		m_pOwner->SetActorLocation(Hit.Location);
 	}
 
-	
-
-
 	m_pOwner->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 
 	m_pOwner->initJump();

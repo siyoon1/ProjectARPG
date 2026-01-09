@@ -210,7 +210,6 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim,
 
 	pAttacker->setCombatState(E_CombatState::Executing);
 	pEnemy->setCombatState(E_CombatState::Executing);
-	//pEnemy->beginAction();
 
 	pAttacker->DisableInput(nullptr);
 	pAttacker->GetCharacterMovement()->StopMovementImmediately();
