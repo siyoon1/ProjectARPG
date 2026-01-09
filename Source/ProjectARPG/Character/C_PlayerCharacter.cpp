@@ -70,6 +70,39 @@ void AC_PlayerCharacter::BeginPlay()
 
 }
 
+void AC_PlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+
+	// 락온 기능
+	setLockOn(DeltaTime);
+
+	checkWallTrace();  // 무조건 실행
+
+
+	if (m_eState == E_CombatState::Climb)
+	{
+		FVector ActorLoc = GetActorLocation();
+
+		// Tick 기준으로 RootMotion에 의해 이동한 X/Y값은 그대로 두고 Z만 Clamp
+		FVector CurrentVelocity = GetCharacterMovement()->Velocity;
+
+		// Z Clamp
+		if (ActorLoc.Z > m_vClimbLocation.Z)
+		{
+			ActorLoc.Z = m_vClimbLocation.Z;
+
+			SetActorLocation(ActorLoc, true);
+
+			FVector NewVelocity = FVector(CurrentVelocity.X, CurrentVelocity.Y, 0.f);
+			GetCharacterMovement()->Velocity = NewVelocity;
+		}
+	}
+
+
+}
+
 bool AC_PlayerCharacter::isInvincibleAgainst(AActor* pAttacker) const
 {
 	if (m_eState == E_CombatState::Executing)
@@ -569,6 +602,11 @@ USphereComponent* AC_PlayerCharacter::getExecutionSphere() const
 	return nullptr;
 }
 
+void AC_PlayerCharacter::initWallgrab()
+{
+	setWallGrab(false);
+}
+
 AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()
 {
 	const float fDetectRadius = 500.f;
@@ -844,7 +882,7 @@ void AC_PlayerCharacter::startClimbUp()
 	m_bCanClimbUp = false;
 	m_bIsWallGrabbing = false;
 
-	// ? 2) RootMotion 제어 위해 Flying
+	// RootMotion 제어 위해 Flying
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 
 
@@ -973,40 +1011,6 @@ UCameraComponent* AC_PlayerCharacter::getFollowCamera() const
 void AC_PlayerCharacter::initJump()
 {
 	m_nJumpCount = 0;
-}
-
-
-void AC_PlayerCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-
-	// 락온 기능
-	setLockOn(DeltaTime);
-
-	checkWallTrace();  // 무조건 실행
-
-
-	if(m_eState == E_CombatState::Climb)
-	{
-		FVector ActorLoc = GetActorLocation();
-
-		// Tick 기준으로 RootMotion에 의해 이동한 X/Y값은 그대로 두고 Z만 Clamp
-		FVector CurrentVelocity = GetCharacterMovement()->Velocity;
-
-		// Z Clamp
-		if (ActorLoc.Z > m_vClimbLocation.Z)
-		{
-			ActorLoc.Z = m_vClimbLocation.Z;
-
-			SetActorLocation(ActorLoc, true);
-
-			FVector NewVelocity = FVector(CurrentVelocity.X, CurrentVelocity.Y, 0.f);
-			GetCharacterMovement()->Velocity = NewVelocity;
-		}
-	}
-
-	
 }
 
 bool AC_PlayerCharacter::tryExcuteEnemy() const

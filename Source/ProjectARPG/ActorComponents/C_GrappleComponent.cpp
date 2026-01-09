@@ -34,6 +34,8 @@ void UC_GrappleComponent::endPull()
 		m_pOwner->SetActorLocation(Hit.Location);
 	}
 
+	
+
 
 	m_pOwner->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 
@@ -238,6 +240,7 @@ void UC_GrappleComponent::tryStartGrapple()
 	startFireRope(pTarget);
 
 
+
 	if (UAnimInstance* pAnim = Cast<UAnimInstance>(m_pOwner->GetMesh()->GetAnimInstance()))
 	{
 		pAnim->Montage_Play(m_pGrappleStartMontage);
@@ -250,6 +253,9 @@ void UC_GrappleComponent::startPull(AC_GrapplePoint* pTarget)
 {
 	if (!m_pOwner || !pTarget)
 		return;
+
+	if (m_pOwner->getCombatState() == E_CombatState::WallGrabbing)
+		m_pOwner->initWallgrab();
 
 	m_bIsPulling = true;
 	m_pCurrentTarget = pTarget;

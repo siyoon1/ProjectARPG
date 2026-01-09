@@ -191,7 +191,7 @@ public:
 	void resetCombo();
 	USphereComponent* getExecutionSphere() const;
 
-
+	void initWallgrab();
 
 	//락온 함수
 	UFUNCTION(BlueprintCallable)

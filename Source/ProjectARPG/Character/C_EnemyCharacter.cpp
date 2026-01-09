@@ -261,10 +261,7 @@ bool AC_EnemyCharacter::decideNextAttack(float fDist, FName& OutRow)
 	getAttackCandidates(fDist, Candidates);
 
 	if (Candidates.Num() == 0)
-	{
-		OutRow = FName("LightAttack1");
-		return true;
-	}
+		return false; 
 
 	OutRow = selectAttack(Candidates);
 	return !OutRow.IsNone();
@@ -524,6 +521,7 @@ bool AC_EnemyCharacter::isCombat() const
 
 void AC_EnemyCharacter::onParryFinished()
 {
+	finishAction(0.f);
 	m_bIsExecutingAction = false;
 	m_eState = E_CombatState::Idle;
 
