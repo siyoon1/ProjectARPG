@@ -32,18 +32,18 @@ EBTNodeResult::Type UC_BTTask_Guard::ExecuteTask(UBehaviorTreeComponent& OwnerCo
     if (!Enemy)
         return EBTNodeResult::Failed;
 
-    const FS_EnemyCombatProfile& Profile =
-        Enemy->getCombatProfile();
+    UE_LOG(LogTemp, Warning,
+        TEXT("[GuardTask] ExecuteTask start, isGuard=%d"),
+        Enemy->isGuard());
 
-
-    if (!Enemy->startGuard())
+    if (!Enemy->isGuard())
     {
-        return EBTNodeResult::Failed;
+        if (!Enemy->startGuard())
+            return EBTNodeResult::Failed;
     }
 
-    BB->SetValueAsBool(
-        AC_EnemyController::IntentLockedKey,
-        true);
+    UE_LOG(LogTemp, Warning,
+        TEXT("[GuardTask] startGuard SUCCESS"));
 
     return EBTNodeResult::InProgress;
 }
@@ -59,8 +59,11 @@ void UC_BTTask_Guard::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMem
     if (!Enemy)
         return;
 
+
+
     if (!Enemy->canReleaseGuard())
         return;
+
 
     Enemy->endGuard();
 

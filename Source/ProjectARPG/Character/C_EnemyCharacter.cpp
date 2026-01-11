@@ -180,6 +180,7 @@ bool AC_EnemyCharacter::startGuard()
 	if (m_bIsGuarding)
 		return false;
 
+	beginAction();
 	setGuard(true);
 
 	m_bIsGuarding = true;
@@ -193,6 +194,14 @@ bool AC_EnemyCharacter::canReleaseGuard() const
 {
 	const float fNow = GetWorld()->GetTimeSeconds();
 	const float fElapsed = fNow - m_fGuardStartTime;
+
+	UE_LOG(LogTemp, Warning,
+		TEXT("[Enemy] canReleaseGuard elapsed=%.2f min=%.2f max=%.2f threatening=%d"),
+		fElapsed,
+		m_CurrentCombatProfile.fGuardMinTime,
+		m_CurrentCombatProfile.fGuardMaxTime,
+		isPlayerThreatening()
+	);
 
 	if (fElapsed < m_CurrentCombatProfile.fGuardMinTime)
 		return false;

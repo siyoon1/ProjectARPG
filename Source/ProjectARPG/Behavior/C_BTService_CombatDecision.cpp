@@ -36,6 +36,13 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	AActor* Target =
 		Cast<AActor>(BB->GetValueAsObject("TargetActor"));
 
+	if (BB->GetValueAsBool(AC_EnemyController::IntentLockedKey))
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("[CombatDecision] IntentLocked = true, skip decide"));
+		return;
+	}
+
 	if (!Target)
 	{
 		BB->SetValueAsEnum(
@@ -74,32 +81,30 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 
 	
 
-	// 상황 가중치
-	if (pEnemy->isPlayerAttacking())
+	if (pEnemy->isPlayerAttacking() && Dist < Profile.fPreferredRange * 0.9f)
 		GuardW *= 1.5f;
+	else
+		GuardW *= 0.6f;
 
 	if (Dist < Profile.fPreferredRange * 0.8f)
 		AttackW *= 1.2f;
 
 	const E_CombatIntent LastIntent =
-		(E_CombatIntent)BB->GetValueAsEnum(
-			AC_EnemyController::LastIntentKey);
+		(E_CombatIntent)BB->GetValueAsEnum(AC_EnemyController::LastIntentKey);
 
-	if (LastIntent == E_CombatIntent::Reposition)
+	if (LastIntent == E_CombatIntent::Guard)
 	{
-		RepoW *= 0.25f;   // 연속 리포지션 강력 억제
-		AttackW *= 1.2f;
-	}
-	else if (LastIntent == E_CombatIntent::Attack)
-	{
-		AttackW *= 0.85f;
-		GuardW *= 1.1f;
+		AttackW = 1.3f;
+		GuardW *= 0.2f;
+		RepoW *= 1.2f;
 	}
 
 	const float Sum = AttackW + GuardW + RepoW;
 	const float Pick = FMath::FRandRange(0.f, Sum);
 
-	E_CombatIntent Intent = E_CombatIntent::Guard;
+	E_CombatIntent Intent;
+
+	
 
 	if (Pick < AttackW)
 		Intent = E_CombatIntent::Attack;
@@ -107,6 +112,11 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 		Intent = E_CombatIntent::Guard;
 	else
 		Intent = E_CombatIntent::Reposition;
+
+	UE_LOG(LogTemp, Warning,
+		TEXT("[CombatDecision] Dist=%.1f A=%.2f G=%.2f R=%.2f Pick=%.2f -> Intent=%d"),
+		Dist, AttackW, GuardW, RepoW, Pick, (int32)Intent);
+
 
 	BB->SetValueAsEnum(
 		AC_EnemyController::IntentKey,

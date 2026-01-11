@@ -77,10 +77,6 @@ void UC_BTTask_StepBack::onStepBackFinished()
                 BB->SetValueAsEnum(
                     AC_EnemyController::IntentKey,
                     (uint8)E_CombatIntent::None);
-
-                BB->SetValueAsEnum(
-                    AC_EnemyController::LastIntentKey,
-                    (uint8)E_CombatIntent::None);
             }
 
         }
