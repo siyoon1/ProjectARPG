@@ -2,6 +2,8 @@
 
 
 #include "C_Inventory.h"
+#include "ProjectARPG/Inventory/C_ItemDataBase.h"
+#include "ProjectARPG/Game/C_ARPGGameInstance.h"
 
 // Sets default values for this component's properties
 UC_Inventory::UC_Inventory()
@@ -21,7 +23,11 @@ void UC_Inventory::BeginPlay()
 
 	// ...
 	
-
+	UC_ARPGGameInstance* GI = Cast<UC_ARPGGameInstance>(GetWorld()->GetGameInstance());
+	if (GI)
+	{
+		m_ItemDB = GI->getItemDB();
+	}
 }
 
 
@@ -33,9 +39,9 @@ void UC_Inventory::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 	// ...
 }
 
-bool UC_Inventory::addItem(UC_ItemObject* pItem, int32 nCount)
+bool UC_Inventory::addItem(UC_ItemObject* Item, int32 nCount)
 {
-	if (!pItem || nCount <= 0)
+	if (!Item || nCount <= 0)
 		return false;
 
 	int32 nRemaining = nCount;
@@ -47,10 +53,10 @@ bool UC_Inventory::addItem(UC_ItemObject* pItem, int32 nCount)
 		if (!slot.Item)
 			continue;
 
-		if (slot.Item->m_ItemID == pItem->m_ItemID &&
-			pItem->m_MaxStack > 1 && slot.nCount < pItem->m_MaxStack)
+		if (slot.Item->m_ItemData->ItemID == Item->m_ItemData->ItemID &&
+			Item->m_ItemData->MaxStack > 1 && slot.nCount < Item->m_ItemData->MaxStack)
 		{
-			int32 nSpace = pItem->m_MaxStack - slot.nCount;
+			int32 nSpace = Item->m_ItemData->MaxStack - slot.nCount;
 			int32 nAdd = FMath::Min(nSpace, nRemaining);
 
 			slot.nCount += nAdd;
@@ -58,10 +64,10 @@ bool UC_Inventory::addItem(UC_ItemObject* pItem, int32 nCount)
 
 			UE_LOG(LogTemp, Warning,
 				TEXT("[Inventory] Stack %s +%d (%d/%d)"),
-				*pItem->m_ItemID.ToString(),
+				*Item->m_ItemData->ItemID.ToString(),
 				nAdd,
 				slot.nCount,
-				pItem->m_MaxStack
+				Item->m_ItemData->MaxStack
 			);
 
 			// 나머지 0이면 성공으로 그냥 끝
@@ -81,9 +87,9 @@ bool UC_Inventory::addItem(UC_ItemObject* pItem, int32 nCount)
 		}
 
 		FS_InventorySlot newSlot;
-		newSlot.Item = pItem;
+		newSlot.Item = Item;
 
-		int32 nAdd = (pItem->m_MaxStack > 1) ? FMath::Min(pItem->m_MaxStack, nRemaining) : 1;
+		int32 nAdd = (Item->m_ItemData->MaxStack > 1) ? FMath::Min(Item->m_ItemData->MaxStack, nRemaining) : 1;
 
 		newSlot.nCount = nAdd;
 
@@ -93,12 +99,27 @@ bool UC_Inventory::addItem(UC_ItemObject* pItem, int32 nCount)
 
 		UE_LOG(LogTemp, Warning,
 			TEXT("[Inventory] New Slot %s x%d"),
-			*pItem->m_ItemID.ToString(),
+			*Item->m_ItemData->ItemID.ToString(),
 			nAdd
 		);
 	}
 
 	m_onInventoryChanged.Broadcast();
+
+	return true;
+}
+
+bool UC_Inventory::addItemByID(FName ItemID, int32 nCount)
+{
+	if (!m_ItemDB || nCount < 0)
+		return false;
+
+	for (int32 i = 0; i < nCount; ++i)
+	{
+		UC_ItemObject* NewItem = m_ItemDB->createItemObject(ItemID, this);
+		if (!NewItem || !addItem(NewItem, 1))
+			return false;
+	}
 
 	return true;
 }
@@ -111,6 +132,8 @@ bool UC_Inventory::removeItem(FName ItemID, int32 nCount)
 	int32 nRemaining = nCount;
 
 
+	int32 nTotalCount{};
+
 	for (FS_InventorySlot& slot : m_Slots)
 	{
 		if (!slot.Item)
@@ -120,13 +143,42 @@ bool UC_Inventory::removeItem(FName ItemID, int32 nCount)
 			return false;
 
 
-		if (ItemID == slot.Item->m_ItemID)
+		if (ItemID == slot.Item->m_ItemData->ItemID)
 		{
-			int32 nSpace = slot.Item->m_MaxStack + nCount;
+			nTotalCount += slot.nCount;
 
 		}
 	}
 
+	if (nTotalCount < nCount)
+		return false;
+
+	for (int32 i = 0; i < m_Slots.Num(); ++i)
+	{
+		FS_InventorySlot& slot = m_Slots[i];
+
+		if (!slot.Item || slot.Item->m_ItemData->ItemID != ItemID)
+			continue;
+
+		int32 nRemove = FMath::Min(slot.nCount, nRemaining);
+
+		slot.nCount -= nRemove;
+
+		nRemaining -= nRemove;
+
+		if (slot.nCount <= 0)
+		{
+			m_Slots.RemoveAt(i);
+			--i;
+		}
+	}
+
+	
+	if (nRemaining <= 0)
+	{
+		m_onInventoryChanged.Broadcast();
+		return true;
+	}
 
 	return false;
 }
@@ -134,5 +186,31 @@ bool UC_Inventory::removeItem(FName ItemID, int32 nCount)
 TArray<FS_InventorySlot>& UC_Inventory::getSlots()
 {
 	return m_Slots;
+}
+
+bool UC_Inventory::hasItem(FName ItemID, int32 nCount)
+{
+	if (nCount < 0)
+		return false;
+
+	int32 nTotalCount{};
+
+	for (const FS_InventorySlot& slot : m_Slots)
+	{
+
+		if (!slot.Item)
+			continue;
+
+		if (slot.Item->getItemID() == ItemID)
+		{
+			nTotalCount += slot.nCount;
+
+			if (nTotalCount >= nCount)
+				return true;
+		}
+			
+	}
+
+	return false;
 }
 

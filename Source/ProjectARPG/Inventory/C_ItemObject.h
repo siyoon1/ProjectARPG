@@ -13,6 +13,30 @@ enum class E_ItemType : uint8
 	Equipment
 };
 
+USTRUCT(BlueprintType)
+struct FS_ItemData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	FName ItemID;
+
+	UPROPERTY(EditAnywhere)
+	FText ItemName;
+
+	UPROPERTY(EditAnywhere)
+	UTexture2D* Icon;
+
+	UPROPERTY(EditAnywhere)
+	int32 MaxStack;
+
+	UPROPERTY(EditAnywhere)
+	E_ItemType ItemType;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UC_ItemObject> ItemClass;
+};
+
 /**
  * 
  */
@@ -22,26 +46,19 @@ class PROJECTARPG_API UC_ItemObject : public UObject
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FName m_ItemID;
+	const FS_ItemData* m_ItemData;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FText m_ItemName;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	UTexture2D* m_Icon;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	int32 m_MaxStack;
-
 
 public:
+	void init(const FS_ItemData* InData);
+
 	UFUNCTION(BlueprintCallable)
 	FText getItemName() const;
 
 	UFUNCTION(BlueprintCallable)
 	UTexture2D* getItemIcon() const;
 
-
+	UFUNCTION(BlueprintCallable)
+	FName getItemID() const;
 
 };

@@ -3,12 +3,23 @@
 
 #include "C_ItemObject.h"
 
+void UC_ItemObject::init(const FS_ItemData* InData)
+{
+    check(InData);
+    m_ItemData = InData;
+}
+
 FText UC_ItemObject::getItemName() const
 {
-    return m_ItemName;
+    return m_ItemData ? m_ItemData->ItemName : FText::GetEmpty();
 }
 
 UTexture2D* UC_ItemObject::getItemIcon() const
 {
-    return m_Icon;
+    return m_ItemData ? m_ItemData->Icon : nullptr;
+}
+
+FName UC_ItemObject::getItemID() const
+{
+    return m_ItemData ? m_ItemData->ItemID : NAME_None;
 }

@@ -28,12 +28,17 @@ class PROJECTARPG_API UC_Inventory : public UActorComponent
 	GENERATED_BODY()
 
 
-public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+private:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	int32 m_MaxSlotCount = 20;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TArray<FS_InventorySlot> m_Slots;
+
+	UPROPERTY()
+	class UC_ItemDataBase* m_ItemDB;
+
+public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnInventoryChanged m_onInventoryChanged;
@@ -52,11 +57,18 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable)
-	bool addItem(UC_ItemObject* pItem, int32 nCount);
+	bool addItem(UC_ItemObject* Item, int32 nCount);
+
+	UFUNCTION(BlueprintCallable)
+	bool addItemByID(FName ItemID, int32 nCount);
 
 	UFUNCTION(BlueprintCallable)
 	bool removeItem(FName ItemID, int32 nCount);
 
 	UFUNCTION(BlueprintCallable)
 	TArray<FS_InventorySlot>& getSlots();
+
+	bool hasItem(FName ItemID, int32 nCount);
+
+	
 };
