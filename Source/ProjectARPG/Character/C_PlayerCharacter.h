@@ -166,6 +166,9 @@ private:
 	//인살 시도 함수
 	bool tryExcuteEnemy() const;
 
+	//상호작용 인터페이스 판정 함수
+	bool tryInteractInterface();
+
 
 protected:
 	void sprint(const struct FInputActionInstance& sInst);

@@ -16,6 +16,7 @@
 #include "Components/CapsuleComponent.h"
 #include "ProjectARPG/Animation/C_PlayerAnim.h"
 #include "ProjectARPG/ActorComponents/C_GrappleComponent.h"
+#include "ProjectARPG/Interface/C_Interactable.h"
 
 AC_PlayerCharacter::AC_PlayerCharacter()
 {
@@ -372,6 +373,9 @@ void AC_PlayerCharacter::crouch(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::interact(const FInputActionValue& sValue)
 {
+	if (tryInteractInterface())
+		return;
+
 	if (isCanWallGrab())
 	{
 		setWallGrab(true);
@@ -1025,6 +1029,24 @@ bool AC_PlayerCharacter::tryExcuteEnemy() const
 		return false;
 
 	return m_pExecutionCom->tryExecuteCurrentTarget();
+}
+
+bool AC_PlayerCharacter::tryInteractInterface()
+{
+	TArray<AActor*> Overlaps{};
+
+	GetOverlappingActors(Overlaps);
+
+	for (AActor* act : Overlaps)
+	{
+		if (act->Implements<UC_Interactable>())
+		{
+			IC_Interactable::Execute_interact(act, this);
+			return true;
+		}
+	}
+
+	return false;
 }
 
 
