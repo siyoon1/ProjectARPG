@@ -14,11 +14,15 @@ class PROJECTARPG_API UC_InteractionComponent : public UActorComponent
 
 private:
 	UPROPERTY()
-	class AC_PlayerCharacter* m_CachedPlayer;
+	AActor* m_CurrentTarget;
 
 	UPROPERTY()
-	class AC_NPCCharacter* m_Owner;
+	TArray<AActor*> m_InteractableList;
 
+
+
+private:
+	void updateCurrentTarget();
 
 public:	
 	// Sets default values for this component's properties
@@ -32,20 +36,17 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UFUNCTION(BlueprintCallable)
-	void showIneractUI();
+	bool tryInteract();
 
 	UFUNCTION(BlueprintCallable)
-	void hideInteractUI();
+	void showUI(AActor* Target);
 
 	UFUNCTION(BlueprintCallable)
-	void onPlayerEnter(AC_PlayerCharacter* Player);
+	void hideUI(AActor* Target);
 
+	
 	UFUNCTION(BlueprintCallable)
-	void onPlayerExit();
-
-	bool canInteract() const;
-
-
-		
+	void registerInteractable(AActor* Actor);
+	UFUNCTION(BlueprintCallable)
+	void unregisterInteractable(AActor* Actor);
 };

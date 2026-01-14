@@ -16,7 +16,8 @@
 #include "Components/CapsuleComponent.h"
 #include "ProjectARPG/Animation/C_PlayerAnim.h"
 #include "ProjectARPG/ActorComponents/C_GrappleComponent.h"
-#include "ProjectARPG/Interface/C_Interactable.h"
+#include "ProjectARPG/ActorComponents/C_InteractionComponent.h"
+
 
 AC_PlayerCharacter::AC_PlayerCharacter()
 {
@@ -65,6 +66,8 @@ void AC_PlayerCharacter::BeginPlay()
 	m_pExecutionDetectSphere = GetComponentByClass<USphereComponent>();
 
 	m_pGrappleCom = GetComponentByClass<UC_GrappleComponent>();
+
+	m_pInteractCom = GetComponentByClass<UC_InteractionComponent>();
 
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
@@ -373,7 +376,7 @@ void AC_PlayerCharacter::crouch(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::interact(const FInputActionValue& sValue)
 {
-	if (tryInteractInterface())
+	if (m_pInteractCom && m_pInteractCom->tryInteract())
 		return;
 
 	if (isCanWallGrab())
@@ -609,6 +612,17 @@ USphereComponent* AC_PlayerCharacter::getExecutionSphere() const
 void AC_PlayerCharacter::initWallgrab()
 {
 	setWallGrab(false);
+}
+
+void AC_PlayerCharacter::restoreHP()
+{
+	m_fCurrentHp = m_fMaxHp;
+}
+
+void AC_PlayerCharacter::resetPosture()
+{
+	if (m_fCurrentPosture > 0)
+		m_fCurrentPosture = m_fMaxPosture;
 }
 
 AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()
@@ -1029,24 +1043,6 @@ bool AC_PlayerCharacter::tryExcuteEnemy() const
 		return false;
 
 	return m_pExecutionCom->tryExecuteCurrentTarget();
-}
-
-bool AC_PlayerCharacter::tryInteractInterface()
-{
-	TArray<AActor*> Overlaps{};
-
-	GetOverlappingActors(Overlaps);
-
-	for (AActor* act : Overlaps)
-	{
-		if (act->Implements<UC_Interactable>())
-		{
-			IC_Interactable::Execute_interact(act, this);
-			return true;
-		}
-	}
-
-	return false;
 }
 
 

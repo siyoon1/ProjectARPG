@@ -2,9 +2,9 @@
 
 
 #include "C_InteractionComponent.h"
-#include "ProjectARPG/Character/C_PlayerCharacter.h"
-#include "ProjectARPG//Character/C_NPCCharacter.h"
+#include "ProjectARPG/Character/C_BaseCharacter.h"
 #include "Components/WidgetComponent.h"
+#include "ProjectARPG/Interface/C_Interactable.h"
 
 
 
@@ -26,8 +26,6 @@ void UC_InteractionComponent::BeginPlay()
 
 	// ...
 
-	m_Owner = Cast<AC_NPCCharacter>(GetOwner());
-
 }
 
 
@@ -39,38 +37,78 @@ void UC_InteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 	// ...
 }
 
-void UC_InteractionComponent::showIneractUI()
+bool UC_InteractionComponent::tryInteract()
 {
-	if (m_Owner)
+	if (!m_CurrentTarget)
+		return false;
+
+	IC_Interactable::Execute_interact(m_CurrentTarget, GetOwner());
+	return true;
+}
+
+void UC_InteractionComponent::showUI(AActor* Target)
+{
+	if (!Target) return;
+
+	if (UWidgetComponent* Widget = Target->FindComponentByClass<UWidgetComponent>())
 	{
-		m_Owner->getInteractWidgetComp()->SetVisibility(true);
+		Widget->SetVisibility(true);
 	}
 }
 
-void UC_InteractionComponent::hideInteractUI()
+void UC_InteractionComponent::hideUI(AActor* Target)
 {
-	if (m_Owner)
+	if (!Target) return;
+
+	if (UWidgetComponent* Widget = Target->FindComponentByClass<UWidgetComponent>())
 	{
-		m_Owner->getInteractWidgetComp()->SetVisibility(false);
+		Widget->SetVisibility(false);
 	}
 }
 
-void UC_InteractionComponent::onPlayerEnter(AC_PlayerCharacter* Player)
+void UC_InteractionComponent::updateCurrentTarget()
 {
-	m_CachedPlayer = Player;
-	showIneractUI();
+	AActor* Best = nullptr;
+	float fBestDist = FLT_MAX;
 
+	for (AActor* act : m_InteractableList)
+	{
+		float fDist = FVector::Dist(GetOwner()->GetActorLocation(), act->GetActorLocation());
+
+		if (fDist < fBestDist)
+		{
+			fBestDist = fDist;
+			Best = act;
+		}
+
+		if (Best != m_CurrentTarget)
+		{
+			hideUI(m_CurrentTarget);
+			m_CurrentTarget = Best;
+			showUI(m_CurrentTarget);
+		}
+	}
 }
 
-void UC_InteractionComponent::onPlayerExit()
+void UC_InteractionComponent::registerInteractable(AActor* Actor)
 {
-	m_CachedPlayer = nullptr;
-	hideInteractUI();
+	if (!Actor || !Actor->Implements<UC_Interactable>())
+		return;
+
+	m_InteractableList.AddUnique(Actor);
+	updateCurrentTarget();
 }
 
-bool UC_InteractionComponent::canInteract() const
+void UC_InteractionComponent::unregisterInteractable(AActor* Actor)
 {
-	return m_CachedPlayer != nullptr;
+	m_InteractableList.Remove(Actor);
+
+	if (m_CurrentTarget == Actor)
+	{
+		hideUI(m_CurrentTarget);
+		m_CurrentTarget = nullptr;
+		updateCurrentTarget();
+	}
 }
 
 

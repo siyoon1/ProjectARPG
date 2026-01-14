@@ -19,6 +19,62 @@ AC_CombatCharacter::AC_CombatCharacter()
 
 }
 
+void AC_CombatCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (m_pPostureStatsTable)
+	{
+		FS_PostureStats* pLoadedStats = m_pPostureStatsTable->FindRow<FS_PostureStats>(m_sPostureRowName, TEXT("Posture Data Load"));
+		if (pLoadedStats)
+		{
+			m_sPostureStats = pLoadedStats;
+			m_fMaxPosture = m_sPostureStats->fMaxPosture;
+			m_fCurrentPosture = m_fMaxPosture;
+			m_fRecoveryRate = m_sPostureStats->fRecoveryRate;
+			m_fRecoveryDelayTimer = m_sPostureStats->fRecoveryDelay;
+			m_fBrokenDuration = m_sPostureStats->fBrokenDuration;
+
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Posture Stats Row '%s' not found!"), *m_sPostureRowName.ToString());
+		}
+	}
+
+	m_fCurrentHp = m_fMaxHp;
+
+	m_CurrentLifeNodes = m_MaxLifeNodes;
+
+	if (!m_pTraceStart)
+	{
+		m_pTraceStart = Cast<USceneComponent>(GetDefaultSubobjectByName(TEXT("TraceStart")));
+	}
+
+	if (!m_pTraceEnd)
+	{
+		m_pTraceEnd = Cast<USceneComponent>(GetDefaultSubobjectByName(TEXT("TraceEnd")));
+	}
+
+
+	if (m_pTraceStart && m_pTraceEnd)
+	{
+
+		m_vLastTraceStart = m_pTraceStart->GetComponentLocation();
+		m_vLastTraceEnd = m_pTraceEnd->GetComponentLocation();
+
+	}
+
+	m_pExecutionCom = GetComponentByClass<UC_ExecutionComponent>();
+
+	m_pParryCom = GetComponentByClass<UC_ParryComponent>();
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		m_CamMgr = Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager);
+	}
+}
+
 void AC_CombatCharacter::applyHitStop(float fSlowlate, float fDuration)
 {
 	if (m_bHitStopActive)
@@ -266,6 +322,11 @@ void AC_CombatCharacter::setHp(float fHp)
 float AC_CombatCharacter::getHp() const
 {
 	return m_fCurrentHp;
+}
+
+void AC_CombatCharacter::setMaxHp(float fHp)
+{
+	m_fMaxHp = fHp;
 }
 
 float AC_CombatCharacter::getMaxHp() const
@@ -707,61 +768,7 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 
 }
 
-void AC_CombatCharacter::BeginPlay()
-{
-	Super::BeginPlay();
 
-	if (m_pPostureStatsTable)
-	{
-		FS_PostureStats* pLoadedStats = m_pPostureStatsTable->FindRow<FS_PostureStats>(m_sPostureRowName, TEXT("Posture Data Load"));
-		if (pLoadedStats)
-		{
-			m_sPostureStats = pLoadedStats;
-			m_fMaxPosture = m_sPostureStats->fMaxPosture;
-			m_fCurrentPosture = m_fMaxPosture;
-			m_fRecoveryRate = m_sPostureStats->fRecoveryRate;
-			m_fRecoveryDelayTimer = m_sPostureStats->fRecoveryDelay;
-			m_fBrokenDuration = m_sPostureStats->fBrokenDuration;
-			
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Posture Stats Row '%s' not found!"), *m_sPostureRowName.ToString());
-		}
-	}
-
-	m_fCurrentHp = m_fMaxHp;
-
-	m_CurrentLifeNodes = m_MaxLifeNodes;
-
-	if (!m_pTraceStart)
-	{
-		m_pTraceStart = Cast<USceneComponent>(GetDefaultSubobjectByName(TEXT("TraceStart")));
-	}
-
-	if (!m_pTraceEnd)
-	{
-		m_pTraceEnd = Cast<USceneComponent>(GetDefaultSubobjectByName(TEXT("TraceEnd")));
-	}
-
-
-	if (m_pTraceStart && m_pTraceEnd)
-	{
-
-		m_vLastTraceStart = m_pTraceStart->GetComponentLocation();
-		m_vLastTraceEnd = m_pTraceEnd->GetComponentLocation();
-	
-	}
-
-	m_pExecutionCom = GetComponentByClass<UC_ExecutionComponent>();
-
-	m_pParryCom = GetComponentByClass<UC_ParryComponent>();
-	
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		m_CamMgr = Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager);
-	}
-}
 
 void AC_CombatCharacter::onDeath()
 {

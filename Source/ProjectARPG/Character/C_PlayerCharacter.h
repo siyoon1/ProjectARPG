@@ -61,6 +61,9 @@ private:
 	class UC_GrappleComponent* m_pGrappleCom{};
 
 	UPROPERTY()
+	class UC_InteractionComponent* m_pInteractCom{};
+
+	UPROPERTY()
 	class AC_EnemyCharacter* m_pCurrentExecutionTarget = nullptr;
 
 	//위젯 관련
@@ -166,9 +169,6 @@ private:
 	//인살 시도 함수
 	bool tryExcuteEnemy() const;
 
-	//상호작용 인터페이스 판정 함수
-	bool tryInteractInterface();
-
 
 protected:
 	void sprint(const struct FInputActionInstance& sInst);
@@ -195,6 +195,9 @@ public:
 	USphereComponent* getExecutionSphere() const;
 
 	void initWallgrab();
+
+	void restoreHP();
+	void resetPosture();
 
 	//락온 함수
 	UFUNCTION(BlueprintCallable)

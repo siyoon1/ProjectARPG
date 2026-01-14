@@ -23,9 +23,6 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dialogue", meta = (AllowPrivateAccess = "true"))
 	TArray<FText> m_DialogueLine;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Dialogue", meta = (AllowPrivateAccess = "true"))
-	bool m_bHasShop = true;
-
 protected:
 	void BeginPlay() override;
 
@@ -37,9 +34,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	const TArray<FText>& getDialogueLine() const;
-	
-	UFUNCTION(BlueprintCallable)
-	bool hasShop() const;
 
 	
 };

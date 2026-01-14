@@ -28,8 +28,3 @@ const TArray<FText>& AC_NPCCharacter::getDialogueLine() const
 {
 	return m_DialogueLine;
 }
-
-bool AC_NPCCharacter::hasShop() const
-{
-	return m_bHasShop;
-}

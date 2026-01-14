@@ -21,13 +21,30 @@ public:
 
 
 	UPROPERTY()
-	UC_ItemDataBase* ItemDB;
+	UC_ItemDataBase* m_ItemDB;
+
+	UPROPERTY()
+	FName m_LastBonfireID;
+
+	UPROPERTY()
+	class UC_SaveGame* m_SaveGame;
+
+private:
+	void applyPlayerData(class AC_PlayerCharacter* Player);
 
 public:
 	virtual void Init() override;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure)
-	UC_ItemDataBase* getItemDB() const { return ItemDB; }
+	UC_ItemDataBase* getItemDB() const { return m_ItemDB; }
 
+	void setLastBonfireID(FName NewID);
+	FName getLastBonfireID() const;
 
+	void saveGame();
+	void loadGame();
+
+	
+	void collectPlayerData(AC_PlayerCharacter* Player);
+	void respawnPlayer(AC_PlayerCharacter* Player);
 };
