@@ -265,24 +265,12 @@ bool AC_CombatCharacter::isGuard() const
 
 bool AC_CombatCharacter::canAct() const
 {
-	if (m_bIsDead)
-		return false;
-
-	if (m_eState == E_CombatState::Die)
-		return false;
-
-	if (m_eState == E_CombatState::Executing)
-		return false;
-
-	if (m_bIsPostureBroken)
-		return false;
-
-	return true;
+	return m_ActionState == E_ActionState::Free;
 }
 
 bool AC_CombatCharacter::isInvincibleAgainst(AActor* pAttacker) const
 {
-	if (m_bIsDead)
+	if (isDead())
 		return true;
 
 	if (m_eState == E_CombatState::Executing)
@@ -297,7 +285,7 @@ bool AC_CombatCharacter::isInvincibleAgainst(AActor* pAttacker) const
 
 void AC_CombatCharacter::onExecuted()
 {
-	if (m_bIsDead)
+	if (isDead())
 		return;
 
 	m_CurrentLifeNodes--;
@@ -385,7 +373,7 @@ void AC_CombatCharacter::stopAttackTrace()
 
 void AC_CombatCharacter::performAttackTrace()
 {
-	if (m_bIsDead)
+	if (isDead())
 		return;
 
 	if (!m_bIsTracing)
@@ -615,8 +603,8 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 
 void AC_CombatCharacter::onPostureBroken()
 {
-	if (m_bIsDead)
-		return;
+	m_ActionState = E_ActionState::Stunned;
+	m_CombatMode = E_CombatMode::None;
 
 	if (m_bIsPostureBroken)
 		return;
@@ -637,7 +625,7 @@ void AC_CombatCharacter::onPostureBroken()
 
 void AC_CombatCharacter::enterExecutionReady()
 {
-	if (m_bExecutionAvailable || m_bIsDead)
+	if (m_bExecutionAvailable || isDead())
 		return;
 
 	m_bExecutionAvailable = true;
@@ -814,19 +802,16 @@ UC_ParryComponent* AC_CombatCharacter::getParryComponent() const
 
 void AC_CombatCharacter::onDeath()
 {
-	if (m_bIsDead)
-		return;
-
-	m_bIsDead = true;
-	m_eState = E_CombatState::Die;
+	m_ActionState = E_ActionState::Dead;
+	m_CombatMode = E_CombatMode::None;
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
+	 
 }
 
 bool AC_CombatCharacter::isDead() const
 {
-	return m_bIsDead;
+	return m_ActionState == E_ActionState::Dead;
 }
 
 

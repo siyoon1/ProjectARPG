@@ -167,7 +167,7 @@ private:
 	void wallGrabMove(const FVector2D& MoveInput);
 
 	//인살 시도 함수
-	bool tryExcuteEnemy() const;
+	bool tryExcuteEnemy();
 
 
 protected:
@@ -231,4 +231,5 @@ public:
 
 	void initJump();
 
+	void playerActEnd();
 };

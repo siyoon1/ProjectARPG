@@ -111,7 +111,7 @@ protected:
 	FName m_CurrentAttackRow;
 
 	UPROPERTY()
-	E_EnemyActionState m_ActionState = E_EnemyActionState::Idle;
+	E_EnemyActionState m_EnemyActionState = E_EnemyActionState::Idle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	TMap<E_EnemyTier, FS_EnemyCombatProfile> m_CombatProfiles;

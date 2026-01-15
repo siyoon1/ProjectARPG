@@ -237,17 +237,17 @@ bool AC_EnemyCharacter::isAttackInRange(const FS_AttackData& Data, float fDistan
 
 bool AC_EnemyCharacter::canDecideAction() const
 {
-	return m_ActionState == E_EnemyActionState::Idle;
+	return m_EnemyActionState == E_EnemyActionState::Idle;
 }
 
 void AC_EnemyCharacter::beginAction()
 {
-	m_ActionState = E_EnemyActionState::Executing;
+	m_EnemyActionState = E_EnemyActionState::Executing;
 }
 
 void AC_EnemyCharacter::finishAction(float fCooldown)
 {
-	m_ActionState = E_EnemyActionState::Cooldown;
+	m_EnemyActionState = E_EnemyActionState::Cooldown;
 	m_nextActionTime = GetWorld()->GetTimeSeconds() + fCooldown;
 
 	GetWorldTimerManager().SetTimer(
@@ -261,7 +261,7 @@ void AC_EnemyCharacter::finishAction(float fCooldown)
 
 void AC_EnemyCharacter::onActionCooldownFinished()
 {
-	m_ActionState = E_EnemyActionState::Idle;
+	m_EnemyActionState = E_EnemyActionState::Idle;
 }
 
 bool AC_EnemyCharacter::decideNextAttack(float fDist, FName& OutRow)

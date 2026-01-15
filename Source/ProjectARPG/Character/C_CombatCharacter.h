@@ -12,6 +12,26 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, fCurrentHp, fl
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPostureChanged, float, fCurrentPosture, float, fMaxPosture);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLifeNodeChanged, int32, nCurrentLifeNode, int32, nMaxLifeNode);
 
+
+UENUM(BlueprintType)
+enum class E_ActionState : uint8
+{
+	Free,
+	Locked,
+	Stunned,
+	Dead
+};
+
+UENUM(BlueprintType)
+enum class E_CombatMode : uint8
+{
+	None,
+	Attacking,
+	Guarding,
+	Parrying,
+	Executing
+};
+
 UENUM(BlueprintType)
 enum class E_CombatState : uint8
 {
@@ -53,6 +73,13 @@ class PROJECTARPG_API AC_CombatCharacter : public AC_BaseCharacter, public IC_Co
 	GENERATED_BODY()
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	E_ActionState m_ActionState = E_ActionState::Free;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	E_CombatMode m_CombatMode = E_CombatMode::None;
+
+
 	// 현재 상태
 	E_CombatState m_eState = E_CombatState::Idle;
 
@@ -115,7 +142,6 @@ protected:
 
 	E_AttackType m_eAttackType = E_AttackType::Normal;
 
-	bool m_bIsDead = false;
 	bool m_bExecutionAvailable = false;
 
 	bool m_bIsPostureBroken = false;

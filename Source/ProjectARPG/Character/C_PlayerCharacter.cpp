@@ -327,24 +327,30 @@ void AC_PlayerCharacter::guard(const FInputActionInstance& sInst)
 	if (!pAnim)
 		return;
 
-	if (m_eState != E_CombatState::Idle)
+	if (!canAct())
 		return;
 
-	FVector vInputDir = GetLastMovementInputVector().GetSafeNormal();
+	if (m_ActionState != E_ActionState::Free)
+		return;
 
 	const float fElapsedTime = sInst.GetElapsedTime();
 
 	const float fHoldThreshold = 0.3f;
 
-	if (fElapsedTime >= fHoldThreshold && GetLastMovementInputVector().IsNearlyZero())
-	{
-		if (m_eState != E_CombatState::Guard)
-		{
-			setCombatState(E_CombatState::Guard);
-			pAnim->setIsGuarding(true);
-			GetCharacterMovement()->MaxWalkSpeed = 400.f;
-		}
-	}
+	if (fElapsedTime < fHoldThreshold)
+		return;
+
+	if (!GetLastMovementInputVector().IsNearlyZero())
+		return;
+
+	m_ActionState = E_ActionState::Locked;
+	m_CombatMode = E_CombatMode::Guarding;
+
+
+	setCombatState(E_CombatState::Guard);
+	pAnim->setIsGuarding(true);
+	GetCharacterMovement()->MaxWalkSpeed = 400.f;
+	
 	
 }
 
@@ -393,19 +399,33 @@ void AC_PlayerCharacter::grapple(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
 {
-	if (m_eState == E_CombatState::Guard)
+	if (m_CombatMode != E_CombatMode::Guarding)
+		return;
+
+	m_ActionState = E_ActionState::Free;
+	m_CombatMode = E_CombatMode::None;
+
+	setCombatState(E_CombatState::Idle);
+
+	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
-		setCombatState(E_CombatState::Idle);
-		if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
-		{
-			pAnim->setIsGuarding(false);
-			GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
-		}
+		pAnim->setIsGuarding(false);
+		GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
 	}
 }
 
 void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 {
+	if (m_CombatMode == E_CombatMode::Attacking)
+		return;
+
+	
+	if (m_eState != E_CombatState::Idle)
+		return;
+
+	if (m_ActionState != E_ActionState::Free)
+		return;
+
 	AC_CombatCharacter* Target = nullptr;
 
 	if (m_pCurrentLockOnTarget)
@@ -419,6 +439,9 @@ void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 
 	if (!Target)
 		return;
+
+	m_ActionState = E_ActionState::Locked;
+	m_CombatMode = E_CombatMode::Parrying;
 
 	IC_CombatInterface::Execute_tryParry(Target, this);
 	
@@ -443,6 +466,13 @@ void AC_PlayerCharacter::lockOn(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
+	UE_LOG(LogTemp, Warning, TEXT("comboAttack called, ActionState=%d"), (int)m_ActionState);
+
+	if (m_ActionState != E_ActionState::Free)
+	{
+		m_ActionState = E_ActionState::Free;
+	}
+
 	m_fLastAttackInputTime = GetWorld()->GetTimeSeconds();
 
 	if (canExecute() && tryExcuteEnemy())
@@ -451,27 +481,18 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 	if (!canAttack())
 		return;
 
-	if (m_eState == E_CombatState::Sprinting || m_eState == E_CombatState::Dodging)
+	if (m_ActionState == E_ActionState::Free)
 	{
-		// 대시 상태 해제
+		m_ActionState = E_ActionState::Locked;
+		m_CombatMode = E_CombatMode::Attacking;
+
 		setCombatState(E_CombatState::Attacking);
 
-
-		m_nCurrentComboIndex = 1;
-		m_bNextComboQueued = false;
-		playCombo(m_nCurrentComboIndex);
-		return;
-	}
-
-	if (m_eState != E_CombatState::Attacking)
-	{
-		m_eState = E_CombatState::Attacking;
 		m_nCurrentComboIndex = 1;
 		m_bNextComboQueued = false;
 		playCombo(m_nCurrentComboIndex);
 	}
-
-	else if (m_eState == E_CombatState::Attacking && !m_bNextComboQueued)
+	else if (!m_bNextComboQueued)
 	{
 		if (m_nCurrentComboIndex < m_nMaxComboIndex)
 			m_bNextComboQueued = true;
@@ -497,40 +518,25 @@ void AC_PlayerCharacter::playCombo(int32 nComboIndex)
 
 bool AC_PlayerCharacter::canAttack() const
 {
-	switch (m_eState)
-	{
-	case E_CombatState::Sprinting:
-	case E_CombatState::Dodging:
-	case E_CombatState::Executing:
-	case E_CombatState::Guard:
-	case E_CombatState::Parrying:
-	case E_CombatState::WallGrabbing:
-	case E_CombatState::Climb:
-	case E_CombatState::Die:
+
+	if (m_eState == E_CombatState::WallGrabbing ||
+		m_eState == E_CombatState::Climb ||
+		m_eState == E_CombatState::Die)
 		return false;
 
-	case E_CombatState::Crouch:
-		return false;
-
-
-	default:
-		return true;
-	}
+	return true;
 }
 
 bool AC_PlayerCharacter::canExecute() const
 {
-	switch (m_eState)
-	{
-	case E_CombatState::Dodging:
-	case E_CombatState::Executing:
-	case E_CombatState::Climb:
-	case E_CombatState::Die:
+	if (m_ActionState != E_ActionState::Free)
 		return false;
 
-	default:
-		return true;
-	}
+	if (m_eState == E_CombatState::Climb ||
+		m_eState == E_CombatState::Die)
+		return false;
+
+	return true;
 }
 
 AActor* AC_PlayerCharacter::getCurrentEnemy()
@@ -589,7 +595,10 @@ void AC_PlayerCharacter::onComboTransition()
 
 void AC_PlayerCharacter::resetCombo()
 {
-	m_eState = E_CombatState::Idle;
+	m_ActionState = E_ActionState::Free;
+	m_CombatMode = E_CombatMode::None;
+
+
 	m_nCurrentComboIndex = 0;
 	m_bNextComboQueued = false;
 }
@@ -1024,16 +1033,30 @@ void AC_PlayerCharacter::initJump()
 	m_nJumpCount = 0;
 }
 
-bool AC_PlayerCharacter::tryExcuteEnemy() const
+void AC_PlayerCharacter::playerActEnd()
 {
-	if (!m_pExecutionCom)
+	m_ActionState = E_ActionState::Free;
+	m_CombatMode = E_CombatMode::None;
+
+	setCombatState(E_CombatState::Idle);
+}
+
+bool AC_PlayerCharacter::tryExcuteEnemy()
+{
+	if (m_ActionState != E_ActionState::Free)
 		return false;
 
 	if (m_eState == E_CombatState::Climb ||
-		m_eState == E_CombatState::Dodging ||
-		m_eState == E_CombatState::Executing ||
-		m_eState == E_CombatState::Guard)
+		m_eState == E_CombatState::Die)
 		return false;
+
+	if (!m_pExecutionCom)
+		return false;
+
+	m_ActionState = E_ActionState::Locked;
+	m_CombatMode = E_CombatMode::Executing;
+
+	setCombatState(E_CombatState::Executing);
 
 	return m_pExecutionCom->tryExecuteCurrentTarget();
 }
