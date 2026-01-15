@@ -33,6 +33,30 @@ void UC_ParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	// ...
 }
 
+void UC_ParryComponent::openParry(const FS_AttackData& AttackData)
+{
+	if (!AttackData.bCanParry)
+		return;
+
+	m_CurrentParry.bActive = true;
+	m_CurrentParry.CurrentAttackData = &AttackData;
+
+
+}
+
+void UC_ParryComponent::closeParry()
+{
+	m_CurrentParry.bActive = false;
+	m_CurrentParry.CurrentAttackData = nullptr;
+
+
+}
+
+bool UC_ParryComponent::canParry() const
+{
+	return m_CurrentParry.bActive;
+}
+
 void UC_ParryComponent::startParryWindow(float fCanTime)
 {
 	m_bCanParry = true;

@@ -15,9 +15,16 @@ enum class E_AttackProperty : uint8
 	Sweep,
 	GuardBreak
 };
-/**
- * 
- */
+
+UENUM(BlueprintType)
+enum class E_ParryDirection : uint8
+{
+	None,
+	Left,
+	Right,
+	Both
+};
+
 USTRUCT()
 struct FS_AttackRuntimeState
 {
@@ -47,6 +54,9 @@ struct FS_AttackData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bCanParry;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	E_ParryDirection eParryDirection;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float fGuardPushBack;

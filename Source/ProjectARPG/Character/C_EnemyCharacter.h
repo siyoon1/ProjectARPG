@@ -92,6 +92,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UC_DetectComponent> m_DetectCom;
 
+
 	UPROPERTY()
 	AC_CombatCharacter* m_pPlayer{};
 

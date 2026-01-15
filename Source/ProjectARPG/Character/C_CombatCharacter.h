@@ -120,7 +120,6 @@ protected:
 
 	bool m_bIsPostureBroken = false;
 	bool m_bIsRecoveryDelay = false;
-	bool m_bWasParried = false;
 	bool m_bIsGuarding = false;
 	
 	FTimerHandle m_timerHandle_PostureBroken;
@@ -130,6 +129,8 @@ protected:
 	float m_fOriginalPlayRate = 1.f;
 	FTimerHandle m_hitStopTimerHandle;
 	bool m_bHitStopActive = false;
+
+	E_ParryDirection m_RuntimeParryDir = E_ParryDirection::None;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
@@ -175,6 +176,8 @@ protected:
 	void applyHitStop(float fSlowlate, float fDuration);
 
 	void endHitStop();
+
+	
 
 	
 public:
@@ -239,5 +242,10 @@ public:
 
 	UFUNCTION()
 	void onParrySuccess_Implementation(AActor* ParryTarget);
+
+	UC_ParryComponent* getParryComponent() const;
+
+	void setRuntimeParryDir(E_ParryDirection eDir);
+	E_ParryDirection getCurrentParryDir() const;
 	
 };

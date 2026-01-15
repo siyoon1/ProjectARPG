@@ -406,28 +406,21 @@ void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 {
-	UE_LOG(LogTemp, Warning, TEXT(">>> [Player] Parry Input Triggered"));
+	AC_CombatCharacter* Target = nullptr;
 
-	if (m_eState != E_CombatState::Idle)
-		return;
-
-	if (AActor* pEnemy = getCurrentEnemy())
+	if (m_pCurrentLockOnTarget)
 	{
-		if (m_bIsLockOn)
-			pEnemy = m_pCurrentLockOnTarget;
-
-		if (UC_ParryComponent* ParryComp = pEnemy->GetComponentByClass<UC_ParryComponent>())
-		{
-			if (ParryComp->isCanParry())
-			{
-				IC_CombatInterface::Execute_tryParry(pEnemy, this);
-				UE_LOG(LogTemp, Warning, TEXT("[Player] Parry SUCCESS on %s"), *pEnemy->GetName());
-				return;
-			}
-		}
+		Target = Cast<AC_CombatCharacter>(m_pCurrentLockOnTarget);
+	}
+	else
+	{
+		Target = Cast<AC_CombatCharacter>(getCurrentEnemy());
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[Player] Parry Failed ? No parryable enemy"));
+	if (!Target)
+		return;
+
+	IC_CombatInterface::Execute_tryParry(Target, this);
 	
 }
 
