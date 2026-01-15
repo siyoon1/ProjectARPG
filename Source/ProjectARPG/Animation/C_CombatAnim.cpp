@@ -40,3 +40,22 @@ void UC_CombatAnim::playHitMontage(E_Direction eDir)
     }
 }
 
+void UC_CombatAnim::playParryMontage(E_ParryDirection eDir)
+{
+    switch (eDir)
+    {
+    case E_ParryDirection::Left:
+        Montage_Play(m_LeftParryMontage);
+        break;
+
+    case E_ParryDirection::Right:
+        Montage_Play(m_RightParryMontage);
+        break;
+
+    case E_ParryDirection::Both:
+    default:
+        Montage_Play(m_DefaultParryMontage);
+        break;
+    }
+}
+

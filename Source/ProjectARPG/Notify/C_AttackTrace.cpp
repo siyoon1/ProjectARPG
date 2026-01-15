@@ -5,6 +5,7 @@
 #include "ProjectARPG/Character/C_CombatCharacter.h"
 
 
+
 void UC_AttackTrace::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	if (!MeshComp)
@@ -14,6 +15,12 @@ void UC_AttackTrace::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 	{
 		if (AC_CombatCharacter* pChar = Cast<AC_CombatCharacter>(pPawn))
 		{
+
+			if (m_HitParryDir != E_ParryDirection::None)
+			{
+				pChar->setRuntimeParryDir(m_HitParryDir);
+			}
+
 			pChar->startAttackTrace();
 		}
 	}
@@ -44,6 +51,8 @@ void UC_AttackTrace::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBa
 		if (AC_CombatCharacter* pChar = Cast<AC_CombatCharacter>(pPawn))
 		{
 			pChar->stopAttackTrace();
+
+			pChar->setRuntimeParryDir(E_ParryDirection::None);
 		}
 	}
 }

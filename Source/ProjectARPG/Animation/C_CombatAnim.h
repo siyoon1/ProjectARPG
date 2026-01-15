@@ -25,6 +25,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pHitBackMontage;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> m_DefaultParryMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> m_RightParryMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> m_LeftParryMontage;
+
 public:
 	void playHitMontage(E_Direction eDir);
+	void playParryMontage(E_ParryDirection eDir);
 };
