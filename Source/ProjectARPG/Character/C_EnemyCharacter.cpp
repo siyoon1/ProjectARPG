@@ -427,12 +427,17 @@ void AC_EnemyCharacter::showExecutionVFX(bool bShow)
 
 void AC_EnemyCharacter::onCombatStarted()
 {
+	if (m_bInCombat)
+		return;
+
 	setInCombat(true);
 	showHpBar(true);
 }
 
 void AC_EnemyCharacter::onCombatEnded()
 {
+	m_bInCombat = false;
+
 	setInCombat(false);
 	showHpBar(false);
 }

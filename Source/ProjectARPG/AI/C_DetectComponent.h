@@ -33,6 +33,9 @@ private:
 
 	float m_TimeSinceLastDetect = 0.f;
 
+	float m_TargetMemoryTime = 3.f;
+	float m_TargetLostElapsed = 0.f;
+
 	bool m_bIsDetecting = false;
 
 private:

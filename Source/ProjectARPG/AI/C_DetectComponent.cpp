@@ -81,7 +81,21 @@ void UC_DetectComponent::detectTarget()
 	if (!bHit)
 	{
 		if (PrevTarget)
-			onTargetLost();
+		{
+			m_TargetLostElapsed += GetWorld()->GetDeltaSeconds();
+
+			if (m_TargetLostElapsed >= m_TargetMemoryTime)
+			{
+				onTargetLost();
+				m_DetectedTarget = nullptr;
+			}
+			else
+			{
+				m_DetectedTarget = PrevTarget;
+			}
+			
+		}
+			
 
 		return;
 	}
@@ -118,6 +132,7 @@ void UC_DetectComponent::detectTarget()
 	if (!PrevTarget && m_DetectedTarget)
 	{
 		onTargetDetected(m_DetectedTarget);
+		m_TargetLostElapsed = 0.f;
 	}
 	else if (PrevTarget && !m_DetectedTarget)
 	{
@@ -136,6 +151,9 @@ bool UC_DetectComponent::checkDist(AC_PlayerCharacter* pPlayer)
 
 bool UC_DetectComponent::checkFOV(AC_PlayerCharacter* pPlayer)
 {
+	if (m_bIsDetecting)
+		return true;
+
 	AActor* pOwner = GetOwner();
 
 	FVector vToTarget =
@@ -156,6 +174,9 @@ bool UC_DetectComponent::checkFOV(AC_PlayerCharacter* pPlayer)
 
 bool UC_DetectComponent::checkLineOfSight(AC_PlayerCharacter* pPlayer)
 {
+	if (m_bIsDetecting)
+		return true;
+
 	AActor* pOwner = GetOwner();
 
 	UWorld* pWorld = GetWorld();
