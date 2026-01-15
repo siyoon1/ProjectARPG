@@ -4,7 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "ProjectARPG/Data/C_AttackData.h"
 #include "C_ParryComponent.generated.h"
+
+USTRUCT()
+struct FS_ParryContext
+{
+	GENERATED_BODY()
+
+	bool bActive = false;
+
+	const FS_AttackData* CurrentAttackData = nullptr;
+};
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -13,6 +24,8 @@ class PROJECTARPG_API UC_ParryComponent : public UActorComponent
 	GENERATED_BODY()
 
 private:
+	FS_ParryContext m_CurrentParry;
+
 	bool m_bCanParry = false;
 	
 	FTimerHandle m_ParryTimerHandle;
@@ -35,6 +48,12 @@ protected:
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	void openParry(const FS_AttackData& AttackData);
+	void closeParry();
+
+	bool canParry() const;
+
 
 	void startParryWindow(float fCanTime);
 

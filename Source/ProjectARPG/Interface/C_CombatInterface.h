@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "ProjectARPG/Data/C_AttackData.h"
 #include "C_CombatInterface.generated.h"
 
 // This class does not need to be modified.
