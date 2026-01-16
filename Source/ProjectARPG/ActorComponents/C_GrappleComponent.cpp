@@ -321,15 +321,11 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 		return;
 	}
 
-
-
 	if (!m_bIsPulling || !m_pOwner || !m_pCurrentTarget)
 		return;
 
 	m_fElapsed += DeltaTime;
 	float Alpha = FMath::Clamp(m_fElapsed / m_fDuration, 0.f, 1.f);
-
-	
 
 	// 기본 Lerp 이동 (시작→목적지 까지 정확히 도달)
 	FVector Pos = FMath::Lerp(m_vOwnerPos, m_vTargetPos, Alpha);

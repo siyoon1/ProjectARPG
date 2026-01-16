@@ -175,6 +175,7 @@ protected:
 	void sprintReleased(const FInputActionInstance& sInst);
 	void guard(const FInputActionInstance& sInst);
 	void look(const struct FInputActionValue& sValue);
+	void dodge(const FInputActionValue& sValue);
 	void move(const FInputActionValue& sValue);
 	void comboAttack(const FInputActionValue& sValue);
 	void jumpStart(const FInputActionValue& sValue);

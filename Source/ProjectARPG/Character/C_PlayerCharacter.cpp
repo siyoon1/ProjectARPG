@@ -32,11 +32,15 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 
 
 	m_pExecutionDetectSphere = nullptr;
+
+	UE_LOG(LogTemp, Warning, TEXT("[Init] ActionState=%d"), (int)m_ActionState);
 }
 
 void AC_PlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Warning, TEXT("[Init] BeginPlay ActionState=%d"), (int)m_ActionState);
 
 	GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = m_fDefaultCrouched;
@@ -168,94 +172,102 @@ void AC_PlayerCharacter::move(const FInputActionValue& sValue)
 	}
 }
 
+void AC_PlayerCharacter::dodge(const FInputActionValue& sValue)
+{
+	if (m_ActionState != E_ActionState::Free)
+		return;
+
+	if (m_eState == E_CombatState::WallGrabbing ||
+		m_eState == E_CombatState::Climb ||
+		m_eState == E_CombatState::Die)
+		return;
+
+	UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance());
+	if (!pAnim)
+		return;
+
+	m_ActionState = E_ActionState::Locked;
+	m_CombatMode = E_CombatMode::None;
+
+	m_eState = E_CombatState::Dodging;
+
+
+	// 회피 실행
+	FVector vInputDir = GetLastMovementInputVector().GetSafeNormal();
+
+	FVector vForward = GetActorForwardVector();
+	FVector vRight = GetActorRightVector();
+
+	float fForwardDot = FVector::DotProduct(vForward, vInputDir);
+	float fRightDot = FVector::DotProduct(vRight, vInputDir);
+
+	E_Direction eDir = E_Direction::Backward;
+
+	if (!vInputDir.IsNearlyZero())
+	{
+		if (FMath::Abs(fForwardDot) > FMath::Abs(fRightDot))
+		{
+			eDir = (fForwardDot > 0) ? E_Direction::Forward : E_Direction::Backward;
+		}
+		else
+		{
+			eDir = (fRightDot > 0) ? E_Direction::Right : E_Direction::Left;
+		}
+	}
+
+
+	pAnim->playDodgeMontage(eDir);
+
+}
+
 void AC_PlayerCharacter::sprint(const FInputActionInstance& sInst)
 {
+	if (m_ActionState != E_ActionState::Free)
+		return;
+
+	if (m_eState != E_CombatState::Idle)
+		return;
+
+	if (isCrouch())
+		return;
+
+	const float fHoldThreshold = 0.3f;
+
+	if (sInst.GetElapsedTime() < fHoldThreshold)
+		return;
+
+	if (GetLastMovementInputVector().IsNearlyZero())
+		return;
+
 
 	UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance());
 
 	if (!pAnim)
 		return;
 
-	if (isCrouch())
-		return;
 
+	m_ActionState = E_ActionState::Locked;
+	m_CombatMode = E_CombatMode::None;
+
+	m_eState = E_CombatState::Sprinting;
 	
-	if (sInst.GetTriggerEvent() != ETriggerEvent::Triggered)
-		return;	
 
-	if (m_eState != E_CombatState::Idle)
-		return;
+	pAnim->playSprintStartMontage();
 
 
-	const float fElapsedTime = sInst.GetElapsedTime();
-
-
-	const float fHoldThreshold = 0.3f;
-
-
-	if (fElapsedTime >= fHoldThreshold)
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		if (GetLastMovementInputVector().IsNearlyZero())
-			return;
-		
-		// 대시 실행
-		if (m_eState == E_CombatState::Idle)
-		{			
-			setCombatState(E_CombatState::Sprinting);
-
-			pAnim->playSprintStartMontage();
-
-			if (APlayerController* pPlayerCon = Cast<APlayerController>(GetController()))
-			{
-				if (AC_PlayerCameraManager* pCameraMgr = Cast<AC_PlayerCameraManager>(pPlayerCon->PlayerCameraManager))
-				{
-					pCameraMgr->startSprintEffect();
-				}
-			}
-			FVector vForwardDir = GetActorForwardVector();
-			FVector vLaunchVelocity = vForwardDir * 1000.f; // 숫자 조절해서 속도/거리 조정
-
-			LaunchCharacter(vLaunchVelocity, true, false);
-			GetCharacterMovement()->MaxWalkSpeed = 1000.f;
-		}	
-		
-	}
-	else
-	{
-
-		m_eState = E_CombatState::Dodging;
-
-
-		// 회피 실행
-		FVector vInputDir = GetLastMovementInputVector().GetSafeNormal();
-
-		FVector vForward = GetActorForwardVector();
-		FVector vRight = GetActorRightVector();
-
-		float fForwardDot = FVector::DotProduct(vForward, vInputDir);
-		float fRightDot = FVector::DotProduct(vRight, vInputDir);
-
-		E_Direction eDir = E_Direction::Backward;
-
-		if (!vInputDir.IsNearlyZero())
+		if (AC_PlayerCameraManager* Cam = Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager))
 		{
-			if (FMath::Abs(fForwardDot) > FMath::Abs(fRightDot))
-			{
-				eDir = (fForwardDot > 0) ? E_Direction::Forward : E_Direction::Backward;
-			}
-			else
-			{
-				eDir = (fRightDot > 0) ? E_Direction::Right : E_Direction::Left;
-			}
+			Cam->startSprintEffect();
 		}
-
-
-		pAnim->playDodgeMontage(eDir);
-
-		GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
-		
-		
 	}
+
+	GetCharacterMovement()->MaxWalkSpeed = 1000.f;
+
+	FVector vLaunchVelocity = GetActorForwardVector() * 1000.f; // 숫자 조절해서 속도/거리 조정
+
+	LaunchCharacter(vLaunchVelocity, true, false);
 
 	
 }
@@ -265,16 +277,28 @@ void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)
 	if (m_eState != E_CombatState::Sprinting)
 		return;
 
-	if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying() && m_eState == E_CombatState::Sprinting)
-		GetMesh()->GetAnimInstance()->Montage_Stop(0.1f);
+
+	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+	{
+		if (Anim->IsAnyMontagePlaying())
+			Anim->Montage_Stop(0.15f);
+	}
+
+	m_ActionState = E_ActionState::Free;
+	m_CombatMode = E_CombatMode::None;
+
 
 	m_eState = E_CombatState::Idle;
-	GetCharacterMovement()->MaxWalkSpeed = 800.f;
-	if (APlayerController* pPlayerCon = Cast<APlayerController>(GetController()))
+
+
+	GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
+
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		if (AC_PlayerCameraManager* pCameraMgr = Cast<AC_PlayerCameraManager>(pPlayerCon->PlayerCameraManager))
+		if (AC_PlayerCameraManager* Cam = Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager))
 		{
-			pCameraMgr->stopSprintEffect();
+			Cam->stopSprintEffect();
 		}
 	}
 }
@@ -466,23 +490,24 @@ void AC_PlayerCharacter::lockOn(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 {
-	UE_LOG(LogTemp, Warning, TEXT("comboAttack called, ActionState=%d"), (int)m_ActionState);
+	UE_LOG(LogTemp, Warning,
+		TEXT("comboAttack called | ActionState=%d | Mode=%d"),
+		(int)m_ActionState,
+		(int)m_CombatMode);
 
 	if (m_ActionState != E_ActionState::Free)
-	{
-		m_ActionState = E_ActionState::Free;
-	}
+		return;
 
 	m_fLastAttackInputTime = GetWorld()->GetTimeSeconds();
 
-	if (canExecute() && tryExcuteEnemy())
-		return;
-
-	if (!canAttack())
-		return;
+	/*if (canExecute() && tryExcuteEnemy())
+		return;*/
 
 	if (m_ActionState == E_ActionState::Free)
 	{
+		if (!canAttack())
+			return;
+
 		m_ActionState = E_ActionState::Locked;
 		m_CombatMode = E_CombatMode::Attacking;
 
@@ -490,12 +515,22 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 
 		m_nCurrentComboIndex = 1;
 		m_bNextComboQueued = false;
+
 		playCombo(m_nCurrentComboIndex);
+		return;
 	}
-	else if (!m_bNextComboQueued)
+
+	//
+	if (m_ActionState == E_ActionState::Locked &&
+		m_CombatMode == E_CombatMode::Attacking)
 	{
-		if (m_nCurrentComboIndex < m_nMaxComboIndex)
+		if (!m_bNextComboQueued &&
+			m_nCurrentComboIndex < m_nMaxComboIndex)
+		{
 			m_bNextComboQueued = true;
+
+			UE_LOG(LogTemp, Warning, TEXT("Combo Queued"));
+		}
 	}
 
 
@@ -518,7 +553,6 @@ void AC_PlayerCharacter::playCombo(int32 nComboIndex)
 
 bool AC_PlayerCharacter::canAttack() const
 {
-
 	if (m_eState == E_CombatState::WallGrabbing ||
 		m_eState == E_CombatState::Climb ||
 		m_eState == E_CombatState::Die)
@@ -595,8 +629,12 @@ void AC_PlayerCharacter::onComboTransition()
 
 void AC_PlayerCharacter::resetCombo()
 {
-	m_ActionState = E_ActionState::Free;
-	m_CombatMode = E_CombatMode::None;
+	if (m_CombatMode == E_CombatMode::Attacking)
+	{
+		m_ActionState = E_ActionState::Free;
+		m_CombatMode = E_CombatMode::None;
+	}
+	
 
 
 	m_nCurrentComboIndex = 0;
@@ -1070,6 +1108,7 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	{
 		pEinputCom->BindAction(m_pLookAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::look);
 		pEinputCom->BindAction(m_pMoveAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::move);
+		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::dodge);
 		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Triggered, this, &AC_PlayerCharacter::sprint);
 		pEinputCom->BindAction(m_pSprintAction, ETriggerEvent::Completed, this, &AC_PlayerCharacter::sprintReleased);
 		pEinputCom->BindAction(m_pComboAttackAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::comboAttack);
