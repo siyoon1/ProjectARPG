@@ -93,8 +93,11 @@ bool UC_PlayerAnim::getIsGuarding() const
 
 void UC_PlayerAnim::AnimNotify_onClimbFinished()
 {
-    AC_PlayerCharacter* pOwner = Cast<AC_PlayerCharacter>(TryGetPawnOwner());
-    pOwner->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
-    pOwner->setCombatState(E_CombatState::Idle);
+    AC_PlayerCharacter* pOwner = Cast<AC_PlayerCharacter>(GetOwningActor());
+    if (!pOwner) return;
+
+    pOwner->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+    pOwner->onActionFinished();
+    UE_LOG(LogTemp, Error, TEXT("%s"), *pOwner->GetCharacterMovement()->GetMovementName());
 
 }

@@ -183,6 +183,17 @@ void AC_CombatCharacter::Tick(float DeltaTime)
 
 }
 
+void AC_CombatCharacter::setActionState(E_ActionState eNewState)
+{
+	if (m_ActionState != eNewState)
+		m_ActionState = eNewState;
+}
+
+E_ActionState AC_CombatCharacter::getActionState() const
+{
+	return m_ActionState;
+}
+
 void AC_CombatCharacter::setCombatState(E_CombatState eNewState)
 {
 	if (m_eState != eNewState)
@@ -349,9 +360,6 @@ float AC_CombatCharacter::getMaxPosture() const
 
 void AC_CombatCharacter::startAttackTrace()
 {
-	if (!canAct())
-		return;
-
 	if (m_bIsTracing)
 		return;
 

@@ -11,6 +11,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "ProjectARPG/ActorComponents/C_MoveActionComponent.h"
 
 void UC_GrappleComponent::endPull()
 {
@@ -251,8 +252,10 @@ void UC_GrappleComponent::startPull(AC_GrapplePoint* pTarget)
 	if (!m_pOwner || !pTarget)
 		return;
 
-	if (m_pOwner->getCombatState() == E_CombatState::WallGrabbing)
-		m_pOwner->initWallgrab();
+	if (UC_MoveActionComponent* MoveCom = m_pOwner->GetComponentByClass<UC_MoveActionComponent>())
+	{
+		MoveCom->interruptMovementAction();
+	}
 
 	m_bIsPulling = true;
 	m_pCurrentTarget = pTarget;

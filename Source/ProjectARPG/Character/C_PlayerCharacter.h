@@ -64,11 +64,16 @@ private:
 	class UC_InteractionComponent* m_pInteractCom{};
 
 	UPROPERTY()
+	class UC_MoveActionComponent* m_pMoveActionCom{};
+
+	UPROPERTY()
 	class AC_EnemyCharacter* m_pCurrentExecutionTarget = nullptr;
 
 	//위젯 관련
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> m_GrappleWidgetClass;
+
+	FVector m_ClimbTarget;
 
 	UPROPERTY()
 	UUserWidget* m_GrappleWidget;
@@ -95,20 +100,18 @@ private:
 
 	//플레이어 클라이밍
 	FVector2D m_vCurrentMoveInput{};
-	FVector m_vWallNormal{};
 	FVector m_vWallHitLocation{};
-	FVector m_vClimbLocation{};
-	bool m_bJumpPressed = false; // 점프가 눌리고 있는지
-	bool m_bCanWallGrab = false; // 벽을 짚을수 있는지
-	bool m_bIsWallGrabbing = false; // 벽을 짚고 있는지
-	bool m_bCanClimbUp = false; // 벽을 올라갈수 있는지
 
+	bool m_bJumpPressed = false; // 점프가 눌리고 있는지
 	int32 m_nJumpCount = 0;
 	int32 m_MaxJumpCount = 2;
 
 
 	//플레이어 웅크리기 관련 변수
 	bool m_bIsCrouch = false;
+
+	//플레이어 대시 관련 변수
+	bool m_bSprintStarted = false;
 
 
 public:
@@ -146,28 +149,15 @@ private:
 	//락온 지정
 	void setLockOn(float fDelta);
 	
-	//벽 짚기 가능한지 확인하기
-	void checkWallTrace();
-
 	bool canGrabWallAtLoc(const FVector& checkLoc);
-
-	//벽 짚기
-	void setWallGrab(bool bEnable);
-
-	//위쪽 지면 감지하기
-	FVector checkClimbableSurface();
-
-	//벽 올라가기
-	void startClimbUp();
 
 	//착지 상태
 	void Landed(const FHitResult& Hit) override;
 
-	//벽 좌우 이동
-	void wallGrabMove(const FVector2D& MoveInput);
-
 	//인살 시도 함수
 	bool tryExcuteEnemy();
+
+	
 
 
 protected:
@@ -175,7 +165,6 @@ protected:
 	void sprintReleased(const FInputActionInstance& sInst);
 	void guard(const FInputActionInstance& sInst);
 	void look(const struct FInputActionValue& sValue);
-	void dodge(const FInputActionValue& sValue);
 	void move(const FInputActionValue& sValue);
 	void comboAttack(const FInputActionValue& sValue);
 	void jumpStart(const FInputActionValue& sValue);
@@ -189,13 +178,16 @@ protected:
 
 
 public:
+	void onActionFinished();
+
+
 	void setCombatState(E_CombatState eNewState) override;
 	E_CombatState getCombatState() const;
+
+
 	void onComboTransition();
 	void resetCombo();
 	USphereComponent* getExecutionSphere() const;
-
-	void initWallgrab();
 
 	void restoreHP();
 	void resetPosture();
@@ -223,14 +215,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool isPulling() const;
 
-	//벽짚은 위치
-	FVector getClimbLoc() const;
-
 	bool isPlayerControlled() const;
 
 	UCameraComponent* getFollowCamera() const;
 
 	void initJump();
 
-	void playerActEnd();
+	void interruptSprint();
+
+	void setClimbTarget(const FVector& Target) { m_ClimbTarget = Target; }
+	const FVector& getClimbTarget() const { return m_ClimbTarget; }
+
 };

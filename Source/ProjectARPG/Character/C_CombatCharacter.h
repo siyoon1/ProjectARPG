@@ -211,7 +211,13 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+
+
 	// ป๓ลย set, get
+
+	void setActionState(E_ActionState eNewState);
+	E_ActionState getActionState() const;
+
 	virtual void setCombatState(E_CombatState eNewState);
 	E_CombatState getCombatState() const;
 
