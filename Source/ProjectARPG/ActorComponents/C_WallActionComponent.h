@@ -20,9 +20,6 @@ private:
 	bool m_bIsWallGrabbing = false;
 	bool m_bCanWallGrab = false;
 
-	float m_fDefaultGravity = 2.f;
-	float m_fDefaultAirControl = 0.35f;
-
 	FVector m_WallNormal;
 	FVector m_WallHitLocation;
 
@@ -40,7 +37,6 @@ public:
 
 	inline bool isWallGrabbing() const { return m_bIsWallGrabbing; }
 	bool canWallGrab() const;
-
 
 protected:
 	// Called when the game starts

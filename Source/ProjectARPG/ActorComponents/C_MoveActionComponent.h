@@ -41,12 +41,16 @@ public:
 
 	void init(AC_PlayerCharacter* InOwner);
 
+	void interruptMovementAction();
+
+
+public:
 	void onSprintInput(const struct FInputActionInstance& Inst);
 
 	void onSprintReleased();
 
-	void interruptMovementAction();
-
+	
+public:
 	bool tryWallGrab();
 
 	void wallMove(const FVector2D& Input);
@@ -58,6 +62,9 @@ public:
 	bool tryWallJumpOrClimb();
 
 	void handleClimbclamp();
+
+	void onClimbFinished();
+
 
 private:
 	bool tryDodge(const FInputActionInstance& Inst);

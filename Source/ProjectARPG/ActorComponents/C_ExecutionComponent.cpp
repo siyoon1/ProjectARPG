@@ -208,9 +208,6 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim,
 	UE_LOG(LogTemp, Error, TEXT("pAttacker => %s  pEnemy => %s"),
 		*pAttacker->GetName(), *pEnemy->GetName());
 
-	pAttacker->setCombatState(E_CombatState::Executing);
-	pEnemy->setCombatState(E_CombatState::Executing);
-
 	pAttacker->DisableInput(nullptr);
 	pAttacker->GetCharacterMovement()->StopMovementImmediately();
 
@@ -326,6 +323,21 @@ bool UC_ExecutionComponent::tryExecuteCurrentTarget()
 	return true;
 }
 
+bool UC_ExecutionComponent::canStartExecution() const
+{
+	return isValidCurrentTarget();
+}
+
+AC_EnemyCharacter* UC_ExecutionComponent::getCurrentTarget() const
+{
+	return m_pCurrentExecutableTarget;
+}
+
+E_ExecutionType UC_ExecutionComponent::getCurrentExecutionType() const
+{
+	return m_eCurrentExecutionType;
+}
+
 void UC_ExecutionComponent::playStunMontage()
 {
 	AC_CombatCharacter* pOwner = Cast<AC_CombatCharacter>(GetOwner());
@@ -356,7 +368,7 @@ void UC_ExecutionComponent::onExecutionFinished(UAnimMontage* Montage, bool bInt
 	}
 
 	pOwner->EnableInput(nullptr);
-	pOwner->setCombatState(E_CombatState::Idle);
+	pOwner->onActionFinished();
 
 	
 }

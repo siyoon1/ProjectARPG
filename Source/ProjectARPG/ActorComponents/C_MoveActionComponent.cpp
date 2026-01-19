@@ -177,4 +177,19 @@ void UC_MoveActionComponent::handleClimbclamp()
 	}
 }
 
+void UC_MoveActionComponent::onClimbFinished()
+{
+	m_Owner->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+	UCharacterMovementComponent* Move = m_Owner->GetCharacterMovement();
+
+	Move->SetMovementMode(MOVE_Walking);
+
+	Move->GravityScale = m_Owner->getDefaultGravity();
+	Move->AirControl = m_Owner->getDefaultAirControl();
+	Move->Velocity = FVector::ZeroVector;
+	m_Owner->onActionFinished();
+	
+}
+
 

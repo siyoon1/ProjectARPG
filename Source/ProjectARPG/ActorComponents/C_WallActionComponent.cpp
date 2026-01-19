@@ -91,10 +91,10 @@ void UC_WallActionComponent::releaseWall()
 		Move->SetMovementMode(MOVE_Falling);
 
 		// 중력 복원
-		Move->GravityScale = m_fDefaultGravity;
+		Move->GravityScale = m_Owner->getDefaultGravity();
 
 		// 공중 제어 초기화
-		Move->AirControl = m_fDefaultAirControl;
+		Move->AirControl = m_Owner->getDefaultAirControl();
 
 		// Velocity 초기화
 		Move->Velocity = FVector::ZeroVector;

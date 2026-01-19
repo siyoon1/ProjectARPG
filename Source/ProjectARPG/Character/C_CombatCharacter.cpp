@@ -12,11 +12,12 @@
 #include "ProjectARPG/Animation/C_CombatAnim.h"
 #include "../Camera/C_PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
+#include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
 
 
 AC_CombatCharacter::AC_CombatCharacter()
 {
-
+	m_StatComp = CreateDefaultSubobject<UC_CombatStatComponent>(TEXT("StatComp"));
 }
 
 void AC_CombatCharacter::BeginPlay()
@@ -73,6 +74,8 @@ void AC_CombatCharacter::BeginPlay()
 	{
 		m_CamMgr = Cast<AC_PlayerCameraManager>(PC->PlayerCameraManager);
 	}
+
+	m_StatComp->m_OnPostureBroken.AddUObject(this, &AC_CombatCharacter::onPostureBroken);
 }
 
 void AC_CombatCharacter::applyHitStop(float fSlowlate, float fDuration)
@@ -142,43 +145,19 @@ void AC_CombatCharacter::setRuntimeParryDir(E_ParryDirection eDir)
 	m_RuntimeParryDir = eDir;
 }
 
-E_ParryDirection AC_CombatCharacter::getCurrentParryDir() const
-{
-	if (m_RuntimeParryDir != E_ParryDirection::None)
-		return m_RuntimeParryDir;
-
-	const FS_AttackData* Attack = getCurrentAttackData();
-	return Attack ? Attack->eParryDirection : E_ParryDirection::Both;
-}
+//E_ParryDirection AC_CombatCharacter::getCurrentParryDir() const
+//{
+//	if (m_RuntimeParryDir != E_ParryDirection::None)
+//		return m_RuntimeParryDir;
+//
+//	const FS_AttackData* Attack = getCurrentAttackData();
+//	return Attack ? Attack->eParryDirection : E_ParryDirection::Both;
+//}
 
 
 void AC_CombatCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	if (m_bIsPostureBroken)
-		return;
-
-	// 회복 지연 처리
-	if (m_bIsRecoveryDelay)
-	{
-		m_fRecoveryDelayTimer -= DeltaTime;
-		if (m_fRecoveryDelayTimer <= 0.f)
-		{
-			m_bIsRecoveryDelay = false;
-		}
-		else
-		{
-			return; // 지연 중에는 체간 회복 안 함
-		}
-	}
-
-	// 체간 회복
-	if (m_fCurrentPosture < m_fMaxPosture)
-	{
-		m_fCurrentPosture = FMath::Min(m_fMaxPosture, m_fCurrentPosture + m_fRecoveryRate * DeltaTime);
-		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
-	}
 
 
 }
@@ -222,33 +201,33 @@ const FS_AttackData* AC_CombatCharacter::getCurrentAttackData() const
 	return m_pCurrentAttackData;
 }
 
-void AC_CombatCharacter::applyAttack(const FS_AttackData& sData)
-{
-	m_pCurrentAttackData = &sData;
-
-	m_fAttackDamage = sData.fDamage;
-	m_fPostureDamage = sData.fPostureDamage;
-
-	m_bCurrentAttackUnblockable = sData.bUnblockable;
-	m_bCurrentAttackCanParry = sData.bCanParry;
-	m_fGuardPushBack = sData.fGuardPushBack;
-
-	switch (sData.eProperty)
-	{
-	case E_AttackProperty::Normal:
-		m_eAttackType = E_AttackType::Normal;
-		break;
-
-	case E_AttackProperty::Heavy:
-		m_eAttackType = E_AttackType::Normal;
-		break;
-
-	case E_AttackProperty::Thrust:
-	case E_AttackProperty::Sweep:
-		m_eAttackType = E_AttackType::Charge;
-		break;
-	}
-}
+//void AC_CombatCharacter::applyAttack(const FS_AttackData& sData)
+//{
+//	m_pCurrentAttackData = &sData;
+//
+//	m_fAttackDamage = sData.fDamage;
+//	m_fPostureDamage = sData.fPostureDamage;
+//
+//	m_bCurrentAttackUnblockable = sData.bUnblockable;
+//	m_bCurrentAttackCanParry = sData.bCanParry;
+//	m_fGuardPushBack = sData.fGuardPushBack;
+//
+//	switch (sData.eProperty)
+//	{
+//	case E_AttackProperty::Normal:
+//		m_eAttackType = E_AttackType::Normal;
+//		break;
+//
+//	case E_AttackProperty::Heavy:
+//		m_eAttackType = E_AttackType::Normal;
+//		break;
+//
+//	case E_AttackProperty::Thrust:
+//	case E_AttackProperty::Sweep:
+//		m_eAttackType = E_AttackType::Charge;
+//		break;
+//	}
+//}
 
 bool AC_CombatCharacter::isGuardingFront(AActor* pAttacker) const
 {
@@ -316,10 +295,10 @@ void AC_CombatCharacter::onExecuted()
 	GetWorldTimerManager().ClearTimer(m_timerHandle_PostureBroken);
 
 	m_fCurrentPosture = m_fMaxPosture;
-	m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
+	/*m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);*/
 
 	m_fCurrentHp = m_fMaxHp;
-	m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
+	/*m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);*/
 
 	m_eState = E_CombatState::Idle;
 
@@ -334,7 +313,7 @@ void AC_CombatCharacter::setHp(float fHp)
 
 float AC_CombatCharacter::getHp() const
 {
-	return m_fCurrentHp;
+	return m_StatComp->getCurrentHp();
 }
 
 void AC_CombatCharacter::setMaxHp(float fHp)
@@ -349,7 +328,7 @@ float AC_CombatCharacter::getMaxHp() const
 
 float AC_CombatCharacter::getPosture() const
 {
-	return m_fCurrentPosture;
+	return m_StatComp->getCurrentPosture();
 }
 
 float AC_CombatCharacter::getMaxPosture() const
@@ -552,59 +531,26 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 	if (isInvincibleAgainst(pAttacker))
 		return;
 
-	reduceHp(fDamage);
+	m_StatComp->applyDamage(fDamage, fPostureDamage);
 
-	if (m_fCurrentHp <= 0.f)
-	{
-		m_fCurrentHp = 0.f;
-
-		m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
-
-		enterExecutionReady();
-		return;
-	}
-
-	
-
-	m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);
-
-	// Posture 처리
-	if (m_fCurrentPosture > 0.f)
-	{
-		reducePosture(fPostureDamage);
-
-		// 체간 회복 지연 초기화
-		m_bIsRecoveryDelay = true;
-		m_fRecoveryDelayTimer = m_sPostureStats->fRecoveryDelay;
-
-		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
-	}
-
-	// 체간 붕괴 처리
-	if (m_fCurrentPosture <= 0.f && !m_bIsPostureBroken)
-	{
-		m_fCurrentPosture = 0.f;
-		m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);
-
-		onPostureBroken();
-	}
 
 	if (!bGuardSuccess)
 	{
 
-		if (!m_bIsPostureBroken)
+		if (!m_StatComp->isPostureBroken())
 		{
 			E_Direction eDir = getHitDirection(pAttacker);
-
 			playHitMontage(eDir);
 		}
+
+
 		applyHitStop(0.01f, 0.12f);
 		
 	}
-	else if (bGuardSuccess)
+	else
 	{
-		applyHitStop(0.05f, 0.02f); // 거의 체감 안 나는 히트스탑
-		m_CamMgr->playHitCameraShake(0.2f);   // 흔들림 약하게
+		applyHitStop(0.05f, 0.02f);
+		m_CamMgr->playHitCameraShake(0.2f);
 	}
 		
 }
@@ -614,21 +560,8 @@ void AC_CombatCharacter::onPostureBroken()
 	m_ActionState = E_ActionState::Stunned;
 	m_CombatMode = E_CombatMode::None;
 
-	if (m_bIsPostureBroken)
-		return;
-
-	m_bIsPostureBroken = true;
-
-	m_bIsRecoveryDelay = true;
-
 	if (m_pExecutionCom)
 		m_pExecutionCom->playStunMontage();
-
-	GetWorldTimerManager().SetTimer(m_timerHandle_PostureBroken, [this]() 
-		{
-			m_bIsPostureBroken = false;
-
-		}, m_fBrokenDuration, false);
 }
 
 void AC_CombatCharacter::enterExecutionReady()
@@ -737,7 +670,7 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 		return;
 
 	// 패링 성공자
-	if (UAnimInstance* PlayerAnim = GetMesh()->GetAnimInstance())
+	/*if (UAnimInstance* PlayerAnim = GetMesh()->GetAnimInstance())
 	{
 		if (UC_CombatAnim* pAnim = Cast<UC_CombatAnim>(PlayerAnim))
 		{
@@ -749,7 +682,7 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 		}
 
 		
-	}
+	}*/
 
 	// 패링 당한 쪽
 	if (pTarget->m_pParryCom)
@@ -799,6 +732,11 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 
 	m_eState = E_CombatState::Idle;
 
+}
+
+void AC_CombatCharacter::applyAttack(const FS_AttackData& AttackData)
+{
+	// TODO: 실제 공격 처리
 }
 
 UC_ParryComponent* AC_CombatCharacter::getParryComponent() const

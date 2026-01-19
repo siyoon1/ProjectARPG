@@ -92,6 +92,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UC_DetectComponent> m_DetectCom;
 
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UC_EnemyAttackComponent> m_EnemyAttackComp;
+
 
 	UPROPERTY()
 	AC_CombatCharacter* m_pPlayer{};
@@ -108,16 +111,13 @@ private:
 
 protected:
 	E_CombatIntent m_CombatIntent;
-	FName m_CurrentAttackRow;
+	TMap<FName, FS_AttackRuntimeState> m_AttackStates;
 
 	UPROPERTY()
 	E_EnemyActionState m_EnemyActionState = E_EnemyActionState::Idle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	TMap<E_EnemyTier, FS_EnemyCombatProfile> m_CombatProfiles;
-
-	UPROPERTY()
-	TMap<FName, FS_AttackRuntimeState> m_AttackStates;
 
 	FS_EnemyCombatProfile m_CurrentCombatProfile;
 
@@ -134,14 +134,7 @@ public:
 
 private:
 	void applyCombatProfile();
-
-	void getAttackCandidates(float fDist, TArray<FName>& OutCandidates) const;
-	FName selectAttack(const TArray<FName>& Candidates) const;
-	bool canUseAttack(FName Row) const;
-	
-
-
-
+	float getDistToTarget() const;
 
 protected:
 	void BeginPlay() override;
@@ -150,6 +143,15 @@ protected:
 public:
 	void Tick(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable)
+	UC_EnemyAttackComponent* getAttackComponent() const;
+
+	// Runtime 사용 조회
+	const FS_AttackRuntimeState* getAttackRuntimeState(FName Row) const;
+
+	// 사용 기록
+	void markAttackUsed(FName Row, float Cooldown);
+
 	// UI 관련
 	void showHpBar(bool bShow);
 
@@ -157,10 +159,6 @@ public:
 
 	void onCombatStarted();
 	void onCombatEnded();
-
-	float getAttackMinRange() const;
-	float getAttackMaxRange() const;
-	float getAttackIdealRange() const;
 	float getNextActionTime() const;
 	FS_EnemyCombatProfile& getCombatProfile();
 
@@ -186,16 +184,12 @@ public:
 	void finishAction(float fCooldown);
 	void onActionCooldownFinished();
 
-	bool isAttackInRange(const FS_AttackData& Data, float Distance) const;
-	bool isPlayerAttacking() const;
-	bool canConsiderAttack(float fDist) const;
-	float getDistanceToTarget() const;
-	bool decideNextAttack(float fDist, FName& OutRow);
+	bool tryAttack();
 
-	bool attack(const FS_AttackData* pAttackData);
+	// 실제 공격 실행
+	bool playAttack(const FS_AttackData* Data);
+
 	void endAttack();
-
-	bool isPlayerThreatening() const;
 
 	bool playStepBack();
 	void endStepBack();
@@ -207,7 +201,6 @@ public:
 	bool guardForDuration(float fTime);
 
 	
-
 	bool isExecutingAction() const;
 
 	UFUNCTION(BlueprintCallable)

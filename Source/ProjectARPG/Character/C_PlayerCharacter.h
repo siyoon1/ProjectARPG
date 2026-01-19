@@ -137,6 +137,9 @@ private:
 	//공격이 가능한지 체크
 	bool canAttack() const;
 
+	//공격 시작
+	void startAttackCombo();
+
 	//인살이 가능한지 체크
 	bool canExecute() const;
 
@@ -155,7 +158,7 @@ private:
 	void Landed(const FHitResult& Hit) override;
 
 	//인살 시도 함수
-	bool tryExcuteEnemy();
+	bool tryStartExecution();
 
 	
 
@@ -183,6 +186,9 @@ public:
 
 	void setCombatState(E_CombatState eNewState) override;
 	E_CombatState getCombatState() const;
+
+	float getDefaultGravity() const;
+	float getDefaultAirControl() const;
 
 
 	void onComboTransition();
@@ -221,7 +227,7 @@ public:
 
 	void initJump();
 
-	void interruptSprint();
+	void interruptMoveAction();
 
 	void setClimbTarget(const FVector& Target) { m_ClimbTarget = Target; }
 	const FVector& getClimbTarget() const { return m_ClimbTarget; }

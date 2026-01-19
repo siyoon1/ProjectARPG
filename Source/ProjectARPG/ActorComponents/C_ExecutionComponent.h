@@ -68,6 +68,10 @@ public:
 
 	bool tryExecuteCurrentTarget();
 
+	bool canStartExecution() const;
+	AC_EnemyCharacter* getCurrentTarget() const;
+	E_ExecutionType getCurrentExecutionType() const;
+
 	void playStunMontage();
 
 	UFUNCTION()

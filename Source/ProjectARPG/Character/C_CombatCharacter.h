@@ -8,8 +8,7 @@
 #include "ProjectARPG/Data/C_AttackData.h"
 #include "C_CombatCharacter.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, fCurrentHp, float, fMaxHp);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPostureChanged, float, fCurrentPosture, float, fMaxPosture);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLifeNodeChanged, int32, nCurrentLifeNode, int32, nMaxLifeNode);
 
 
@@ -72,7 +71,11 @@ class PROJECTARPG_API AC_CombatCharacter : public AC_BaseCharacter, public IC_Co
 {
 	GENERATED_BODY()
 
+
 protected:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UC_CombatStatComponent> m_StatComp;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	E_ActionState m_ActionState = E_ActionState::Free;
 
@@ -164,12 +167,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CombatTrace")
 	TObjectPtr<USceneComponent> m_pTraceEnd;
-
-	UPROPERTY(BlueprintAssignable, Category = "Status")
-	FOnHpChanged m_OnHpChanged;
-
-	UPROPERTY(BlueprintAssignable, Category = "Status")
-	FOnPostureChanged m_OnPostureChanged;
 
 	UPROPERTY(BlueprintAssignable, Category = "Status")
 	FOnLifeNodeChanged m_OnLifeNodeChanged;
