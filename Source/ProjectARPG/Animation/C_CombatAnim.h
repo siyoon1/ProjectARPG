@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
 #include "ProjectARPG/Character/C_CombatCharacter.h"
+#include "ProjectARPG/Enums/C_ExecutionTypes.h"
 #include "C_CombatAnim.generated.h"
 
 /**
@@ -34,7 +35,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_LeftParryMontage;
 
+	// Ã¼°£ ºØ±« ÀÎ»ì (·£´ý)
+	UPROPERTY(EditDefaultsOnly, Category = "Execution")
+	TArray<TObjectPtr<UAnimMontage>> PostureBreakExecutions;
+
+	// ÈÄ¹æ ¾Ï»ì (°íÁ¤)
+	UPROPERTY(EditDefaultsOnly, Category = "Execution")
+	TObjectPtr<UAnimMontage> StealthExecution;
+
 public:
 	void playHitMontage(E_Direction eDir);
 	void playParryMontage(E_ParryDirection eDir);
+
+	void playExecutionMontage(E_ExecutionType Type);
 };

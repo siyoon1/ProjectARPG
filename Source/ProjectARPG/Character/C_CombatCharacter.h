@@ -162,7 +162,9 @@ protected:
 
 	virtual void onPostureBroken();
 
-	void enterExecutionReady();
+	virtual void onPostureBroken_Internal();
+
+	virtual void enterExecutionReady();
 
 	void playHitMontage(E_Direction eDir);
 
@@ -216,9 +218,6 @@ public:
 
 	virtual bool isInvincibleAgainst(AActor* pAttacker) const;
 
-	// ÀÎ»ì
-	virtual void onExecuted();
-
 	// Á×À½
 	virtual void onDeath();
 	bool isDead() const;
@@ -243,9 +242,8 @@ public:
 	UC_ParryComponent* getParryComponent() const;
 
 	void setRuntimeParryDir(E_ParryDirection eDir);
-	E_ParryDirection getCurrentParryDir() const;
 
 private:
 	void applyHitFeedback(E_HitResult HitResult, AActor* Attacker);
-	void applyAttackerHitFeedback(E_HitResult HitResult);
+	void applyAttackerHitFeedback(E_HitResult HitResult, AActor* Attacker);
 };

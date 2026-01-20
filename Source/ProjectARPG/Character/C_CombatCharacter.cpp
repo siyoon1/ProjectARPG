@@ -6,9 +6,7 @@
 #include "DrawDebugHelpers.h"
 #include "Engine/World.h"
 #include "CollisionQueryParams.h"
-#include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 #include "ProjectARPG/ActorComponents/C_ParryComponent.h"
-#include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "ProjectARPG/Animation/C_CombatAnim.h"
 #include "../Camera/C_PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -126,6 +124,18 @@ void AC_CombatCharacter::setRuntimeParryDir(E_ParryDirection eDir)
 
 void AC_CombatCharacter::applyHitFeedback(E_HitResult HitResult, AActor* Attacker)
 {
+	if (AC_CombatCharacter* AttackerChar =
+		Cast<AC_CombatCharacter>(Attacker))
+	{
+		AttackerChar->applyAttackerHitFeedback(HitResult, Attacker);
+	}
+
+	m_CamMgr->playHitCameraShake(0.2f);
+}
+
+void AC_CombatCharacter::applyAttackerHitFeedback(E_HitResult HitResult, AActor* Attacker)
+{
+
 	switch (HitResult)
 	{
 	case E_HitResult::Normal:
@@ -139,35 +149,10 @@ void AC_CombatCharacter::applyHitFeedback(E_HitResult HitResult, AActor* Attacke
 
 	case E_HitResult::PostureBroken:
 		applyHitStop(0.1f, 0.08f);
-		m_CamMgr->executionEffect(1.f);
 		break;
 	}
+	
 
-	if (AC_CombatCharacter* AttackerChar =
-		Cast<AC_CombatCharacter>(Attacker))
-	{
-		AttackerChar->applyAttackerHitFeedback(HitResult);
-	}
-
-	m_CamMgr->playHitCameraShake(0.2f);
-}
-
-void AC_CombatCharacter::applyAttackerHitFeedback(E_HitResult HitResult)
-{
-	switch (HitResult)
-	{
-	case E_HitResult::Normal:
-		applyHitStop(0.02f, 0.01f);
-		break;
-
-	case E_HitResult::Guarded:
-		applyHitStop(0.01f, 0.005f);
-		break;
-
-	case E_HitResult::PostureBroken:
-		applyHitStop(0.15f, 0.1f);
-		break;
-	}
 }
 
 void AC_CombatCharacter::startAttack(const FS_AttackData& AttackData)
@@ -285,19 +270,14 @@ bool AC_CombatCharacter::isInvincibleAgainst(AActor* pAttacker) const
 	if (isDead())
 		return true;
 
-	if (m_eState == E_CombatState::Executing)
-		return true;
-
-	// 인살 가능 상태 (HP 0 대기 상태)
-	if (m_bExecutionAvailable)
+	//인살 연출 중
+	if (m_CombatMode == E_CombatMode::Executing)
 		return true;
 
 	return false;
 }
 
-void AC_CombatCharacter::onExecuted()
-{
-	if (isDead())
+	/*if (isDead())
 		return;
 
 	m_CurrentLifeNodes--;
@@ -316,11 +296,7 @@ void AC_CombatCharacter::onExecuted()
 	GetWorldTimerManager().ClearTimer(m_timerHandle_PostureBroken);
 
 
-	m_eState = E_CombatState::Idle;
-
-	
-	
-}
+	m_eState = E_CombatState::Idle;*/
 
 
 float AC_CombatCharacter::getHp() const
@@ -355,11 +331,20 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 
 void AC_CombatCharacter::onPostureBroken()
 {
+	UE_LOG(LogTemp, Warning,
+		TEXT("[POSTURE] CombatCharacter::onPostureBroken %s"),
+		*GetName());
+
 	m_ActionState = E_ActionState::Stunned;
 	m_CombatMode = E_CombatMode::None;
 
-	/*if (m_pExecutionCom)
-		m_pExecutionCom->playStunMontage();*/
+	onPostureBroken_Internal();
+
+}
+
+void AC_CombatCharacter::onPostureBroken_Internal()
+{
+
 }
 
 void AC_CombatCharacter::enterExecutionReady()
@@ -490,25 +475,25 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 		this
 	);
 
-	if (AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(pTarget))
-	{
-		FTimerHandle Timer;
-		GetWorld()->GetTimerManager().SetTimer(
-			Timer,
-			FTimerDelegate::CreateLambda([this, pEnemy]()
-				{
-					if (pEnemy && pEnemy->canBeExecuted())
-					{
-						/*m_pExecutionCom->triggerExecution(
-							pEnemy,
-							E_ExecutionType::PostureBreak
-						);*/
-					}
-				}),
-			0.12f,
-			false
-		);
-	}
+	//if (AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(pTarget))
+	//{
+	//	FTimerHandle Timer;
+	//	GetWorld()->GetTimerManager().SetTimer(
+	//		Timer,
+	//		FTimerDelegate::CreateLambda([this, pEnemy]()
+	//			{
+	//				if (pEnemy && pEnemy->canBeExecuted())
+	//				{
+	//					/*m_pExecutionCom->triggerExecution(
+	//						pEnemy,
+	//						E_ExecutionType::PostureBreak
+	//					);*/
+	//				}
+	//			}),
+	//		0.12f,
+	//		false
+	//	);
+	//}
 	
 
 	m_eState = E_CombatState::Idle;

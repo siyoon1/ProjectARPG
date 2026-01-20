@@ -13,6 +13,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BrainComponent.h"
 #include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
+#include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
 
 
 void AC_EnemyCharacter::BeginPlay()
@@ -25,6 +26,7 @@ void AC_EnemyCharacter::BeginPlay()
 
 	applyCombatProfile();
 
+	setExecutionHintVisible(false);
 	showHpBar(false);
 
 	m_EnemyAttackComp = FindComponentByClass<UC_EnemyAttackComponent>();
@@ -75,38 +77,33 @@ float AC_EnemyCharacter::getDistToTarget() const
 
 bool AC_EnemyCharacter::startGuard()
 {
-	if (m_bIsGuarding)
+	if (!canDecideAction())
 		return false;
 
 	beginAction();
 	setGuard(true);
 
-	m_bIsGuarding = true;
-
 	m_fGuardStartTime = GetWorld()->GetTimeSeconds();
-
 	return true;
 }
 
 bool AC_EnemyCharacter::canReleaseGuard() const
 {
-	const float fNow = GetWorld()->GetTimeSeconds();
-	const float fElapsed = fNow - m_fGuardStartTime;
+	const float Elapsed = GetWorld()->GetTimeSeconds() - m_fGuardStartTime;
 
-
-	if (fElapsed < m_CurrentCombatProfile.fGuardMinTime)
+	if (Elapsed < m_CurrentCombatProfile.fGuardMinTime)
 		return false;
 
-	if (fElapsed >= m_CurrentCombatProfile.fGuardMaxTime)
+	if (Elapsed >= m_CurrentCombatProfile.fGuardMaxTime)
 		return true;
 
+	// 중간 구간: AI 판단 여지
 	return true;
 }
 
 void AC_EnemyCharacter::endGuard()
 {
 	setGuard(false);
-	m_bIsGuarding = false;
 
 	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
 	finishAction(Cooldown);
@@ -114,7 +111,7 @@ void AC_EnemyCharacter::endGuard()
 
 bool AC_EnemyCharacter::canDecideAction() const
 {
-	return m_EnemyActionState == E_EnemyActionState::Idle;
+	return m_EnemyActionState == E_EnemyActionState::Idle && canAct();
 }
 
 void AC_EnemyCharacter::beginAction()
@@ -277,14 +274,80 @@ FS_EnemyCombatProfile& AC_EnemyCharacter::getCombatProfile()
 	return m_CurrentCombatProfile;
 }
 
+bool AC_EnemyCharacter::canBeExecuted(E_ExecutionType Type) const
+{
+	UE_LOG(LogTemp, Warning,
+		TEXT("[EXEC][Enemy:%s] canBeExecuted Type=%d Can=%d PostureBroken=%d"),
+		*GetName(),
+		(int)Type,
+		m_bCanBeExecuted,
+		m_bIsPostureBroken
+	);
+
+	switch (Type)
+	{
+	case E_ExecutionType::PostureBreak:
+		return m_bCanBeExecuted && m_bIsPostureBroken;
+
+	case E_ExecutionType::Stealth:
+		return !isAnawareOfPlayer();
+
+	default:
+		return false;
+	}
+}
+
+void AC_EnemyCharacter::onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionType Type)
+{
+	m_bCanBeExecuted = false;
+
+	// 이동 정지
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->DisableMovement();
+	}
+
+	// AI 정지
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		AICon->StopMovement();
+
+		if (AICon->BrainComponent)
+		{
+			AICon->BrainComponent->StopLogic(TEXT("Execution"));
+		}
+	}
+
+	// 전투 상태 차단
+	setGuard(false);
+	setInCombat(false);
+	setExecutionHintVisible(false);
+
+	// TODO: ExecutionType별 피격 몽타주 (Enemy 기준)
+	if (UC_CombatAnim* Anim = Cast<UC_CombatAnim>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->playExecutionMontage(Type);
+	}
+}
+
+void AC_EnemyCharacter::onExecutionFinished(APawn* ExecutionInstigator)
+{
+	onDeath();
+}
+
+void AC_EnemyCharacter::setExecutionHintVisible(bool bVisible)
+{
+	showExecutionVFX(bVisible);
+}
+
 void AC_EnemyCharacter::setCanBeExecuted(bool bCan)
 {
-	m_bCanbeExcuted = bCan;
+	m_bCanBeExecuted = bCan;
 }
 
 bool AC_EnemyCharacter::canBeExecuted() const
 {
-	return m_bCanbeExcuted && m_bIsPostureBroken;
+	return m_bCanBeExecuted && m_bIsPostureBroken;
 }
 
 bool AC_EnemyCharacter::isAnawareOfPlayer() const
@@ -294,21 +357,19 @@ bool AC_EnemyCharacter::isAnawareOfPlayer() const
 
 void AC_EnemyCharacter::onPostureBroken()
 {
+	UE_LOG(LogTemp, Warning,
+		TEXT("[POSTURE] Enemy::onPostureBroken %s"),
+		*GetName());
+
 	Super::onPostureBroken();
 
-	if (!m_bCanbeExcuted)
-	{
-		m_bCanbeExcuted = true;
+}
 
-		/*if (m_pExecutionCom)
-		{
-			m_pExecutionCom->onBecomeExecutable(this);
-			UE_LOG(LogTemp, Error, TEXT("ONBECOMEEXCUTABLE!!!!"));
-		}*/
-
-
-	}
-
+void AC_EnemyCharacter::onPostureBroken_Internal()
+{
+	m_bCanBeExecuted = true;
+	m_bIsPostureBroken = true;
+	setExecutionHintVisible(true);
 }
 
 void AC_EnemyCharacter::setInCombat(bool bCombat)
@@ -328,14 +389,9 @@ void AC_EnemyCharacter::setInCombat(bool bCombat)
 	}
 }
 
-bool AC_EnemyCharacter::isExecutingAction() const
-{
-	return m_bIsExecutingAction;
-}
-
 bool AC_EnemyCharacter::isGuard() const
 {
-	return m_bIsGuarding;
+	return Super::isGuard();
 }
 
 bool AC_EnemyCharacter::isCombat() const
@@ -346,8 +402,9 @@ bool AC_EnemyCharacter::isCombat() const
 void AC_EnemyCharacter::onParryFinished()
 {
 	finishAction(0.f);
-	m_bIsExecutingAction = false;
-	m_eState = E_CombatState::Idle;
+
+	setActionState(E_ActionState::Free);
+	setCombatState(E_CombatState::Idle);
 
 	m_nextActionTime = GetWorld()->GetTimeSeconds() + 0.3f;
 }
@@ -355,22 +412,6 @@ void AC_EnemyCharacter::onParryFinished()
 bool AC_EnemyCharacter::isBoss() const
 {
 	return m_eEnemyTier == E_EnemyTier::MiniBoss || m_eEnemyTier == E_EnemyTier::Boss;
-}
-
-void AC_EnemyCharacter::onExecuted()
-{
-	Super::onExecuted();
-
-	m_bIsExecutingAction = false;
-	m_bInCombat = true;
-	m_bCanbeExcuted = false;
-
-	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
-	{
-		MoveComp->SetMovementMode(MOVE_Walking);
-	}
-
-	m_nextActionTime = GetWorld()->GetTimeSeconds() + 0.1f;
 }
 
 void AC_EnemyCharacter::onDeath()
@@ -401,20 +442,5 @@ void AC_EnemyCharacter::takeDamage_Implementation(float fDamage, float fPostureD
 void AC_EnemyCharacter::tryParry_Implementation(AActor* ParryOwner)
 {
 	Super::tryParry_Implementation(ParryOwner);
-
-	m_bIsExecutingAction = true;
-}
-
-void AC_EnemyCharacter::onExecutionStarted()
-{
-	setCanBeExecuted(false);
-	GetCharacterMovement()->DisableMovement();
-
-	if (AAIController* AICon = Cast<AAIController>(GetController()))
-	{
-		AICon->StopMovement();
-		AICon->BrainComponent->StopLogic(TEXT("Executed"));
-	}
-
 
 }

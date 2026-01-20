@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 #include "C_ExecutionTarget.generated.h"
 
 // This class does not need to be modified.
@@ -20,9 +21,17 @@ class PROJECTARPG_API IC_ExecutionTarget
 {
 	GENERATED_BODY()
 public:
-	virtual bool canBeExecuted() const = 0;
-	virtual void onExecutionStarted() = 0;
-	virtual void onExecuted() = 0;
+	// 처형 가능 여부 (Posture / Stealth 포함)
+	virtual bool canBeExecuted(E_ExecutionType Type) const = 0;
+
+	// ExecutionComponent가 호출
+	virtual void onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionType Type) = 0;
+
+	// 애니메이션 끝나면 호출
+	virtual void onExecutionFinished(APawn* ExecutionInstigator) = 0;
+
+	// UI / VFX
+	virtual void setExecutionHintVisible(bool bVisible) = 0;
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:

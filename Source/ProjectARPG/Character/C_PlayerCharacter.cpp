@@ -20,6 +20,7 @@
 #include "ProjectARPG/ActorComponents/C_MoveActionComponent.h"
 
 
+
 AC_PlayerCharacter::AC_PlayerCharacter()
 {
 	m_pSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -546,6 +547,14 @@ void AC_PlayerCharacter::resetPosture()
 		//m_fCurrentPosture = m_fMaxPosture;
 }
 
+void AC_PlayerCharacter::playPlayerExecutionMontage(E_ExecutionType Type)
+{
+	if (UC_CombatAnim* Anim = Cast<UC_CombatAnim>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->playExecutionMontage(Type);
+	}
+}
+
 AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()
 {
 	const float fDetectRadius = 500.f;
@@ -706,6 +715,11 @@ void AC_PlayerCharacter::initJump()
 
 bool AC_PlayerCharacter::tryStartExecution()
 {
+	UE_LOG(LogTemp, Warning,
+		TEXT("[EXEC][Player] tryStartExecution Action=%d State=%d"),
+		(int)m_ActionState,
+		(int)m_eState);
+
 	if (m_ActionState != E_ActionState::Free)
 		return false;
 
@@ -719,9 +733,7 @@ bool AC_PlayerCharacter::tryStartExecution()
 	m_CombatMode = E_CombatMode::Executing;
 	setCombatState(E_CombatState::Executing);
 
-	//m_ExecutionComp->triggerExecution(m_ExecutionComp->getCurrentTarget(), m_ExecutionComp->getCurrentExecutionType());
-
-	return true;
+	return m_ExecutionComp->tryExecuteCurrentTarget();
 }
 
 void AC_PlayerCharacter::interruptMoveAction()

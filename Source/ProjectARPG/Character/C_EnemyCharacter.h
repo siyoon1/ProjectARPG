@@ -100,10 +100,8 @@ private:
 	UPROPERTY()
 	AC_CombatCharacter* m_pPlayer{};
 
-	bool m_bCanbeExcuted = false;
-	bool m_bIsGuarding = false;
+	bool m_bCanBeExecuted = false;
 	bool m_bInCombat = false;
-	bool m_bIsExecutingAction = false;
 	float m_fGuardStartTime = 0.f;
 	float m_nextActionTime = 0.f;
 
@@ -164,6 +162,11 @@ public:
 	FS_EnemyCombatProfile& getCombatProfile();
 
 	//ÀÎ»ì °ü·Ã
+	virtual bool canBeExecuted(E_ExecutionType Type) const override;
+	virtual void onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionType Type) override;
+	virtual void onExecutionFinished(APawn* ExecutionInstigator) override;
+	virtual void setExecutionHintVisible(bool bVisible) override;
+
 
 	void setCanBeExecuted(bool bCan);
 
@@ -174,6 +177,7 @@ public:
 	//Ã¼°£ ºØ±«
 
 	void onPostureBroken() override;
+	void onPostureBroken_Internal() override;
 
 	void setInCombat(bool bCombat);
 
@@ -201,8 +205,6 @@ public:
 
 	bool guardForDuration(float fTime);
 
-	
-	bool isExecutingAction() const;
 
 	UFUNCTION(BlueprintCallable)
 	bool isGuard() const;
@@ -215,8 +217,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool isBoss() const;
 
-	//ÀÎ»ì
-	void onExecuted() override;
 
 	//Á×À½
 	void onDeath() override;
@@ -225,6 +225,4 @@ public:
 	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker) override;
 
 	void tryParry_Implementation(AActor* ParryOwner) override;
-
-	void onExecutionStarted() override;
 };

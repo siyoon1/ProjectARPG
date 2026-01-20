@@ -25,9 +25,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pSprintStartMontage;
-	/// <summary>
-	/// //////////////////
-	/// </summary>
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
 	TArray<UAnimMontage*> m_pComboAttackMontages;
 

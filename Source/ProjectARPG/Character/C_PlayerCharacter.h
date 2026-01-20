@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "C_CombatCharacter.h"
+#include "ProjectARPG/Enums/C_ExecutionTypes.h"
 #include "C_PlayerCharacter.generated.h"
 
 /**
@@ -203,6 +204,8 @@ public:
 
 	void restoreHP();
 	void resetPosture();
+
+	void playPlayerExecutionMontage(E_ExecutionType Type);
 
 	//락온 함수
 	UFUNCTION(BlueprintCallable)

@@ -31,9 +31,6 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	if (!pEnemy->canDecideAction())
 		return;
 
-	if (pEnemy->isExecutingAction())
-		return;
-
 	AActor* Target =
 		Cast<AActor>(BB->GetValueAsObject("TargetActor"));
 
