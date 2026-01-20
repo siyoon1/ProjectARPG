@@ -38,8 +38,6 @@ void AC_CombatCharacter::BeginPlay()
 		m_pTraceEnd = Cast<USceneComponent>(GetDefaultSubobjectByName(TEXT("TraceEnd")));
 	}
 
-	m_pExecutionCom = GetComponentByClass<UC_ExecutionComponent>();
-
 	m_pParryCom = GetComponentByClass<UC_ParryComponent>();
 
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -314,15 +312,9 @@ void AC_CombatCharacter::onExecuted()
 
 	m_bExecutionAvailable = false;
 	m_bIsPostureBroken = false;
-	//m_bIsRecoveryDelay = false;
 
 	GetWorldTimerManager().ClearTimer(m_timerHandle_PostureBroken);
 
-	//m_fCurrentPosture = m_fMaxPosture;
-	/*m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);*/
-
-	//m_fCurrentHp = m_fMaxHp;
-	/*m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);*/
 
 	m_eState = E_CombatState::Idle;
 
@@ -366,8 +358,8 @@ void AC_CombatCharacter::onPostureBroken()
 	m_ActionState = E_ActionState::Stunned;
 	m_CombatMode = E_CombatMode::None;
 
-	if (m_pExecutionCom)
-		m_pExecutionCom->playStunMontage();
+	/*if (m_pExecutionCom)
+		m_pExecutionCom->playStunMontage();*/
 }
 
 void AC_CombatCharacter::enterExecutionReady()
@@ -507,10 +499,10 @@ void AC_CombatCharacter::onParrySuccess_Implementation(AActor* ParryTarget)
 				{
 					if (pEnemy && pEnemy->canBeExecuted())
 					{
-						m_pExecutionCom->triggerExecution(
+						/*m_pExecutionCom->triggerExecution(
 							pEnemy,
 							E_ExecutionType::PostureBreak
-						);
+						);*/
 					}
 				}),
 			0.12f,

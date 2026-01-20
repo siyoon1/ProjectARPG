@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "C_CombatCharacter.h"
+#include "ProjectARPG/Interface/C_ExecutionTarget.h"
 #include "C_EnemyCharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossCombatStateChanged, AC_EnemyCharacter*, Boss, bool, bInCombat);
@@ -75,7 +76,7 @@ struct FS_EnemyCombatProfile
  * 
  */
 UCLASS(Blueprintable)
-class PROJECTARPG_API AC_EnemyCharacter : public AC_CombatCharacter
+class PROJECTARPG_API AC_EnemyCharacter : public AC_CombatCharacter, public IC_ExecutionTarget
 {
 	GENERATED_BODY()
 
@@ -225,5 +226,5 @@ public:
 
 	void tryParry_Implementation(AActor* ParryOwner) override;
 
-	
+	void onExecutionStarted() override;
 };

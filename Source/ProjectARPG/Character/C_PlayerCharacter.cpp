@@ -31,6 +31,8 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 	m_pCamera->SetupAttachment(m_pSpringArm);
 	m_pCamera->bUsePawnControlRotation = false;
 
+	m_ExecutionComp = CreateDefaultSubobject<UC_ExecutionComponent>(TEXT("ExecutionComp"));
+
 
 	m_pExecutionDetectSphere = nullptr;
 
@@ -707,17 +709,17 @@ bool AC_PlayerCharacter::tryStartExecution()
 	if (m_ActionState != E_ActionState::Free)
 		return false;
 
-	if (!m_pExecutionCom)
+	if (!m_ExecutionComp)
 		return false;
 
-	if (!m_pExecutionCom->canStartExecution())
+	if (!m_ExecutionComp->canStartExecution())
 		return false;
 
 	m_ActionState = E_ActionState::Locked;
 	m_CombatMode = E_CombatMode::Executing;
 	setCombatState(E_CombatState::Executing);
 
-	m_pExecutionCom->triggerExecution(m_pExecutionCom->getCurrentTarget(),	m_pExecutionCom->getCurrentExecutionType());
+	//m_ExecutionComp->triggerExecution(m_ExecutionComp->getCurrentTarget(), m_ExecutionComp->getCurrentExecutionType());
 
 	return true;
 }

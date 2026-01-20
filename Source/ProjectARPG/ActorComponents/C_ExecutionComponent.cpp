@@ -49,34 +49,32 @@ void UC_ExecutionComponent::updateExecutionTarget()
 	findNewExecutionTarget();
 }
 
-void UC_ExecutionComponent::setCurrentExecutableTarget(AC_EnemyCharacter* pNewTarget, E_ExecutionType eType)
+void UC_ExecutionComponent::setCurrentExecutableTarget(AActor* NewActor,IC_ExecutionTarget* NewTarget , E_ExecutionType eType)
 {
-	if (m_pCurrentExecutableTarget == pNewTarget &&
-		m_eCurrentExecutionType == eType)
-		return;
+	clearCurrentTarget();
 
-	if (m_pCurrentExecutableTarget)
-		m_pCurrentExecutableTarget->showExecutionVFX(false);
-
-	m_pCurrentExecutableTarget = pNewTarget;
+	m_CurrentTargetActor = NewActor;
+	m_CurrentTarget.SetObject(NewActor);
+	m_CurrentTarget.SetInterface(NewTarget);
 	m_eCurrentExecutionType = eType;
 
-	if (m_pCurrentExecutableTarget && eType != E_ExecutionType::None)
-		m_pCurrentExecutableTarget->showExecutionVFX(true);
+		
+	//showExecutionVFX(true); vfx는 인터페이스 or 별도 컴포넌트로
 }
 
 bool UC_ExecutionComponent::isValidCurrentTarget() const
 {
-	if (!m_pCurrentExecutableTarget)
+	if (!m_CurrentTargetActor.IsValid() || !m_CurrentTarget)
 		return false;
 
 	switch (m_eCurrentExecutionType)
 	{
-	case E_ExecutionType::Stealth:
-		return canStealthExecute(m_pCurrentExecutableTarget);
-
 	case E_ExecutionType::PostureBreak:
-		return m_pCurrentExecutableTarget->canBeExecuted();
+		return m_CurrentTarget->canBeExecuted();
+
+	case E_ExecutionType::Stealth:
+		return false;
+		//return canStealthExecute();
 
 	default:
 		return false;
@@ -89,27 +87,26 @@ void UC_ExecutionComponent::findNewExecutionTarget()
 		return;
 
 	TArray<AActor*> Overlaps{};
-	m_pOwnerPlayer->getExecutionSphere()->GetOverlappingActors(
-		Overlaps,
-		AC_EnemyCharacter::StaticClass()
-	);
+	m_pOwnerPlayer->getExecutionSphere()->GetOverlappingActors(Overlaps);
 
 	for (AActor* Act : Overlaps)
 	{
-		if (AC_EnemyCharacter* Enemy = Cast<AC_EnemyCharacter>(Act))
-		{
-			if (canStealthExecute(Enemy))
-			{
-				setCurrentExecutableTarget(Enemy, E_ExecutionType::Stealth);
-				return;
-			}
+		if (!Act->Implements<UC_ExecutionTarget>())
+			continue;
 
-			if (Enemy->canBeExecuted())
-			{
-				setCurrentExecutableTarget(Enemy, E_ExecutionType::PostureBreak);
-				return;
-			}
+		IC_ExecutionTarget* Target =
+			Cast<IC_ExecutionTarget>(Act);
+
+		if (!Target)
+			continue;
+
+		if (Target->canBeExecuted())
+		{
+			setCurrentExecutableTarget(Act, Target, E_ExecutionType::PostureBreak);
+			return;
 		}
+
+		
 	}
 
 	// 못 찾았으면 해제
@@ -118,7 +115,9 @@ void UC_ExecutionComponent::findNewExecutionTarget()
 
 void UC_ExecutionComponent::clearCurrentTarget()
 {
-	setCurrentExecutableTarget(nullptr, E_ExecutionType::None);
+	m_CurrentTargetActor = nullptr;
+	m_CurrentTarget = nullptr;
+	m_eCurrentExecutionType = E_ExecutionType::None;
 }
 
 bool UC_ExecutionComponent::isInStealthRange(AC_EnemyCharacter* pEnemy) const
@@ -199,28 +198,26 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim,
 	if (!pInstigator || !pVictim)
 		return;
 
-	AC_PlayerCharacter* pAttacker = Cast<AC_PlayerCharacter>(pInstigator);
-	AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(pVictim);
+	AActor* VictimActor = pVictim;
 
-	if (!pAttacker || !pEnemy)
+	IC_ExecutionTarget* Target = Cast<IC_ExecutionTarget>(VictimActor);
+
+	if (!Target)
 		return;
 
-	UE_LOG(LogTemp, Error, TEXT("pAttacker => %s  pEnemy => %s"),
-		*pAttacker->GetName(), *pEnemy->GetName());
+	AC_PlayerCharacter* Player =
+		Cast<AC_PlayerCharacter>(pInstigator);
 
-	pAttacker->DisableInput(nullptr);
-	pAttacker->GetCharacterMovement()->StopMovementImmediately();
+	if (!Player)
+		return;
 
-	pEnemy->setCanBeExecuted(false);
-	pEnemy->GetCharacterMovement()->DisableMovement();
+	Target->onExecutionStarted();
 
-	if (AAIController* AICon = Cast<AAIController>(pEnemy->GetController()))
-	{
-		AICon->StopMovement();
-		AICon->BrainComponent->StopLogic(TEXT("Executed"));
-	}
+	Player->DisableInput(nullptr);
+	Player->GetCharacterMovement()->StopMovementImmediately();
+	Player->setCombatState(E_CombatState::Executing);
 
-	switch (eType)
+	/*switch (eType)
 	{
 	case E_ExecutionType::Stealth:
 	case E_ExecutionType::PostureBreak:
@@ -267,7 +264,7 @@ void UC_ExecutionComponent::performExecution(APawn* pInstigator, APawn* pVictim,
 		}
 		break;
 	}
-	}
+	}*/
 	
 }
 
@@ -319,18 +316,13 @@ bool UC_ExecutionComponent::tryExecuteCurrentTarget()
 	if (!isValidCurrentTarget())
 		return false;
 
-	triggerExecution(m_pCurrentExecutableTarget, m_eCurrentExecutionType);
+	//triggerExecution(m_pCurrentExecutableTarget, m_eCurrentExecutionType);
 	return true;
 }
 
 bool UC_ExecutionComponent::canStartExecution() const
 {
 	return isValidCurrentTarget();
-}
-
-AC_EnemyCharacter* UC_ExecutionComponent::getCurrentTarget() const
-{
-	return m_pCurrentExecutableTarget;
 }
 
 E_ExecutionType UC_ExecutionComponent::getCurrentExecutionType() const

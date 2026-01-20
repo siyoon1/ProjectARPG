@@ -151,9 +151,6 @@ public:
 	FOnLifeNodeChanged m_OnLifeNodeChanged;
 
 	UPROPERTY()
-	TObjectPtr<class UC_ExecutionComponent> m_pExecutionCom;
-
-	UPROPERTY()
 	TObjectPtr<class UC_ParryComponent> m_pParryCom;
 
 	UPROPERTY()

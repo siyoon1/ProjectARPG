@@ -300,11 +300,11 @@ void AC_EnemyCharacter::onPostureBroken()
 	{
 		m_bCanbeExcuted = true;
 
-		if (m_pExecutionCom)
+		/*if (m_pExecutionCom)
 		{
 			m_pExecutionCom->onBecomeExecutable(this);
 			UE_LOG(LogTemp, Error, TEXT("ONBECOMEEXCUTABLE!!!!"));
-		}
+		}*/
 
 
 	}
@@ -403,4 +403,18 @@ void AC_EnemyCharacter::tryParry_Implementation(AActor* ParryOwner)
 	Super::tryParry_Implementation(ParryOwner);
 
 	m_bIsExecutingAction = true;
+}
+
+void AC_EnemyCharacter::onExecutionStarted()
+{
+	setCanBeExecuted(false);
+	GetCharacterMovement()->DisableMovement();
+
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		AICon->StopMovement();
+		AICon->BrainComponent->StopLogic(TEXT("Executed"));
+	}
+
+
 }

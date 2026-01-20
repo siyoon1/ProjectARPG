@@ -114,7 +114,9 @@ private:
 	bool m_bSprintStarted = false;
 
 
-
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class UC_ExecutionComponent* m_ExecutionComp{};
 
 
 public:

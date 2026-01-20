@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "ProjectARPG/Interface/C_ExecutionTarget.h"
 #include "C_ExecutionComponent.generated.h"
 
 enum class E_ExecutionType : uint8
@@ -29,7 +30,10 @@ private:
 	TObjectPtr<UAnimMontage> m_pStunMontage;
 
 	UPROPERTY()
-	TObjectPtr<class AC_EnemyCharacter> m_pCurrentExecutableTarget;
+	TScriptInterface<IC_ExecutionTarget> m_CurrentTarget;
+
+	UPROPERTY()
+	TWeakObjectPtr<AActor> m_CurrentTargetActor;
 
 	UPROPERTY()
 	TObjectPtr<class AC_PlayerCharacter> m_pOwnerPlayer;
@@ -45,7 +49,7 @@ public:
 
 private:
 	void updateExecutionTarget();
-	void setCurrentExecutableTarget(AC_EnemyCharacter* pNewTarget, E_ExecutionType eType);
+	void setCurrentExecutableTarget(AActor* NewActor, IC_ExecutionTarget* NewTarget, E_ExecutionType eType);
 	bool isValidCurrentTarget() const;
 	void findNewExecutionTarget();
 	void clearCurrentTarget();
@@ -69,7 +73,6 @@ public:
 	bool tryExecuteCurrentTarget();
 
 	bool canStartExecution() const;
-	AC_EnemyCharacter* getCurrentTarget() const;
 	E_ExecutionType getCurrentExecutionType() const;
 
 	void playStunMontage();
