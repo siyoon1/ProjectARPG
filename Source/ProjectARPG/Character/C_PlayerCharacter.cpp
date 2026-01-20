@@ -292,6 +292,19 @@ void AC_PlayerCharacter::grapple(const FInputActionValue& sValue)
 		m_pGrappleCom->tryStartGrapple();
 }
 
+FName AC_PlayerCharacter::getComboAttackRow(int32 ComboIndex) const
+{
+	switch (ComboIndex)
+	{
+	case 1: return TEXT("Player_Normal_1");
+	case 2: return TEXT("Player_Normal_2");
+	case 3: return TEXT("Player_Normal_3");
+	case 4: return TEXT("Player_Normal_4");
+	default: return NAME_None;
+	}
+	
+}
+
 void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
 {
 	if (m_CombatMode != E_CombatMode::Guarding)
@@ -397,12 +410,12 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 void AC_PlayerCharacter::playCombo(int32 nComboIndex)
 {
 	m_nCurrentComboIndex = nComboIndex;
+
+	setCurrentAttackRow(getComboAttackRow(nComboIndex));
 	
 	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Player] AnimInstance cast SUCCESS"));
-		m_eAttackType = E_AttackType::Normal;
-		pAnim->playComboMontage(m_eAttackType,nComboIndex);
+		pAnim->playComboMontage(nComboIndex);
 	}
 
 }
@@ -522,13 +535,13 @@ USphereComponent* AC_PlayerCharacter::getExecutionSphere() const
 
 void AC_PlayerCharacter::restoreHP()
 {
-	m_fCurrentHp = m_fMaxHp;
+	//m_fCurrentHp = m_fMaxHp;
 }
 
 void AC_PlayerCharacter::resetPosture()
 {
-	if (m_fCurrentPosture > 0)
-		m_fCurrentPosture = m_fMaxPosture;
+	//if (m_fCurrentPosture > 0)
+		//m_fCurrentPosture = m_fMaxPosture;
 }
 
 AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()

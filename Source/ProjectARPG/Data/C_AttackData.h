@@ -57,6 +57,9 @@ struct FS_AttackCombatData
 
 	UPROPERTY(EditAnywhere)
 	float GuardPushBack = 0.f;
+
+	UPROPERTY(EditAnywhere)
+	E_AttackProperty Property;
 };
 
 USTRUCT(BlueprintType)

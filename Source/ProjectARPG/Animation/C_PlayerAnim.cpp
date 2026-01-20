@@ -45,29 +45,25 @@ void UC_PlayerAnim::playSprintStartMontage()
 		
 }
 
-void UC_PlayerAnim::playComboMontage(E_AttackType eType, int32 nComboIndex)
+void UC_PlayerAnim::playComboMontage(int32 nComboIndex)
 {
-    switch(eType)
-    {
-    case E_AttackType::Normal:
-        if (!m_pComboAttackMontages.IsValidIndex(nComboIndex - 1))
-        {
-            UE_LOG(LogTemp, Error, TEXT("Invalid Combo Index: %d"), nComboIndex);
-            return;
-        }
+
+	if (!m_pComboAttackMontages.IsValidIndex(nComboIndex - 1))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid Combo Index: %d"), nComboIndex);
+		return;
+	}
 
 
-        UAnimMontage* pMontageToPlay = m_pComboAttackMontages[nComboIndex - 1];
+	UAnimMontage* pMontageToPlay = m_pComboAttackMontages[nComboIndex - 1];
 
-        if (!pMontageToPlay)
-        {
-            return;
-        }
+	if (!pMontageToPlay)
+	{
+		return;
+	}
 
-        Montage_Play(pMontageToPlay);
-        break;
-    }
-    
+	Montage_Play(pMontageToPlay);   
+   
     
 }
 

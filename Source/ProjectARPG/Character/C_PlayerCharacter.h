@@ -114,6 +114,9 @@ private:
 	bool m_bSprintStarted = false;
 
 
+
+
+
 public:
 	AC_PlayerCharacter();
 
@@ -179,6 +182,7 @@ protected:
 	void interact(const FInputActionValue& sValue);
 	void grapple(const FInputActionValue& sValue);
 
+	FName getComboAttackRow(int32 ComboIndex) const;
 
 public:
 	void onActionFinished();

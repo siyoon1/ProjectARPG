@@ -13,37 +13,18 @@
 #include "../Camera/C_PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
+#include "ProjectARPG/ActorComponents/C_AttackComponent.h"
 
 
 AC_CombatCharacter::AC_CombatCharacter()
 {
 	m_StatComp = CreateDefaultSubobject<UC_CombatStatComponent>(TEXT("StatComp"));
+	m_AttackComp = CreateDefaultSubobject<UC_AttackComponent>(TEXT("AttackComp"));
 }
 
 void AC_CombatCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (m_pPostureStatsTable)
-	{
-		FS_PostureStats* pLoadedStats = m_pPostureStatsTable->FindRow<FS_PostureStats>(m_sPostureRowName, TEXT("Posture Data Load"));
-		if (pLoadedStats)
-		{
-			m_sPostureStats = pLoadedStats;
-			m_fMaxPosture = m_sPostureStats->fMaxPosture;
-			m_fCurrentPosture = m_fMaxPosture;
-			m_fRecoveryRate = m_sPostureStats->fRecoveryRate;
-			m_fRecoveryDelayTimer = m_sPostureStats->fRecoveryDelay;
-			m_fBrokenDuration = m_sPostureStats->fBrokenDuration;
-
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Posture Stats Row '%s' not found!"), *m_sPostureRowName.ToString());
-		}
-	}
-
-	m_fCurrentHp = m_fMaxHp;
 
 	m_CurrentLifeNodes = m_MaxLifeNodes;
 
@@ -57,15 +38,6 @@ void AC_CombatCharacter::BeginPlay()
 		m_pTraceEnd = Cast<USceneComponent>(GetDefaultSubobjectByName(TEXT("TraceEnd")));
 	}
 
-
-	if (m_pTraceStart && m_pTraceEnd)
-	{
-
-		m_vLastTraceStart = m_pTraceStart->GetComponentLocation();
-		m_vLastTraceEnd = m_pTraceEnd->GetComponentLocation();
-
-	}
-
 	m_pExecutionCom = GetComponentByClass<UC_ExecutionComponent>();
 
 	m_pParryCom = GetComponentByClass<UC_ParryComponent>();
@@ -77,6 +49,15 @@ void AC_CombatCharacter::BeginPlay()
 
 	m_StatComp->m_OnPostureBroken.AddUObject(this, &AC_CombatCharacter::onPostureBroken);
 }
+
+
+void AC_CombatCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+
+}
+
 
 void AC_CombatCharacter::applyHitStop(float fSlowlate, float fDuration)
 {
@@ -145,21 +126,80 @@ void AC_CombatCharacter::setRuntimeParryDir(E_ParryDirection eDir)
 	m_RuntimeParryDir = eDir;
 }
 
-//E_ParryDirection AC_CombatCharacter::getCurrentParryDir() const
-//{
-//	if (m_RuntimeParryDir != E_ParryDirection::None)
-//		return m_RuntimeParryDir;
-//
-//	const FS_AttackData* Attack = getCurrentAttackData();
-//	return Attack ? Attack->eParryDirection : E_ParryDirection::Both;
-//}
-
-
-void AC_CombatCharacter::Tick(float DeltaTime)
+void AC_CombatCharacter::applyHitFeedback(E_HitResult HitResult, AActor* Attacker)
 {
-	Super::Tick(DeltaTime);
+	switch (HitResult)
+	{
+	case E_HitResult::Normal:
+		applyHitStop(0.05f, 0.02f);
+		m_CamMgr->playHitCameraShake(0.2f);
+		break;
 
+	case E_HitResult::Guarded:
+		applyHitStop(0.03f, 0.015f);
+		break;
 
+	case E_HitResult::PostureBroken:
+		applyHitStop(0.1f, 0.08f);
+		m_CamMgr->executionEffect(1.f);
+		break;
+	}
+
+	if (AC_CombatCharacter* AttackerChar =
+		Cast<AC_CombatCharacter>(Attacker))
+	{
+		AttackerChar->applyAttackerHitFeedback(HitResult);
+	}
+
+	m_CamMgr->playHitCameraShake(0.2f);
+}
+
+void AC_CombatCharacter::applyAttackerHitFeedback(E_HitResult HitResult)
+{
+	switch (HitResult)
+	{
+	case E_HitResult::Normal:
+		applyHitStop(0.02f, 0.01f);
+		break;
+
+	case E_HitResult::Guarded:
+		applyHitStop(0.01f, 0.005f);
+		break;
+
+	case E_HitResult::PostureBroken:
+		applyHitStop(0.15f, 0.1f);
+		break;
+	}
+}
+
+void AC_CombatCharacter::startAttack(const FS_AttackData& AttackData)
+{
+	m_pCurrentAttackData = &AttackData;
+
+	m_fAttackDamage = AttackData.Combat.Damage;
+	m_fPostureDamage = AttackData.Combat.PostureDamage;
+	m_fGuardPushBack = AttackData.Combat.GuardPushBack;
+
+	if (m_AttackComp)
+		m_AttackComp->startAttack(AttackData);
+}
+
+void AC_CombatCharacter::endAttack()
+{
+	if (m_AttackComp)
+		m_AttackComp->endAttack();
+
+	m_pCurrentAttackData = nullptr;
+}
+
+void AC_CombatCharacter::setCurrentAttackRow(FName RowName)
+{
+	m_CurrentAttackRow = RowName;
+}
+
+FName AC_CombatCharacter::getCurrentAttackRow() const
+{
+	return m_CurrentAttackRow;
 }
 
 void AC_CombatCharacter::setActionState(E_ActionState eNewState)
@@ -184,6 +224,18 @@ E_CombatState AC_CombatCharacter::getCombatState() const
 	return m_eState;
 }
 
+FVector AC_CombatCharacter::getTraceStartLocation() const
+{
+	return m_pTraceStart ? m_pTraceStart->GetComponentLocation()
+		: GetActorLocation();
+}
+
+FVector AC_CombatCharacter::getTraceEndLocation() const
+{
+	return m_pTraceEnd ? m_pTraceEnd->GetComponentLocation()
+		: GetActorLocation();
+}
+
 const FS_AttackData* AC_CombatCharacter::getAttackData(FName RowName) const
 {
 	if (RowName.IsNone())
@@ -200,34 +252,6 @@ const FS_AttackData* AC_CombatCharacter::getCurrentAttackData() const
 {
 	return m_pCurrentAttackData;
 }
-
-//void AC_CombatCharacter::applyAttack(const FS_AttackData& sData)
-//{
-//	m_pCurrentAttackData = &sData;
-//
-//	m_fAttackDamage = sData.fDamage;
-//	m_fPostureDamage = sData.fPostureDamage;
-//
-//	m_bCurrentAttackUnblockable = sData.bUnblockable;
-//	m_bCurrentAttackCanParry = sData.bCanParry;
-//	m_fGuardPushBack = sData.fGuardPushBack;
-//
-//	switch (sData.eProperty)
-//	{
-//	case E_AttackProperty::Normal:
-//		m_eAttackType = E_AttackType::Normal;
-//		break;
-//
-//	case E_AttackProperty::Heavy:
-//		m_eAttackType = E_AttackType::Normal;
-//		break;
-//
-//	case E_AttackProperty::Thrust:
-//	case E_AttackProperty::Sweep:
-//		m_eAttackType = E_AttackType::Charge;
-//		break;
-//	}
-//}
 
 bool AC_CombatCharacter::isGuardingFront(AActor* pAttacker) const
 {
@@ -290,14 +314,14 @@ void AC_CombatCharacter::onExecuted()
 
 	m_bExecutionAvailable = false;
 	m_bIsPostureBroken = false;
-	m_bIsRecoveryDelay = false;
+	//m_bIsRecoveryDelay = false;
 
 	GetWorldTimerManager().ClearTimer(m_timerHandle_PostureBroken);
 
-	m_fCurrentPosture = m_fMaxPosture;
+	//m_fCurrentPosture = m_fMaxPosture;
 	/*m_OnPostureChanged.Broadcast(m_fCurrentPosture, m_fMaxPosture);*/
 
-	m_fCurrentHp = m_fMaxHp;
+	//m_fCurrentHp = m_fMaxHp;
 	/*m_OnHpChanged.Broadcast(m_fCurrentHp, m_fMaxHp);*/
 
 	m_eState = E_CombatState::Idle;
@@ -306,225 +330,18 @@ void AC_CombatCharacter::onExecuted()
 	
 }
 
-void AC_CombatCharacter::setHp(float fHp)
-{
-	m_fCurrentHp = fHp;
-}
 
 float AC_CombatCharacter::getHp() const
 {
 	return m_StatComp->getCurrentHp();
 }
 
-void AC_CombatCharacter::setMaxHp(float fHp)
-{
-	m_fMaxHp = fHp;
-}
-
-float AC_CombatCharacter::getMaxHp() const
-{
-	return m_fMaxHp;
-}
 
 float AC_CombatCharacter::getPosture() const
 {
 	return m_StatComp->getCurrentPosture();
 }
 
-float AC_CombatCharacter::getMaxPosture() const
-{
-
-	return m_fMaxPosture;
-}
-
-void AC_CombatCharacter::startAttackTrace()
-{
-	if (m_bIsTracing)
-		return;
-
-	m_HitActors.Empty();
-	m_bIsTracing = true;
-	
-
-	if (m_pTraceStart)
-		m_vLastTraceStart = m_pTraceStart->GetComponentLocation();
-	if (m_pTraceEnd)
-		m_vLastTraceEnd = m_pTraceEnd->GetComponentLocation();
-}
-
-void AC_CombatCharacter::stopAttackTrace()
-{
-	m_HitActors.Empty();
-	m_bIsTracing = false;
-}
-
-void AC_CombatCharacter::performAttackTrace()
-{
-	if (isDead())
-		return;
-
-	if (!m_bIsTracing)
-		return;
-
-
-	if (!m_pTraceStart || !m_pTraceEnd)
-		return;
-
-	FVector vPrevStart = m_vLastTraceStart;
-	FVector vPrevEnd = m_vLastTraceEnd;
-
-	FVector vCurStart = m_pTraceStart->GetComponentLocation();
-	FVector vCurEnd = m_pTraceEnd->GetComponentLocation();
-
-	m_vLastTraceStart = vCurStart;
-	m_vLastTraceEnd = vCurEnd;
-
-
-	TArray<FHitResult> HitRes{};
-	FCollisionQueryParams Params{};
-	Params.AddIgnoredActor(this);
-
-	const int32 nNumSubSteps = 3;
-	for (int32 i = 0; i < nNumSubSteps; ++i)
-	{
-		float t = (float)i / (float)nNumSubSteps;
-		FVector InterpStart = FMath::Lerp(vPrevStart, vCurStart, t);
-		FVector InterpEnd = FMath::Lerp(vPrevEnd, vCurEnd, t);
-
-
-		bool bHit = GetWorld()->SweepMultiByChannel(
-			HitRes,
-			InterpStart,
-			InterpEnd,
-			FQuat::Identity,
-			ECC_GameTraceChannel3,
-			FCollisionShape::MakeSphere(m_fTraceRadius),
-			Params
-		);
-
-
-
-#if WITH_EDITOR
-
-		DrawDebugCapsule(GetWorld(), (vPrevStart + vCurEnd) * 0.5f, FVector::Distance(vPrevStart, vCurEnd) * 0.5f,
-			m_fTraceRadius, FQuat::Identity, bHit ? FColor::Green : FColor::Red, false, 0.05f);
-	
-#endif 
-		bool bAppliedHitStop = false;
-
-		if (bHit)
-		{
-			
-			for (const FHitResult& Hit : HitRes)
-			{
-				AActor* pHitActor = Hit.GetActor();
-
-				if (!pHitActor)
-					continue;
-
-				if (pHitActor == this)
-					continue;
-
-				if (m_HitActors.Contains(pHitActor))
-					continue;
-
-				
-
-				if (pHitActor->GetClass()->ImplementsInterface(UC_CombatInterface::StaticClass()))
-				{
-					bool bValidHit = true;
-
-
-					AC_CombatCharacter* pTarget = Cast<AC_CombatCharacter>(pHitActor);
-
-					if (pTarget)
-					{
-						// 죽은 적 무시
-						if (pTarget->isDead())
-							bValidHit = false;
-
-						// 인살 중 / 무적 상태면 무시 (확장 포인트)
-						if (pTarget->isInvincibleAgainst(this))
-							bValidHit = false;
-					}
-
-					if (!bValidHit)
-					{
-						m_HitActors.Add(pHitActor);
-						continue;
-					}
-
-
-					if (!bAppliedHitStop)
-					{
-						applyHitStop(0.01f, 0.09f);  // 공격자
-						bAppliedHitStop = true;
-						m_CamMgr->playHitCameraShake(0.3f);
-					}
-
-					float fFinalDamage = m_fAttackDamage;
-					float fFinalPostureDamage = m_fPostureDamage;
-
-					switch (m_eAttackType)
-					{
-					case E_AttackType::Normal:
-						// 기본값 그대로
-						break;
-
-					case E_AttackType::Air:
-						fFinalDamage *= 0.8f;
-						fFinalPostureDamage *= 1.0f;
-						break;
-					}
-
-					
-					bool bGuardSuccess = false;
-
-					if (pTarget)
-					{			
-						if (pTarget->m_bIsGuarding == true || pTarget->getCombatState() == E_CombatState::Guard)
-						{
-							bool bFront = pTarget->isGuardingFront(this);
-
-							if (bFront)
-							{
-								bGuardSuccess = true;
-
-								fFinalDamage *= 0.1f;
-								fFinalPostureDamage *= 0.5f;
-
-								if (m_fGuardPushBack > 0.f)
-								{
-									FVector vDir = (pTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-									vDir.Z = 0.f;
-									pTarget->LaunchCharacter(vDir * m_fGuardPushBack, true, false);
-								}
-								
-							}
-							
-						}
-
-						if (bGuardSuccess)
-						{
-							// 공격자 방향과 반대 방향으로 살짝 밀기
-							FVector KnockBackDir = (pTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-							KnockBackDir.Z = 0.f; // 위로 안 튀게
-							float KnockBackStrength = 150.f; // 거리 조절
-
-							pTarget->LaunchCharacter(KnockBackDir * KnockBackStrength, true, false);
-						}
-					}
-					UE_LOG(LogTemp, Warning, TEXT("[%s] Hit %s!"), *GetName(), *pHitActor->GetName());
-					IC_CombatInterface::Execute_takeDamage(pHitActor, fFinalDamage, fFinalPostureDamage, bGuardSuccess, this);
-						
-				}
-
-				m_HitActors.Add(pHitActor);
-			}
-		}
-	}
-
-}
 
 void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker)
 {
@@ -533,26 +350,15 @@ void AC_CombatCharacter::takeDamage_Implementation(float fDamage, float fPosture
 
 	m_StatComp->applyDamage(fDamage, fPostureDamage);
 
+	E_HitResult HitResult = E_HitResult::Normal;
 
-	if (!bGuardSuccess)
-	{
+	if (bGuardSuccess)
+		HitResult = E_HitResult::Guarded;
+	else if (m_StatComp->isPostureBroken())
+		HitResult = E_HitResult::PostureBroken;
 
-		if (!m_StatComp->isPostureBroken())
-		{
-			E_Direction eDir = getHitDirection(pAttacker);
-			playHitMontage(eDir);
-		}
-
-
-		applyHitStop(0.01f, 0.12f);
-		
-	}
-	else
-	{
-		applyHitStop(0.05f, 0.02f);
-		m_CamMgr->playHitCameraShake(0.2f);
-	}
-		
+	applyHitFeedback(HitResult, pAttacker);
+	
 }
 
 void AC_CombatCharacter::onPostureBroken()
@@ -570,19 +376,8 @@ void AC_CombatCharacter::enterExecutionReady()
 		return;
 
 	m_bExecutionAvailable = true;
-	stopAttackTrace();
 
 	onPostureBroken();
-}
-
-void AC_CombatCharacter::reduceHp(float fDamage)
-{
-	m_fCurrentHp = FMath::Clamp(m_fCurrentHp - fDamage, 0.f, m_fMaxHp);
-}
-
-void AC_CombatCharacter::reducePosture(float fDamage)
-{
-	m_fCurrentPosture = FMath::Clamp(m_fCurrentPosture - fDamage, 0.f, m_fMaxPosture);
 }
 
 void AC_CombatCharacter::playHitMontage(E_Direction eDir)
@@ -608,12 +403,6 @@ E_Direction AC_CombatCharacter::getHitDirection(AActor* pAttacker)
 
 	return E_Direction::Left;
 
-}
-
-
-FVector AC_CombatCharacter::getLocation_Implementation()
-{
-	return GetActorLocation();
 }
 
 void AC_CombatCharacter::tryParry_Implementation(AActor* ParryOwner)

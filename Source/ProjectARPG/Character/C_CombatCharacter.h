@@ -48,20 +48,22 @@ enum class E_CombatState : uint8
 };
 
 UENUM(BlueprintType)
-enum class E_AttackType : uint8
-{
-	Normal,
-	Air,
-	Charge
-};
-
-UENUM(BlueprintType)
 enum class E_Direction : uint8
 {
 	Forward     UMETA(DisplayName = "Forward"),
 	Backward    UMETA(DisplayName = "Backward"),
 	Left        UMETA(DisplayName = "Left"),
 	Right       UMETA(DisplayName = "Right")
+};
+
+UENUM()
+enum class E_HitResult : uint8
+{
+	Normal,
+	Guarded,
+	Parried,
+	PostureBroken,
+	Execution
 };
 /**
  * 
@@ -76,12 +78,14 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<class UC_CombatStatComponent> m_StatComp;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<class UC_AttackComponent> m_AttackComp;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	E_ActionState m_ActionState = E_ActionState::Free;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	E_CombatMode m_CombatMode = E_CombatMode::None;
-
 
 	// 현재 상태
 	E_CombatState m_eState = E_CombatState::Idle;
@@ -92,30 +96,8 @@ protected:
 
 	const FS_AttackData* m_pCurrentAttackData = nullptr;
 
-	// 체간 스텟
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
-	UDataTable* m_pPostureStatsTable{};
-
-	struct FS_PostureStats* m_sPostureStats{};
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Posture", meta = (AllowPrivateAccess = "true"))
-	FName m_sPostureRowName;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Posture", meta = (AllowPrivateAccess = "true"))
-	float m_fCurrentPosture = 0.f;
-
-	float m_fMaxPosture = 0.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hp", meta = (AllowPrivateAccess = "true"))
-	float m_fMaxHp = 0.f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Hp", meta = (AllowPrivateAccess = "true"))
-	float m_fCurrentHp = 0.f;
-
-	float m_fRecoveryRate = 0.f;
-	float m_fRecoveryDelayTimer = 0.f;
-	float m_fBrokenDuration = 0.f;
-
+	UPROPERTY()
+	FName m_CurrentAttackRow;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "trace", meta = (AllowPrivateAccess = "true"))
 	float m_fTraceRadius = 40.f;
@@ -143,12 +125,9 @@ protected:
 	FVector m_vLastTraceEnd{};
 	TArray<AActor*> m_HitActors{};
 
-	E_AttackType m_eAttackType = E_AttackType::Normal;
-
 	bool m_bExecutionAvailable = false;
 
 	bool m_bIsPostureBroken = false;
-	bool m_bIsRecoveryDelay = false;
 	bool m_bIsGuarding = false;
 	
 	FTimerHandle m_timerHandle_PostureBroken;
@@ -188,9 +167,6 @@ protected:
 
 	void enterExecutionReady();
 
-	void reduceHp(float fDamage);
-	void reducePosture(float fDamage);
-
 	void playHitMontage(E_Direction eDir);
 
 	E_Direction getHitDirection(AActor* pAttacker);
@@ -208,8 +184,6 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-
-
 	// 상태 set, get
 
 	void setActionState(E_ActionState eNewState);
@@ -218,7 +192,20 @@ public:
 	virtual void setCombatState(E_CombatState eNewState);
 	E_CombatState getCombatState() const;
 
-	// 공격 데이터
+	FVector getTraceStartLocation() const;
+	FVector getTraceEndLocation() const;
+
+
+	// 공격
+
+	void startAttack(const FS_AttackData& AttackData);
+	void endAttack();
+
+	void setCurrentAttackRow(FName RowName);
+	FName getCurrentAttackRow() const;
+
+
+
 	void applyAttack(const FS_AttackData& sData);
 	const FS_AttackData* getAttackData(FName RowName) const;
 	const FS_AttackData* getCurrentAttackData() const;
@@ -240,31 +227,15 @@ public:
 	bool isDead() const;
 	
 
-	UFUNCTION(BlueprintCallable)
-	void setHp(float fHp);
+
 	UFUNCTION(BlueprintCallable)
 	float getHp() const;
-	UFUNCTION(BlueprintCallable)
-	void setMaxHp(float fHp);
-	UFUNCTION(BlueprintCallable)
-	float getMaxHp() const;
+
 	UFUNCTION(BlueprintCallable)
 	float getPosture() const;
-	UFUNCTION(BlueprintCallable)
-	float getMaxPosture() const;
-
-	UFUNCTION()
-	void startAttackTrace();
-	UFUNCTION()
-	void stopAttackTrace();
-	UFUNCTION()
-	void performAttackTrace();
 
 	UFUNCTION()
 	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker);
-
-	UFUNCTION()
-	FVector getLocation_Implementation();
 
 	UFUNCTION()
 	void tryParry_Implementation(AActor* ParryOwner);
@@ -276,5 +247,8 @@ public:
 
 	void setRuntimeParryDir(E_ParryDirection eDir);
 	E_ParryDirection getCurrentParryDir() const;
-	
+
+private:
+	void applyHitFeedback(E_HitResult HitResult, AActor* Attacker);
+	void applyAttackerHitFeedback(E_HitResult HitResult);
 };

@@ -38,7 +38,7 @@ protected:
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
-	void playComboMontage(E_AttackType eType, int32 nComboIndex);
+	void playComboMontage(int32 nComboIndex);
 	void playUpToClimb();
 
 

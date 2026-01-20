@@ -15,17 +15,20 @@ struct PROJECTARPG_API FS_PostureStats : public FTableRowBase
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere)
+	float fMaxHp;
+
 	//최대 체간 수치
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Posture")
+	UPROPERTY(EditAnywhere)
 	float fMaxPosture = 100.f;
 
 	// 회복 속도 (초당)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Posture")
+	UPROPERTY(EditAnywhere)
 	float fRecoveryRate = 10.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Posture")
+	UPROPERTY(EditAnywhere)
 	float fRecoveryDelay = 0.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Posture")
+	UPROPERTY(EditAnywhere)
 	float fBrokenDuration = 0.f;
 };

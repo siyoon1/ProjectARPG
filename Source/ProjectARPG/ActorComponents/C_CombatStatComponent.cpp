@@ -2,6 +2,7 @@
 
 
 #include "C_CombatStatComponent.h"
+#include "ProjectARPG/Sturcts/FS_PostureStats.h"
 
 // Sets default values for this component's properties
 UC_CombatStatComponent::UC_CombatStatComponent()
@@ -19,9 +20,7 @@ void UC_CombatStatComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-
-	m_CurrentHp = m_MaxHp;
-	m_CurrentPosture = m_MaxPosture;
+	initStat();
 }
 
 
@@ -61,6 +60,26 @@ void UC_CombatStatComponent::applyDamage(float HpDamage, float PostureDamage)
 	}
 }
 
+
+void UC_CombatStatComponent::initStat()
+{
+	if (!m_StatTable || m_StatRowName.IsNone())
+		return;
+
+	FS_PostureStats* Row = m_StatTable->FindRow<FS_PostureStats>(m_StatRowName, TEXT("Stat Load"));
+
+	if (!Row)
+		return;
+
+	m_MaxHp = Row->fMaxHp;
+	m_MaxPosture = Row->fMaxPosture;
+	m_PostureRecoveryRate = Row->fRecoveryRate;
+	m_RecoveryDelayTime = Row->fRecoveryDelay;
+
+	m_CurrentHp = m_MaxHp;
+	m_CurrentPosture = m_MaxPosture;
+
+}
 
 void UC_CombatStatComponent::tickPostureRecovery(float DeltaTime)
 {

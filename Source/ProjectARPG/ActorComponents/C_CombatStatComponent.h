@@ -17,6 +17,13 @@ class PROJECTARPG_API UC_CombatStatComponent : public UActorComponent
 	GENERATED_BODY()
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
+	UDataTable* m_StatTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
+	FName m_StatRowName;
+
+private:
 	UPROPERTY(EditAnywhere)
 	float m_MaxHp = 100.f;
 
@@ -39,8 +46,11 @@ private:
 	bool m_bPostureBroken = false;
 
 public:
+	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnHpChanged m_OnHpChanged;
+	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnPostureChanged m_OnPostureChanged;
+
 	FOnPostureBroken m_OnPostureBroken;
 
 public:	
@@ -49,8 +59,15 @@ public:
 
 	void applyDamage(float HpDamage, float PostureDamage);
 
+	UFUNCTION(BlueprintCallable)
 	inline float getCurrentHp() const { return m_CurrentHp; }
+	UFUNCTION(BlueprintCallable)
+	inline float getMaxHp() const { return m_MaxHp; }
+	UFUNCTION(BlueprintCallable)
 	inline float getCurrentPosture() const { return m_CurrentPosture; }
+	UFUNCTION(BlueprintCallable)
+	inline float getMaxPosture() const { return m_MaxPosture; }
+
 	inline bool isPostureBroken() const { return m_bPostureBroken; }
 
 	
@@ -64,6 +81,7 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
+	void initStat();
 	void tickPostureRecovery(float DeltaTime);
 	void breakPosture();
 

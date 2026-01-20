@@ -2,6 +2,7 @@
 
 
 #include "C_AttackTrace.h"
+#include "ProjectARPG/ActorComponents/C_AttackComponent.h"
 #include "ProjectARPG/Character/C_CombatCharacter.h"
 
 
@@ -13,17 +14,32 @@ void UC_AttackTrace::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 
 	if (APawn* pPawn = Cast<APawn>(MeshComp->GetOwner()))
 	{
-		if (AC_CombatCharacter* pChar = Cast<AC_CombatCharacter>(pPawn))
+		if (AC_CombatCharacter* pOwner = Cast<AC_CombatCharacter>(pPawn))
 		{
 
-			if (m_HitParryDir != E_ParryDirection::None)
+			if (UC_AttackComponent* AttackComp =
+				pOwner->FindComponentByClass<UC_AttackComponent>())
 			{
-				pChar->setRuntimeParryDir(m_HitParryDir);
+
+				FName Row = pOwner->getCurrentAttackRow();
+				if (!Row.IsNone())
+				{
+					const FS_AttackData* Data = pOwner->getAttackData(Row);
+					if (Data)
+					{
+						AttackComp->startAttack(*Data);
+					}
+				}
+
+
+				AttackComp->startTrace();
 			}
 
-			pChar->startAttackTrace();
+			
 		}
 	}
+	UE_LOG(LogTemp, Warning, TEXT("[AttackStart] Notify called"));
+
 
 }
 
@@ -34,9 +50,12 @@ void UC_AttackTrace::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 
 	if (APawn* pPawn = Cast<APawn>(MeshComp->GetOwner()))
 	{
-		if (AC_CombatCharacter* pChar = Cast<AC_CombatCharacter>(pPawn))
+		if (AC_CombatCharacter* pOwner = Cast<AC_CombatCharacter>(pPawn))
 		{
-			pChar->performAttackTrace();
+			if (UC_AttackComponent* AttackComp = pOwner->FindComponentByClass<UC_AttackComponent>())
+			{
+				AttackComp->tickTrace();
+			}
 		}
 	}
 }
@@ -48,11 +67,13 @@ void UC_AttackTrace::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBa
 
 	if (APawn* pPawn = Cast<APawn>(MeshComp->GetOwner()))
 	{
-		if (AC_CombatCharacter* pChar = Cast<AC_CombatCharacter>(pPawn))
+		if (AC_CombatCharacter* pOwner = Cast<AC_CombatCharacter>(pPawn))
 		{
-			pChar->stopAttackTrace();
-
-			pChar->setRuntimeParryDir(E_ParryDirection::None);
+			if (UC_AttackComponent* AttackComp =
+				pOwner->FindComponentByClass<UC_AttackComponent>())
+			{
+				AttackComp->stopTrace();
+			}
 		}
 	}
 }
