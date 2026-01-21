@@ -9,7 +9,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../Camera/C_PlayerCameraManager.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
-#include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 #include "ProjectARPG/ActorComponents/C_ParryComponent.h"
 #include "Components/SphereComponent.h"
 #include "Engine/OverlapResult.h"
@@ -18,6 +17,7 @@
 #include "ProjectARPG/ActorComponents/C_GrappleComponent.h"
 #include "ProjectARPG/ActorComponents/C_InteractionComponent.h"
 #include "ProjectARPG/ActorComponents/C_MoveActionComponent.h"
+#include "ProjectARPG/ActorComponents/C_PlayerExecutionComponent.h"
 
 
 
@@ -32,8 +32,7 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 	m_pCamera->SetupAttachment(m_pSpringArm);
 	m_pCamera->bUsePawnControlRotation = false;
 
-	m_ExecutionComp = CreateDefaultSubobject<UC_ExecutionComponent>(TEXT("ExecutionComp"));
-
+	m_ExecutionComp = CreateDefaultSubobject<UC_PlayerExecutionComponent>(TEXT("ExecutionComp"));
 
 	m_pExecutionDetectSphere = nullptr;
 
@@ -43,6 +42,9 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 void AC_PlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Warning, TEXT("ExecutionComp: %s"),
+		m_ExecutionComp ? TEXT("VALID") : TEXT("NULL"));
 
 	UE_LOG(LogTemp, Warning, TEXT("[Init] BeginPlay ActionState=%d"), (int)m_ActionState);
 
@@ -382,6 +384,9 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 	interruptMoveAction();
 	m_fLastAttackInputTime = GetWorld()->GetTimeSeconds();
 
+	if (tryStartExecution())
+		return;
+
 
 	if (m_ActionState == E_ActionState::Locked &&
 		m_CombatMode == E_CombatMode::Attacking)
@@ -396,8 +401,7 @@ void AC_PlayerCharacter::comboAttack(const FInputActionValue& sValue)
 		return;
 	}
 
-	if (tryStartExecution())
-		return;
+	
 
 	if (m_ActionState != E_ActionState::Free)
 		return;
@@ -547,13 +551,19 @@ void AC_PlayerCharacter::resetPosture()
 		//m_fCurrentPosture = m_fMaxPosture;
 }
 
-void AC_PlayerCharacter::playPlayerExecutionMontage(E_ExecutionType Type)
-{
-	if (UC_CombatAnim* Anim = Cast<UC_CombatAnim>(GetMesh()->GetAnimInstance()))
-	{
-		Anim->playExecutionMontage(Type);
-	}
-}
+//void AC_PlayerCharacter::playPlayerExecutionMontage(E_ExecutionID ExecID, int32 VariantIndex)
+//{
+//	const FS_ExecutionGroup* Arr =
+//		m_PlayerExecutionMontages.Find(ExecID);
+//
+//	if (!Arr || !Arr->Montages.IsValidIndex(VariantIndex))
+//		return;
+//
+//	if (UC_CombatAnim* Anim = Cast<UC_CombatAnim>(GetMesh()->GetAnimInstance()))
+//	{
+//		Anim->playExecutionMontage(Arr->Montages[VariantIndex]);
+//	}
+//}
 
 AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()
 {
@@ -715,11 +725,6 @@ void AC_PlayerCharacter::initJump()
 
 bool AC_PlayerCharacter::tryStartExecution()
 {
-	UE_LOG(LogTemp, Warning,
-		TEXT("[EXEC][Player] tryStartExecution Action=%d State=%d"),
-		(int)m_ActionState,
-		(int)m_eState);
-
 	if (m_ActionState != E_ActionState::Free)
 		return false;
 

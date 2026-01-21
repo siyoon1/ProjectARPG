@@ -45,5 +45,5 @@ public:
 	void playHitMontage(E_Direction eDir);
 	void playParryMontage(E_ParryDirection eDir);
 
-	void playExecutionMontage(E_ExecutionType Type);
+	void playExecutionMontage(UAnimMontage* Montage);
 };

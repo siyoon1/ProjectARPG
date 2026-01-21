@@ -5,13 +5,11 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "ProjectARPG/Enums/C_ExecutionTypes.h"
-#include "C_ExecutionComponent.generated.h"
-
-
+#include "C_PlayerExecutionComponent.generated.h"
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class PROJECTARPG_API UC_ExecutionComponent : public UActorComponent
+class PROJECTARPG_API UC_PlayerExecutionComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -27,13 +25,8 @@ private:
 
 	E_ExecutionType m_CurrentExecutionType = E_ExecutionType::None;
 
-protected:
-	FS_ExecutionSelection* m_PostureMontage{};
-
-	FS_ExecutionSelection* m_StealthMontage{};
-
 public:
-	UC_ExecutionComponent();
+	UC_PlayerExecutionComponent();
 
 protected:
 	virtual void BeginPlay() override;
@@ -54,5 +47,6 @@ private:
 	void setCurrentExecutableTarget(AActor* NewActor, class IC_ExecutionTarget* NewTarget, E_ExecutionType Type);
 
 	void performExecution(APawn* Instigator, APawn* Victim, E_ExecutionType Type);
+
 		
 };

@@ -53,11 +53,21 @@ void UC_CombatStatComponent::applyDamage(float HpDamage, float PostureDamage)
 		m_bRecoveryDelayed = true;
 		m_RecoveryDelayTimer = m_RecoveryDelayTime;
 
-		if (m_CurrentPosture <= 0.f)
+		constexpr float PostureBreakThreshold = 3.f;
+
+		if (m_CurrentPosture <= PostureBreakThreshold)
 		{
+			m_CurrentPosture = 0.f;
 			breakPosture();
 		}
 	}
+
+	UE_LOG(LogTemp, Warning,
+		TEXT("[Posture] Damage=%.1f Current=%.2f Delayed=%d"),
+		PostureDamage,
+		m_CurrentPosture,
+		m_bRecoveryDelayed
+	);
 }
 
 
@@ -83,6 +93,9 @@ void UC_CombatStatComponent::initStat()
 
 void UC_CombatStatComponent::tickPostureRecovery(float DeltaTime)
 {
+	if (m_bPostureBroken)
+		return;
+
 	if (m_bRecoveryDelayed)
 	{
 		m_RecoveryDelayTimer -= DeltaTime;
@@ -93,13 +106,13 @@ void UC_CombatStatComponent::tickPostureRecovery(float DeltaTime)
 		return;
 	}
 
+	if (m_CurrentPosture <= KINDA_SMALL_NUMBER)
+		return;
+
 	if (m_CurrentPosture < m_MaxPosture)
 	{
-		m_CurrentPosture = FMath::Clamp(
-			m_CurrentPosture + m_PostureRecoveryRate * DeltaTime,
-			0.f,
-			m_MaxPosture
-		);
+		m_CurrentPosture += m_PostureRecoveryRate * DeltaTime;
+		m_CurrentPosture = FMath::Min(m_CurrentPosture, m_MaxPosture);
 
 		m_OnPostureChanged.Broadcast(m_CurrentPosture, m_MaxPosture);
 	}

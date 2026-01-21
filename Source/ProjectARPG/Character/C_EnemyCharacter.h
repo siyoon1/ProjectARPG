@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "C_CombatCharacter.h"
 #include "ProjectARPG/Interface/C_ExecutionTarget.h"
+#include "ProjectARPG/Enums/C_ExecutionTypes.h"
 #include "C_EnemyCharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossCombatStateChanged, AC_EnemyCharacter*, Boss, bool, bInCombat);
@@ -120,6 +121,9 @@ protected:
 
 	FS_EnemyCombatProfile m_CurrentCombatProfile;
 
+	/*UPROPERTY(EditAnywhere, Category = "Execution", meta = (AllowPrivateAccess = "true"))
+	TMap<E_ExecutionID, FS_ExecutionGroup> m_ExecutionVictimMontages;*/
+
 	
 
 public:
@@ -163,7 +167,7 @@ public:
 
 	//인살 관련
 	virtual bool canBeExecuted(E_ExecutionType Type) const override;
-	virtual void onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionType Type) override;
+	virtual void onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionID ExecID, int32 VariantIndex) override;
 	virtual void onExecutionFinished(APawn* ExecutionInstigator) override;
 	virtual void setExecutionHintVisible(bool bVisible) override;
 

@@ -4,7 +4,6 @@
 #include "C_EnemyCharacter.h"
 #include "Components/WidgetComponent.h"
 #include "NiagaraComponent.h"
-#include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
 #include "ProjectARPG/Animation/C_EnemyAnim.h"
 #include "ProjectARPG/AI/C_DetectComponent.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
@@ -281,14 +280,6 @@ FS_EnemyCombatProfile& AC_EnemyCharacter::getCombatProfile()
 
 bool AC_EnemyCharacter::canBeExecuted(E_ExecutionType Type) const
 {
-	UE_LOG(LogTemp, Warning,
-		TEXT("[EXEC][Enemy:%s] canBeExecuted Type=%d Can=%d PostureBroken=%d"),
-		*GetName(),
-		(int)Type,
-		m_bCanBeExecuted,
-		m_bIsPostureBroken
-	);
-
 	switch (Type)
 	{
 	case E_ExecutionType::PostureBreak:
@@ -302,7 +293,7 @@ bool AC_EnemyCharacter::canBeExecuted(E_ExecutionType Type) const
 	}
 }
 
-void AC_EnemyCharacter::onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionType Type)
+void AC_EnemyCharacter::onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionID ExecID, int32 VariantIndex)
 {
 	m_bCanBeExecuted = false;
 
@@ -328,11 +319,17 @@ void AC_EnemyCharacter::onExecutionStarted(APawn* ExecutionInstigator, E_Executi
 	setInCombat(false);
 	setExecutionHintVisible(false);
 
-	// TODO: ExecutionType별 피격 몽타주 (Enemy 기준)
-	if (UC_CombatAnim* Anim = Cast<UC_CombatAnim>(GetMesh()->GetAnimInstance()))
+	/*if(const FS_ExecutionGroup* Arr =
+		m_ExecutionVictimMontages.Find(ExecID))
 	{
-		Anim->playExecutionMontage(Type);
-	}
+		if (Arr->Montages.IsValidIndex(VariantIndex))
+		{
+			if (UC_CombatAnim* Anim = Cast<UC_CombatAnim>(GetMesh()->GetAnimInstance()))
+			{
+				Anim->playExecutionMontage(Arr->Montages[VariantIndex]);
+			}
+		}
+	}*/
 }
 
 void AC_EnemyCharacter::onExecutionFinished(APawn* ExecutionInstigator)

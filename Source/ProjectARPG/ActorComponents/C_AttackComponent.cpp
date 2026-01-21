@@ -59,6 +59,8 @@ void UC_AttackComponent::startTrace()
 	UE_LOG(LogTemp, Warning, TEXT("[AttackComponent] Trace START"));
 	m_bTracing = true;
 	m_HitActors.Empty();
+
+	m_PrevDir = FVector::ZeroVector;
 }
 
 void UC_AttackComponent::stopTrace()

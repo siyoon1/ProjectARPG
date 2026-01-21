@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "C_ExecutionComponent.h"
+#include "C_PlayerExecutionComponent.h"
 #include "ProjectARPG/Character/C_CombatCharacter.h"
 #include "ProjectARPG/Character/C_PlayerCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -11,7 +11,7 @@
 #include "ProjectARPG/Interface/C_ExecutionTarget.h"
 
 // Sets default values for this component's properties
-UC_ExecutionComponent::UC_ExecutionComponent()
+UC_PlayerExecutionComponent::UC_PlayerExecutionComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
@@ -21,13 +21,13 @@ UC_ExecutionComponent::UC_ExecutionComponent()
 
 }
 
-void UC_ExecutionComponent::BeginPlay()
+void UC_PlayerExecutionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	m_OwnerPlayer = Cast<AC_PlayerCharacter>(GetOwner());
 }
 
-void UC_ExecutionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UC_PlayerExecutionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
@@ -40,7 +40,7 @@ void UC_ExecutionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	updateExecutionTarget();
 }
 
-void UC_ExecutionComponent::updateExecutionTarget()
+void UC_PlayerExecutionComponent::updateExecutionTarget()
 {
 	if (isValidCurrentTarget())
 		return;
@@ -48,7 +48,7 @@ void UC_ExecutionComponent::updateExecutionTarget()
 	findNewExecutionTarget();
 }
 
-bool UC_ExecutionComponent::isValidCurrentTarget() const
+bool UC_PlayerExecutionComponent::isValidCurrentTarget() const
 {
 	if (!m_CurrentTargetActor.IsValid() || !m_CurrentTarget)
 		return false;
@@ -59,14 +59,14 @@ bool UC_ExecutionComponent::isValidCurrentTarget() const
 	return true;
 }
 
-void UC_ExecutionComponent::findNewExecutionTarget()
+void UC_PlayerExecutionComponent::findNewExecutionTarget()
 {
 	USphereComponent* ExecSphere = m_OwnerPlayer->getExecutionSphere();
 	if (!ExecSphere)
 	{
 		return;
 	}
-		
+
 
 	TArray<AActor*> Overlaps;
 	ExecSphere->GetOverlappingActors(Overlaps);
@@ -98,7 +98,7 @@ void UC_ExecutionComponent::findNewExecutionTarget()
 	clearCurrentTarget();
 }
 
-void UC_ExecutionComponent::setCurrentExecutableTarget(AActor* NewActor, IC_ExecutionTarget* NewTarget, E_ExecutionType Type)
+void UC_PlayerExecutionComponent::setCurrentExecutableTarget(AActor* NewActor, IC_ExecutionTarget* NewTarget, E_ExecutionType Type)
 {
 	clearCurrentTarget();
 
@@ -108,7 +108,7 @@ void UC_ExecutionComponent::setCurrentExecutableTarget(AActor* NewActor, IC_Exec
 	m_CurrentExecutionType = Type;
 }
 
-void UC_ExecutionComponent::clearCurrentTarget()
+void UC_PlayerExecutionComponent::clearCurrentTarget()
 {
 	if (m_CurrentTarget)
 		m_CurrentTarget->setExecutionHintVisible(false);
@@ -118,11 +118,11 @@ void UC_ExecutionComponent::clearCurrentTarget()
 	m_CurrentExecutionType = E_ExecutionType::None;
 }
 
-bool UC_ExecutionComponent::selectExecution(E_ExecutionType Type, FS_ExecutionSelection& OutSelection)
+bool UC_PlayerExecutionComponent::selectExecution(E_ExecutionType Type, FS_ExecutionSelection& OutSelection)
 {
 	const FS_ExecutionSelection* Selection = nullptr;
 
-	switch (Type)
+	/*switch (Type)
 	{
 	case E_ExecutionType::PostureBreak:
 		Selection = m_PostureMontage;
@@ -133,7 +133,7 @@ bool UC_ExecutionComponent::selectExecution(E_ExecutionType Type, FS_ExecutionSe
 
 	default:
 		return false;
-	}
+	}*/
 
 	if (!Selection || Selection->VariantIndex <= 0)
 		return false;
@@ -148,7 +148,7 @@ bool UC_ExecutionComponent::selectExecution(E_ExecutionType Type, FS_ExecutionSe
 	return true;
 }
 
-bool UC_ExecutionComponent::tryExecuteCurrentTarget()
+bool UC_PlayerExecutionComponent::tryExecuteCurrentTarget()
 {
 	UE_LOG(LogTemp, Warning, TEXT("tryExecuteCurrentTarget"));
 
@@ -163,7 +163,7 @@ bool UC_ExecutionComponent::tryExecuteCurrentTarget()
 	return true;
 }
 
-void UC_ExecutionComponent::performExecution(APawn* Instigator, APawn* Victim, E_ExecutionType Type)
+void UC_PlayerExecutionComponent::performExecution(APawn* Instigator, APawn* Victim, E_ExecutionType Type)
 {
 	if (!Instigator || !Victim)
 		return;
@@ -183,19 +183,19 @@ void UC_ExecutionComponent::performExecution(APawn* Instigator, APawn* Victim, E
 	Player->setCombatState(E_CombatState::Executing);
 
 	/*Player->playPlayerExecutionMontage(Selection.ExecutionID, Selection.VariantIndex);
-	Target->onExecutionStarted(Player,Selection.ExecutionID, Selection.VariantIndex);*/
+	Target->onExecutionStarted(Player, Selection.ExecutionID, Selection.VariantIndex);*/
 
 	UE_LOG(LogTemp, Error, TEXT("call!!!"));
 }
 
-bool UC_ExecutionComponent::canStartExecution() const
+bool UC_PlayerExecutionComponent::canStartExecution() const
 {
 	const bool bValid = isValidCurrentTarget();
 
 	return bValid;
 }
 
-E_ExecutionType UC_ExecutionComponent::getCurrentExecutionType() const
+E_ExecutionType UC_PlayerExecutionComponent::getCurrentExecutionType() const
 {
 	return m_CurrentExecutionType;
 }

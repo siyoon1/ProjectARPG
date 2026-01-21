@@ -60,47 +60,11 @@ void UC_CombatAnim::playParryMontage(E_ParryDirection eDir)
     }
 }
 
-void UC_CombatAnim::playExecutionMontage(E_ExecutionType Type)
+void UC_CombatAnim::playExecutionMontage(UAnimMontage* Montage)
 {
-    UAnimMontage* MontageToPlay = nullptr;
-
-    switch (Type)
-    {
-    case E_ExecutionType::PostureBreak:
-    {
-        if (m_PostureBreakExecutions.Num() == 0)
-            return;
-
-        const int32 Index =
-            (m_PostureBreakExecutions.Num() == 1)
-            ? 0
-            : FMath::RandRange(0, m_PostureBreakExecutions.Num() - 1);
-
-        MontageToPlay = m_PostureBreakExecutions[Index];
-        break;
-    }
-
-    case E_ExecutionType::Stealth:
-    {
-        if (m_StealthExecutions.Num() == 0)
-            return;
-
-        const int32 Index =
-            (m_StealthExecutions.Num() == 1)
-            ? 0
-            : FMath::RandRange(0, m_StealthExecutions.Num() - 1);
-
-        MontageToPlay = m_StealthExecutions[Index];
-        break;
-    }
-
-    default:
-        break;
-    }
-
-    if (!MontageToPlay)
+    if (!Montage)
         return;
 
-    Montage_Play(MontageToPlay, 1.0f);
+    Montage_Play(Montage, 1.f);
 }
 

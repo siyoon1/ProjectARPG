@@ -72,16 +72,16 @@ private:
 
 	//위젯 관련
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UUserWidget> m_GrappleWidgetClass;
+	TSubclassOf<UUserWidget> m_GrappleWidgetClass{};
 
 	FVector m_ClimbTarget;
 
 	UPROPERTY()
-	UUserWidget* m_GrappleWidget;
+	UUserWidget* m_GrappleWidget{};
 
 	//플레이어 연속 공격 관련 변수
 	int32 m_nCurrentComboIndex = 0;
-	int32 m_nMaxComboIndex = 5;
+	int32 m_nMaxComboIndex = 4;
 	bool m_bNextComboQueued = false;
 	float m_fLastAttackInputTime = 0.f;
 	float m_fInputBuffer = 0.25f;
@@ -91,7 +91,7 @@ private:
 	float m_fDefaultCrouched = 300.f;
 	float m_fDefaultAcceleration = 4000.f;
 	float m_fDefaultBraking = 4200.f;
-	float m_fDefaultGravity = 2.f;
+	float m_fDefaultGravity = 1.5f;
 	float m_fDefaultJumpVelocity = 560.f;
 	float m_fDefaultAirControl = 0.35f;
 
@@ -116,8 +116,12 @@ private:
 
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	class UC_ExecutionComponent* m_ExecutionComp{};
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UC_PlayerExecutionComponent> m_ExecutionComp{};
+
+public:
+	/*UPROPERTY(EditAnywhere, Category = "Execution", meta = (AllowPrivateAccess = "true"))
+	TMap<E_ExecutionID, FS_ExecutionGroup> m_PlayerExecutionMontages;*/
 
 
 public:
@@ -205,7 +209,7 @@ public:
 	void restoreHP();
 	void resetPosture();
 
-	void playPlayerExecutionMontage(E_ExecutionType Type);
+	//void playPlayerExecutionMontage(E_ExecutionID ExecID, int32 VariantIndex);
 
 	//락온 함수
 	UFUNCTION(BlueprintCallable)
