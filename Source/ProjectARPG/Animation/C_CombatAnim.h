@@ -35,13 +35,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_LeftParryMontage;
 
-	// Ã¼°£ ºØ±« ÀÎ»ì (·£´ý)
 	UPROPERTY(EditDefaultsOnly, Category = "Execution")
-	TArray<TObjectPtr<UAnimMontage>> PostureBreakExecutions;
+	TArray<TObjectPtr<UAnimMontage>> m_PostureBreakExecutions;
 
-	// ÈÄ¹æ ¾Ï»ì (°íÁ¤)
 	UPROPERTY(EditDefaultsOnly, Category = "Execution")
-	TObjectPtr<UAnimMontage> StealthExecution;
+	TArray<TObjectPtr<UAnimMontage>> m_StealthExecutions;
 
 public:
 	void playHitMontage(E_Direction eDir);

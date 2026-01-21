@@ -68,24 +68,34 @@ void UC_CombatAnim::playExecutionMontage(E_ExecutionType Type)
     {
     case E_ExecutionType::PostureBreak:
     {
-        if (PostureBreakExecutions.Num() == 0)
+        if (m_PostureBreakExecutions.Num() == 0)
             return;
 
         const int32 Index =
-            (PostureBreakExecutions.Num() == 1)
+            (m_PostureBreakExecutions.Num() == 1)
             ? 0
-            : FMath::RandRange(0, PostureBreakExecutions.Num() - 1);
+            : FMath::RandRange(0, m_PostureBreakExecutions.Num() - 1);
 
-        MontageToPlay = PostureBreakExecutions[Index];
+        MontageToPlay = m_PostureBreakExecutions[Index];
         break;
     }
 
     case E_ExecutionType::Stealth:
-        MontageToPlay = StealthExecution;
+    {
+        if (m_StealthExecutions.Num() == 0)
+            return;
+
+        const int32 Index =
+            (m_StealthExecutions.Num() == 1)
+            ? 0
+            : FMath::RandRange(0, m_StealthExecutions.Num() - 1);
+
+        MontageToPlay = m_StealthExecutions[Index];
         break;
+    }
 
     default:
-        return;
+        break;
     }
 
     if (!MontageToPlay)
