@@ -12,6 +12,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BrainComponent.h"
+#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
+#include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
 
 
 void AC_EnemyCharacter::BeginPlay()
@@ -24,7 +26,10 @@ void AC_EnemyCharacter::BeginPlay()
 
 	applyCombatProfile();
 
+	setExecutionHintVisible(false);
 	showHpBar(false);
+
+	m_EnemyAttackComp = FindComponentByClass<UC_EnemyAttackComponent>();
 }
 
 bool AC_EnemyCharacter::guardForDuration(float fTime)
@@ -58,196 +63,66 @@ void AC_EnemyCharacter::applyCombatProfile()
 
 }
 
-void AC_EnemyCharacter::getAttackCandidates(float fDist,TArray<FName>& OutCandidates) const
+float AC_EnemyCharacter::getDistToTarget() const
 {
-	OutCandidates.Empty();
-
-	if (!m_pAttackDataTable)
-		return;
-
-	for (const auto& Row : m_pAttackDataTable->GetRowMap())
-	{
-		FS_AttackData* pData = m_pAttackDataTable->FindRow<FS_AttackData>(Row.Key, TEXT("getAttackCandidates"));
-
-		if (!pData)
-			continue;
-
-		if (!canUseAttack(Row.Key))
-			continue;
-
-		OutCandidates.Add(Row.Key);
-	}
-
-	
-}
-
-FName AC_EnemyCharacter::selectAttack(const TArray<FName>& Candidates) const
-{
-	if (Candidates.Num() == 0)
-		return NAME_None;
-
-	const FS_EnemyCombatProfile& profile = m_CurrentCombatProfile;
-
-	TArray<float> Weights;
-	Weights.Reserve(Candidates.Num());
-
-	float fTotalWeight = 0.f;
-
-	for (FName Row : Candidates)
-	{
-		const FS_AttackData* Data = getAttackData(Row);
-		if (!Data || !canUseAttack(Row))
-		{
-			Weights.Add(0.f);
-			continue;
-		}
-
-		float Weight = Data->fBaseWeight;
-
-		switch (Data->eProperty)
-		{
-		case E_AttackProperty::Thrust:
-			Weight *= profile.fThrustWeight;
-			break;
-		case E_AttackProperty::Heavy:
-			Weight *= profile.fHeavyWeight;
-			break;
-		}
-
-		if (const FS_AttackRuntimeState* State = m_AttackStates.Find(Row))
-		{
-			const float Now = GetWorld()->GetTimeSeconds();
-
-			if (Data->fMinReuseTime > 0.f)
-			{
-				const float Elapsed = Now - State->LastUsedTime;
-				if (Elapsed < Data->fMinReuseTime)
-				{
-					const float CooldownRatio = Elapsed / Data->fMinReuseTime;
-					Weight *= FMath::Clamp(CooldownRatio * 0.2f, 0.05f, 0.3f);
-				}
-			}
-
-			Weight *= FMath::Clamp(1.f - State->Fatigue, 0.1f, 1.f);
-		}
-
-		const float Dist = getDistanceToTarget();
-		const float RangeFactor = FMath::Clamp(
-			1.f - FMath::Abs(Dist - Data->fIdealRange) / Data->fIdealRange,
-			0.3f,
-			1.f
-		);
-
-		Weight *= RangeFactor;
-
-		Weights.Add(Weight);
-		fTotalWeight += Weight;
-	}
-
-	if (fTotalWeight <= 0.f)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("TotalWeight == 0, fallback"));
-		return Candidates[0];
-	}
-
-	const float Pick = FMath::FRandRange(0.f, fTotalWeight);
-	float Acc = 0.f;
-
-	for (int32 i = 0; i < Candidates.Num(); ++i)
-	{
-		Acc += Weights[i];
-		if (Pick <= Acc)
-			return Candidates[i];
-	}
-
-	return Candidates.Last();
-}
-
-bool AC_EnemyCharacter::canUseAttack(FName Row) const
-{
-	const FS_AttackData* Data = getAttackData(Row);
-	if (!Data)
-		return false;
-
 	if (!m_pPlayer)
-		return false;
+		return TNumericLimits<float>::Max();
 
-	return true;
+	return FVector::Dist(
+		GetActorLocation(),
+		m_pPlayer->GetActorLocation()
+	);
 }
+
 
 bool AC_EnemyCharacter::startGuard()
 {
-	if (m_bIsGuarding)
+	if (!canDecideAction())
 		return false;
 
 	beginAction();
 	setGuard(true);
 
-	m_bIsGuarding = true;
-
 	m_fGuardStartTime = GetWorld()->GetTimeSeconds();
-
 	return true;
 }
 
 bool AC_EnemyCharacter::canReleaseGuard() const
 {
-	const float fNow = GetWorld()->GetTimeSeconds();
-	const float fElapsed = fNow - m_fGuardStartTime;
+	const float Elapsed = GetWorld()->GetTimeSeconds() - m_fGuardStartTime;
 
-	UE_LOG(LogTemp, Warning,
-		TEXT("[Enemy] canReleaseGuard elapsed=%.2f min=%.2f max=%.2f threatening=%d"),
-		fElapsed,
-		m_CurrentCombatProfile.fGuardMinTime,
-		m_CurrentCombatProfile.fGuardMaxTime,
-		isPlayerThreatening()
-	);
-
-	if (fElapsed < m_CurrentCombatProfile.fGuardMinTime)
+	if (Elapsed < m_CurrentCombatProfile.fGuardMinTime)
 		return false;
 
-	if (fElapsed >= m_CurrentCombatProfile.fGuardMaxTime)
+	if (Elapsed >= m_CurrentCombatProfile.fGuardMaxTime)
 		return true;
 
-	if (isPlayerThreatening())
-		return false;
-
+	// 중간 구간: AI 판단 여지
 	return true;
 }
 
 void AC_EnemyCharacter::endGuard()
 {
 	setGuard(false);
-	m_bIsGuarding = false;
 
 	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
 	finishAction(Cooldown);
 }
 
-bool AC_EnemyCharacter::isAttackInRange(const FS_AttackData& Data, float fDistance) const
-{
-	if (fDistance < Data.fMinRange)
-		return false;
-
-	if (fDistance > Data.fMaxRange)
-		return false;
-
-	return true;
-}
-
 bool AC_EnemyCharacter::canDecideAction() const
 {
-	return m_ActionState == E_EnemyActionState::Idle;
+	return m_EnemyActionState == E_EnemyActionState::Idle && canAct();
 }
 
 void AC_EnemyCharacter::beginAction()
 {
-	m_ActionState = E_EnemyActionState::Executing;
+	m_EnemyActionState = E_EnemyActionState::Executing;
 }
+
 
 void AC_EnemyCharacter::finishAction(float fCooldown)
 {
-	m_ActionState = E_EnemyActionState::Cooldown;
+	m_EnemyActionState = E_EnemyActionState::Cooldown;
 	m_nextActionTime = GetWorld()->GetTimeSeconds() + fCooldown;
 
 	GetWorldTimerManager().SetTimer(
@@ -261,28 +136,27 @@ void AC_EnemyCharacter::finishAction(float fCooldown)
 
 void AC_EnemyCharacter::onActionCooldownFinished()
 {
-	m_ActionState = E_EnemyActionState::Idle;
+	m_EnemyActionState = E_EnemyActionState::Idle;
 }
 
-bool AC_EnemyCharacter::decideNextAttack(float fDist, FName& OutRow)
+bool AC_EnemyCharacter::tryAttack()
 {
-	TArray<FName> Candidates;
-	getAttackCandidates(fDist, Candidates);
-
-	if (Candidates.Num() == 0)
-		return false; 
-
-	OutRow = selectAttack(Candidates);
-	return !OutRow.IsNone();
-}
-
-bool AC_EnemyCharacter::attack(const FS_AttackData* pAttackData)
-{
-	if (!pAttackData || !canDecideAction())
+	if (!canDecideAction())
 		return false;
 
-	beginAction();
-	m_pCurrentAttackData = pAttackData;
+	if (!m_EnemyAttackComp)
+		return false;
+
+	const float Dist = getDistToTarget();
+
+	return m_EnemyAttackComp->tryExecuteAttack(Dist);
+
+}
+
+bool AC_EnemyCharacter::playAttack(const FS_AttackData* Data)
+{
+	if (!Data)
+		return false;
 
 	if (m_pPlayer)
 	{
@@ -291,58 +165,39 @@ bool AC_EnemyCharacter::attack(const FS_AttackData* pAttackData)
 		SetActorRotation(dir.Rotation());
 	}
 
-	if (UAnimInstance* pAnim = GetMesh()->GetAnimInstance())
+	/*if (UAnimInstance* pAnim = GetMesh()->GetAnimInstance())
 	{
 		if (UC_EnemyAnim* pEnemyAnim = Cast<UC_EnemyAnim>(pAnim))
 		{
 			pEnemyAnim->playAttackMontage(pAttackData->pMontage);
 		}
-	}
+	}*/
 
 	return true;
 }
 
-bool AC_EnemyCharacter::isPlayerAttacking() const
-{
-	if (!m_pPlayer)
-		return false;
-
-	if (m_pPlayer->getCombatState() != E_CombatState::Attacking)
-		return false;
-
-
-	float fDist = FVector::Dist(GetActorLocation(), m_pPlayer->GetActorLocation());
-	if (fDist > m_CurrentCombatProfile.fPreferredRange)
-		return false;
-
-	FVector vPlayerForward = m_pPlayer->GetActorForwardVector();
-	FVector vToEnemy = (GetActorLocation() - m_pPlayer->GetActorLocation()).GetSafeNormal();
-
-	float fDot = FVector::DotProduct(vPlayerForward, vToEnemy);
-
-	if (fDot < 0.5f)
-		return false;
-
-	return true;
-}
-
-bool AC_EnemyCharacter::canConsiderAttack(float fDist) const
-{
-	return fDist <= getAttackMaxRange() * 1.1f;
-}
-
-float AC_EnemyCharacter::getDistanceToTarget() const
-{
-	if (!m_pPlayer)
-		return 0.f;
-
-	return FVector::Dist(GetActorLocation(), m_pPlayer->GetActorLocation());
-}
 
 void AC_EnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+UC_EnemyAttackComponent* AC_EnemyCharacter::getAttackComponent() const
+{
+	return m_EnemyAttackComp;
+}
+
+const FS_AttackRuntimeState* AC_EnemyCharacter::getAttackRuntimeState(FName Row) const
+{
+	return m_AttackStates.Find(Row);
+}
+
+void AC_EnemyCharacter::markAttackUsed(FName Row, float Cooldown)
+{
+	FS_AttackRuntimeState& State = m_AttackStates.FindOrAdd(Row);
+	State.LastUsedTime = GetWorld()->GetTimeSeconds();
+	State.Cooldown = Cooldown;
 }
 
 bool AC_EnemyCharacter::playStepBack()
@@ -375,34 +230,6 @@ void AC_EnemyCharacter::endAttack()
 	finishAction(Cooldown);
 
 	m_onAttackFinished.Broadcast();
-}
-
-bool AC_EnemyCharacter::isPlayerThreatening() const
-{
-	if (!m_pPlayer)
-		return false;
-
-	if (m_pPlayer->getCombatState() != E_CombatState::Attacking)
-		return false;
-
-	const float Dist =
-		FVector::Dist(GetActorLocation(), m_pPlayer->GetActorLocation());
-
-	if (Dist > m_CurrentCombatProfile.fPreferredRange * 1.1f)
-		return false;
-
-	const FVector ToEnemy =
-		(GetActorLocation() - m_pPlayer->GetActorLocation()).GetSafeNormal();
-
-	const float Dot =
-		FVector::DotProduct(m_pPlayer->GetActorForwardVector(), ToEnemy);
-
-	if (Dot < 0.6f)
-		return false;
-
-
-
-	return true;
 }
 
 void AC_EnemyCharacter::showHpBar(bool bShow)
@@ -442,21 +269,6 @@ void AC_EnemyCharacter::onCombatEnded()
 	showHpBar(false);
 }
 
-float AC_EnemyCharacter::getAttackMinRange() const
-{
-	return m_pCurrentAttackData ? m_pCurrentAttackData->fMinRange : m_CurrentCombatProfile.fPreferredRange * 0.7f;
-}
-
-float AC_EnemyCharacter::getAttackMaxRange() const
-{
-	return m_pCurrentAttackData ? m_pCurrentAttackData->fMaxRange : m_CurrentCombatProfile.fPreferredRange;
-}
-
-float AC_EnemyCharacter::getAttackIdealRange() const
-{
-	return m_pCurrentAttackData ? m_pCurrentAttackData->fIdealRange : m_CurrentCombatProfile.fPreferredRange;
-}
-
 float AC_EnemyCharacter::getNextActionTime() const
 {
 	return m_nextActionTime;
@@ -467,14 +279,80 @@ FS_EnemyCombatProfile& AC_EnemyCharacter::getCombatProfile()
 	return m_CurrentCombatProfile;
 }
 
+bool AC_EnemyCharacter::canBeExecuted(E_ExecutionType Type) const
+{
+	UE_LOG(LogTemp, Warning,
+		TEXT("[EXEC][Enemy:%s] canBeExecuted Type=%d Can=%d PostureBroken=%d"),
+		*GetName(),
+		(int)Type,
+		m_bCanBeExecuted,
+		m_bIsPostureBroken
+	);
+
+	switch (Type)
+	{
+	case E_ExecutionType::PostureBreak:
+		return m_bCanBeExecuted && m_bIsPostureBroken;
+
+	case E_ExecutionType::Stealth:
+		return !isAnawareOfPlayer();
+
+	default:
+		return false;
+	}
+}
+
+void AC_EnemyCharacter::onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionType Type)
+{
+	m_bCanBeExecuted = false;
+
+	// 이동 정지
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->DisableMovement();
+	}
+
+	// AI 정지
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		AICon->StopMovement();
+
+		if (AICon->BrainComponent)
+		{
+			AICon->BrainComponent->StopLogic(TEXT("Execution"));
+		}
+	}
+
+	// 전투 상태 차단
+	setGuard(false);
+	setInCombat(false);
+	setExecutionHintVisible(false);
+
+	// TODO: ExecutionType별 피격 몽타주 (Enemy 기준)
+	if (UC_CombatAnim* Anim = Cast<UC_CombatAnim>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->playExecutionMontage(Type);
+	}
+}
+
+void AC_EnemyCharacter::onExecutionFinished(APawn* ExecutionInstigator)
+{
+	onDeath();
+}
+
+void AC_EnemyCharacter::setExecutionHintVisible(bool bVisible)
+{
+	showExecutionVFX(bVisible);
+}
+
 void AC_EnemyCharacter::setCanBeExecuted(bool bCan)
 {
-	m_bCanbeExcuted = bCan;
+	m_bCanBeExecuted = bCan;
 }
 
 bool AC_EnemyCharacter::canBeExecuted() const
 {
-	return m_bCanbeExcuted && m_bIsPostureBroken;
+	return m_bCanBeExecuted && m_bIsPostureBroken;
 }
 
 bool AC_EnemyCharacter::isAnawareOfPlayer() const
@@ -484,21 +362,19 @@ bool AC_EnemyCharacter::isAnawareOfPlayer() const
 
 void AC_EnemyCharacter::onPostureBroken()
 {
+	UE_LOG(LogTemp, Warning,
+		TEXT("[POSTURE] Enemy::onPostureBroken %s"),
+		*GetName());
+
 	Super::onPostureBroken();
 
-	if (!m_bCanbeExcuted)
-	{
-		m_bCanbeExcuted = true;
+}
 
-		if (m_pExecutionCom)
-		{
-			m_pExecutionCom->onBecomeExecutable(this);
-			UE_LOG(LogTemp, Error, TEXT("ONBECOMEEXCUTABLE!!!!"));
-		}
-
-
-	}
-
+void AC_EnemyCharacter::onPostureBroken_Internal()
+{
+	m_bCanBeExecuted = true;
+	m_bIsPostureBroken = true;
+	setExecutionHintVisible(true);
 }
 
 void AC_EnemyCharacter::setInCombat(bool bCombat)
@@ -518,14 +394,9 @@ void AC_EnemyCharacter::setInCombat(bool bCombat)
 	}
 }
 
-bool AC_EnemyCharacter::isExecutingAction() const
-{
-	return m_bIsExecutingAction;
-}
-
 bool AC_EnemyCharacter::isGuard() const
 {
-	return m_bIsGuarding;
+	return Super::isGuard();
 }
 
 bool AC_EnemyCharacter::isCombat() const
@@ -536,8 +407,9 @@ bool AC_EnemyCharacter::isCombat() const
 void AC_EnemyCharacter::onParryFinished()
 {
 	finishAction(0.f);
-	m_bIsExecutingAction = false;
-	m_eState = E_CombatState::Idle;
+
+	setActionState(E_ActionState::Free);
+	setCombatState(E_CombatState::Idle);
 
 	m_nextActionTime = GetWorld()->GetTimeSeconds() + 0.3f;
 }
@@ -545,22 +417,6 @@ void AC_EnemyCharacter::onParryFinished()
 bool AC_EnemyCharacter::isBoss() const
 {
 	return m_eEnemyTier == E_EnemyTier::MiniBoss || m_eEnemyTier == E_EnemyTier::Boss;
-}
-
-void AC_EnemyCharacter::onExecuted()
-{
-	Super::onExecuted();
-
-	m_bIsExecutingAction = false;
-	m_bInCombat = true;
-	m_bCanbeExcuted = false;
-
-	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
-	{
-		MoveComp->SetMovementMode(MOVE_Walking);
-	}
-
-	m_nextActionTime = GetWorld()->GetTimeSeconds() + 0.1f;
 }
 
 void AC_EnemyCharacter::onDeath()
@@ -592,5 +448,4 @@ void AC_EnemyCharacter::tryParry_Implementation(AActor* ParryOwner)
 {
 	Super::tryParry_Implementation(ParryOwner);
 
-	m_bIsExecutingAction = true;
 }

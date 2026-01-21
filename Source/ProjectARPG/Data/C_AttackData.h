@@ -36,52 +36,79 @@ struct FS_AttackRuntimeState
 };
 
 USTRUCT(BlueprintType)
+struct FS_AttackCombatData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	float Damage = 0.f;
+
+	UPROPERTY(EditAnywhere)
+	float PostureDamage = 0.f;
+
+	UPROPERTY(EditAnywhere)
+	bool bUnblockable = false;
+
+	UPROPERTY(EditAnywhere)
+	bool bCanParry = true;
+
+	UPROPERTY(EditAnywhere)
+	E_ParryDirection ParryDirection;
+
+	UPROPERTY(EditAnywhere)
+	float GuardPushBack = 0.f;
+
+	UPROPERTY(EditAnywhere)
+	E_AttackProperty Property;
+};
+
+USTRUCT(BlueprintType)
+struct FS_AttackAIData
+{
+	GENERATED_BODY()
+
+	// 공격 가능 거리
+	UPROPERTY(EditAnywhere)
+	float MinRange = 0.f;
+
+	UPROPERTY(EditAnywhere)
+	float MaxRange = 250.f;
+
+	// 선호 거리 (가중치 계산용, 없어도 됨)
+	UPROPERTY(EditAnywhere)
+	float IdealRange = 150.f;
+
+	// 공격 선택 기본 가중치
+	UPROPERTY(EditAnywhere)
+	float BaseWeight = 1.f;
+
+	// 최소 재사용 시간 (쿨타임 개념)
+	UPROPERTY(EditAnywhere)
+	float MinReuseTime = 0.f;
+};
+
+USTRUCT(BlueprintType)
+struct FS_AttackAnimData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	UAnimMontage* Montage = nullptr;
+};
+
+
+
+USTRUCT(BlueprintType)
 struct FS_AttackData : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	E_AttackProperty eProperty;
+	UPROPERTY(EditAnywhere)
+	FS_AttackCombatData Combat;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float fDamage;
+	UPROPERTY(EditAnywhere)
+	FS_AttackAIData AI;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float fPostureDamage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bUnblockable;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bCanParry;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	E_ParryDirection eParryDirection;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float fGuardPushBack;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float fMaxRange;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float fMinRange = 120.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float fIdealRange = 220.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float fBaseWeight = 1.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float fRepeatPenalty = 0.6f; // 연속 사용 시 가중치 감소
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float fFatigueRecovery = 0.3f; // 시간당 회복량
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float fMinReuseTime = 0.f; // 0이면 연속 사용 가능
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	UAnimMontage* pMontage;
+	UPROPERTY(EditAnywhere)
+	FS_AttackAnimData Anim;
 };

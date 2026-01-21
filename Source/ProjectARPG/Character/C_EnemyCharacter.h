@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "C_CombatCharacter.h"
+#include "ProjectARPG/Interface/C_ExecutionTarget.h"
 #include "C_EnemyCharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossCombatStateChanged, AC_EnemyCharacter*, Boss, bool, bInCombat);
@@ -75,7 +76,7 @@ struct FS_EnemyCombatProfile
  * 
  */
 UCLASS(Blueprintable)
-class PROJECTARPG_API AC_EnemyCharacter : public AC_CombatCharacter
+class PROJECTARPG_API AC_EnemyCharacter : public AC_CombatCharacter, public IC_ExecutionTarget
 {
 	GENERATED_BODY()
 
@@ -92,14 +93,15 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UC_DetectComponent> m_DetectCom;
 
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UC_EnemyAttackComponent> m_EnemyAttackComp;
+
 
 	UPROPERTY()
 	AC_CombatCharacter* m_pPlayer{};
 
-	bool m_bCanbeExcuted = false;
-	bool m_bIsGuarding = false;
+	bool m_bCanBeExecuted = false;
 	bool m_bInCombat = false;
-	bool m_bIsExecutingAction = false;
 	float m_fGuardStartTime = 0.f;
 	float m_nextActionTime = 0.f;
 
@@ -108,16 +110,13 @@ private:
 
 protected:
 	E_CombatIntent m_CombatIntent;
-	FName m_CurrentAttackRow;
+	TMap<FName, FS_AttackRuntimeState> m_AttackStates;
 
 	UPROPERTY()
-	E_EnemyActionState m_ActionState = E_EnemyActionState::Idle;
+	E_EnemyActionState m_EnemyActionState = E_EnemyActionState::Idle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	TMap<E_EnemyTier, FS_EnemyCombatProfile> m_CombatProfiles;
-
-	UPROPERTY()
-	TMap<FName, FS_AttackRuntimeState> m_AttackStates;
 
 	FS_EnemyCombatProfile m_CurrentCombatProfile;
 
@@ -134,14 +133,7 @@ public:
 
 private:
 	void applyCombatProfile();
-
-	void getAttackCandidates(float fDist, TArray<FName>& OutCandidates) const;
-	FName selectAttack(const TArray<FName>& Candidates) const;
-	bool canUseAttack(FName Row) const;
-	
-
-
-
+	float getDistToTarget() const;
 
 protected:
 	void BeginPlay() override;
@@ -150,6 +142,15 @@ protected:
 public:
 	void Tick(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable)
+	UC_EnemyAttackComponent* getAttackComponent() const;
+
+	// Runtime 사용 조회
+	const FS_AttackRuntimeState* getAttackRuntimeState(FName Row) const;
+
+	// 사용 기록
+	void markAttackUsed(FName Row, float Cooldown);
+
 	// UI 관련
 	void showHpBar(bool bShow);
 
@@ -157,14 +158,15 @@ public:
 
 	void onCombatStarted();
 	void onCombatEnded();
-
-	float getAttackMinRange() const;
-	float getAttackMaxRange() const;
-	float getAttackIdealRange() const;
 	float getNextActionTime() const;
 	FS_EnemyCombatProfile& getCombatProfile();
 
 	//인살 관련
+	virtual bool canBeExecuted(E_ExecutionType Type) const override;
+	virtual void onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionType Type) override;
+	virtual void onExecutionFinished(APawn* ExecutionInstigator) override;
+	virtual void setExecutionHintVisible(bool bVisible) override;
+
 
 	void setCanBeExecuted(bool bCan);
 
@@ -175,6 +177,7 @@ public:
 	//체간 붕괴
 
 	void onPostureBroken() override;
+	void onPostureBroken_Internal() override;
 
 	void setInCombat(bool bCombat);
 
@@ -186,16 +189,12 @@ public:
 	void finishAction(float fCooldown);
 	void onActionCooldownFinished();
 
-	bool isAttackInRange(const FS_AttackData& Data, float Distance) const;
-	bool isPlayerAttacking() const;
-	bool canConsiderAttack(float fDist) const;
-	float getDistanceToTarget() const;
-	bool decideNextAttack(float fDist, FName& OutRow);
+	bool tryAttack();
 
-	bool attack(const FS_AttackData* pAttackData);
+	// 실제 공격 실행
+	bool playAttack(const FS_AttackData* Data);
+
 	void endAttack();
-
-	bool isPlayerThreatening() const;
 
 	bool playStepBack();
 	void endStepBack();
@@ -206,9 +205,6 @@ public:
 
 	bool guardForDuration(float fTime);
 
-	
-
-	bool isExecutingAction() const;
 
 	UFUNCTION(BlueprintCallable)
 	bool isGuard() const;
@@ -221,8 +217,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool isBoss() const;
 
-	//인살
-	void onExecuted() override;
 
 	//죽음
 	void onDeath() override;
@@ -231,6 +225,4 @@ public:
 	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker) override;
 
 	void tryParry_Implementation(AActor* ParryOwner) override;
-
-	
 };

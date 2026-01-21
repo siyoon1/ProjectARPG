@@ -6,6 +6,7 @@
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "ProjectARPG/Animation/C_EnemyAnim.h"
+#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
 
 UC_BTTask_StepBack::UC_BTTask_StepBack()
 {
@@ -58,35 +59,23 @@ void UC_BTTask_StepBack::onStepBackFinished()
     if (!CachedOwnerComp)
         return;
 
-    UBlackboardComponent* BB =
-        CachedOwnerComp->GetBlackboardComponent();
-
     if (AAIController* AICon = CachedOwnerComp->GetAIOwner())
     {
         if (AC_EnemyCharacter* Enemy =
             Cast<AC_EnemyCharacter>(AICon->GetPawn()))
         {
             Enemy->m_onStepBackFinished.RemoveAll(this);
-
-            const float Dist =
-                BB->GetValueAsFloat(AC_EnemyController::DistKey);
-
-            // ? 핵심: 이제 공격 가능하면 Intent 초기화
-            if (Enemy->canConsiderAttack(Dist))
-            {
-                BB->SetValueAsEnum(
-                    AC_EnemyController::IntentKey,
-                    (uint8)E_CombatIntent::None);
-            }
-
         }
     }
 
-    BB->SetValueAsBool(
-        AC_EnemyController::IntentLockedKey,
-        false);
-
-
+    // ?? Intent 잠금 해제만 수행
+    if (UBlackboardComponent* BB =
+        CachedOwnerComp->GetBlackboardComponent())
+    {
+        BB->SetValueAsBool(
+            AC_EnemyController::IntentLockedKey,
+            false);
+    }
 
     FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 }

@@ -5,6 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
+#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
 
 UC_BTDecorator_CheckAttackRange::UC_BTDecorator_CheckAttackRange()
 {
@@ -34,5 +35,5 @@ bool UC_BTDecorator_CheckAttackRange::CalculateRawConditionValue(UBehaviorTreeCo
 	if (!Data)
 		return false;
 
-	return Enemy->isAttackInRange(*Data, Dist);
+	return Enemy->getAttackComponent()->isAttackInRange(*Data, Dist);
 }

@@ -27,9 +27,6 @@ public:
 	void takeDamage(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")
-	FVector getLocation();
-
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")
 	void tryParry(AActor* ParryOwner);	// 공격자가 피격자에게 패링 시도할 때 호출
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")

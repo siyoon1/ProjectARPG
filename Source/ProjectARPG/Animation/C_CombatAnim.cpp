@@ -4,6 +4,7 @@
 #include "C_CombatAnim.h"
 
 
+
 void UC_CombatAnim::playHitMontage(E_Direction eDir)
 {
     UAnimMontage* pMontageToPlay = nullptr;
@@ -57,5 +58,49 @@ void UC_CombatAnim::playParryMontage(E_ParryDirection eDir)
         Montage_Play(m_DefaultParryMontage);
         break;
     }
+}
+
+void UC_CombatAnim::playExecutionMontage(E_ExecutionType Type)
+{
+    UAnimMontage* MontageToPlay = nullptr;
+
+    switch (Type)
+    {
+    case E_ExecutionType::PostureBreak:
+    {
+        if (m_PostureBreakExecutions.Num() == 0)
+            return;
+
+        const int32 Index =
+            (m_PostureBreakExecutions.Num() == 1)
+            ? 0
+            : FMath::RandRange(0, m_PostureBreakExecutions.Num() - 1);
+
+        MontageToPlay = m_PostureBreakExecutions[Index];
+        break;
+    }
+
+    case E_ExecutionType::Stealth:
+    {
+        if (m_StealthExecutions.Num() == 0)
+            return;
+
+        const int32 Index =
+            (m_StealthExecutions.Num() == 1)
+            ? 0
+            : FMath::RandRange(0, m_StealthExecutions.Num() - 1);
+
+        MontageToPlay = m_StealthExecutions[Index];
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    if (!MontageToPlay)
+        return;
+
+    Montage_Play(MontageToPlay, 1.0f);
 }
 

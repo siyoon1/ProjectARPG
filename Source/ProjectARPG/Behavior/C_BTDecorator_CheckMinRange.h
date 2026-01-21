@@ -16,8 +16,5 @@ class PROJECTARPG_API UC_BTDecorator_CheckMinRange : public UBTDecorator
 
 public:
 	UC_BTDecorator_CheckMinRange();
-
-protected:
-	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;
 	
 };

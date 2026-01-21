@@ -35,8 +35,8 @@ void UC_ParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 
 void UC_ParryComponent::openParry(const FS_AttackData& AttackData)
 {
-	if (!AttackData.bCanParry)
-		return;
+	/*if (!AttackData.bCanParry)
+		return;*/
 
 	m_CurrentParry.bActive = true;
 	m_CurrentParry.CurrentAttackData = &AttackData;

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "C_CombatCharacter.h"
+#include "ProjectARPG/Enums/C_ExecutionTypes.h"
 #include "C_PlayerCharacter.generated.h"
 
 /**
@@ -64,11 +65,16 @@ private:
 	class UC_InteractionComponent* m_pInteractCom{};
 
 	UPROPERTY()
+	class UC_MoveActionComponent* m_pMoveActionCom{};
+
+	UPROPERTY()
 	class AC_EnemyCharacter* m_pCurrentExecutionTarget = nullptr;
 
 	//위젯 관련
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> m_GrappleWidgetClass;
+
+	FVector m_ClimbTarget;
 
 	UPROPERTY()
 	UUserWidget* m_GrappleWidget;
@@ -95,20 +101,23 @@ private:
 
 	//플레이어 클라이밍
 	FVector2D m_vCurrentMoveInput{};
-	FVector m_vWallNormal{};
 	FVector m_vWallHitLocation{};
-	FVector m_vClimbLocation{};
-	bool m_bJumpPressed = false; // 점프가 눌리고 있는지
-	bool m_bCanWallGrab = false; // 벽을 짚을수 있는지
-	bool m_bIsWallGrabbing = false; // 벽을 짚고 있는지
-	bool m_bCanClimbUp = false; // 벽을 올라갈수 있는지
 
+	bool m_bJumpPressed = false; // 점프가 눌리고 있는지
 	int32 m_nJumpCount = 0;
 	int32 m_MaxJumpCount = 2;
 
 
 	//플레이어 웅크리기 관련 변수
 	bool m_bIsCrouch = false;
+
+	//플레이어 대시 관련 변수
+	bool m_bSprintStarted = false;
+
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class UC_ExecutionComponent* m_ExecutionComp{};
 
 
 public:
@@ -134,6 +143,9 @@ private:
 	//공격이 가능한지 체크
 	bool canAttack() const;
 
+	//공격 시작
+	void startAttackCombo();
+
 	//인살이 가능한지 체크
 	bool canExecute() const;
 
@@ -146,28 +158,15 @@ private:
 	//락온 지정
 	void setLockOn(float fDelta);
 	
-	//벽 짚기 가능한지 확인하기
-	void checkWallTrace();
-
 	bool canGrabWallAtLoc(const FVector& checkLoc);
-
-	//벽 짚기
-	void setWallGrab(bool bEnable);
-
-	//위쪽 지면 감지하기
-	FVector checkClimbableSurface();
-
-	//벽 올라가기
-	void startClimbUp();
 
 	//착지 상태
 	void Landed(const FHitResult& Hit) override;
 
-	//벽 좌우 이동
-	void wallGrabMove(const FVector2D& MoveInput);
-
 	//인살 시도 함수
-	bool tryExcuteEnemy() const;
+	bool tryStartExecution();
+
+	
 
 
 protected:
@@ -186,18 +185,27 @@ protected:
 	void interact(const FInputActionValue& sValue);
 	void grapple(const FInputActionValue& sValue);
 
+	FName getComboAttackRow(int32 ComboIndex) const;
 
 public:
+	void onActionFinished();
+
+
 	void setCombatState(E_CombatState eNewState) override;
 	E_CombatState getCombatState() const;
+
+	float getDefaultGravity() const;
+	float getDefaultAirControl() const;
+
+
 	void onComboTransition();
 	void resetCombo();
 	USphereComponent* getExecutionSphere() const;
 
-	void initWallgrab();
-
 	void restoreHP();
 	void resetPosture();
+
+	void playPlayerExecutionMontage(E_ExecutionType Type);
 
 	//락온 함수
 	UFUNCTION(BlueprintCallable)
@@ -222,13 +230,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool isPulling() const;
 
-	//벽짚은 위치
-	FVector getClimbLoc() const;
-
 	bool isPlayerControlled() const;
 
 	UCameraComponent* getFollowCamera() const;
 
 	void initJump();
+
+	void interruptMoveAction();
+
+	void setClimbTarget(const FVector& Target) { m_ClimbTarget = Target; }
+	const FVector& getClimbTarget() const { return m_ClimbTarget; }
 
 };

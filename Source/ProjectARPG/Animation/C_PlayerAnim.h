@@ -25,9 +25,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pSprintStartMontage;
-	/// <summary>
-	/// //////////////////
-	/// </summary>
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
 	TArray<UAnimMontage*> m_pComboAttackMontages;
 
@@ -38,7 +36,7 @@ protected:
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
-	void playComboMontage(E_AttackType eType, int32 nComboIndex);
+	void playComboMontage(int32 nComboIndex);
 	void playUpToClimb();
 
 
@@ -46,7 +44,4 @@ public:
 	void setIsGuarding(bool bNewGuard);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
 	bool getIsGuarding() const;
-
-	UFUNCTION()
-	void AnimNotify_onClimbFinished();
 };
