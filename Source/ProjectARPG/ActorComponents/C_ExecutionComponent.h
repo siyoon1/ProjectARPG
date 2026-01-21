@@ -4,14 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "ProjectARPG/Enums/C_ExecutionTypes.h"
 #include "C_ExecutionComponent.generated.h"
-
-enum class E_ExecutionType : uint8
-{
-	None,
-	PostureBreak,
-	Stealth
-};
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -20,58 +14,43 @@ class PROJECTARPG_API UC_ExecutionComponent : public UActorComponent
 	GENERATED_BODY()
 
 private:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
-	UDataTable* m_pExecutionAnimsTable{};
-
-	struct FS_ExecutionAnim* m_pExecutionAnims{};
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stun", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UAnimMontage> m_pStunMontage;
+	UPROPERTY()
+	TObjectPtr<class AC_PlayerCharacter> m_OwnerPlayer;
 
 	UPROPERTY()
-	TObjectPtr<class AC_EnemyCharacter> m_pCurrentExecutableTarget;
+	TWeakObjectPtr<AActor> m_CurrentTargetActor;
 
 	UPROPERTY()
-	TObjectPtr<class AC_PlayerCharacter> m_pOwnerPlayer;
+	TScriptInterface<class IC_ExecutionTarget> m_CurrentTarget;
 
-	E_ExecutionType m_eCurrentExecutionType = E_ExecutionType::None;
+	E_ExecutionType m_CurrentExecutionType = E_ExecutionType::None;
 
-	UPROPERTY()
-	TArray<FS_ExecutionAnim> m_ExecutionMontages;
-
-public:	
-	// Sets default values for this component's properties
+public:
 	UC_ExecutionComponent();
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void TickComponent(
+		float DeltaTime,
+		ELevelTick TickType,
+		FActorComponentTickFunction* ThisTickFunction) override;
+
+public:
+	bool tryExecuteCurrentTarget();
+	bool canStartExecution() const;
+	E_ExecutionType getCurrentExecutionType() const;
 
 private:
 	void updateExecutionTarget();
-	void setCurrentExecutableTarget(AC_EnemyCharacter* pNewTarget, E_ExecutionType eType);
-	bool isValidCurrentTarget() const;
 	void findNewExecutionTarget();
 	void clearCurrentTarget();
-	bool isInStealthRange(AC_EnemyCharacter* pEnemy) const;
-	bool isBehindTarget(AC_EnemyCharacter* pEnemy) const;
-	bool canStealthExecute(AC_EnemyCharacter* pEnemy) const;
 
-protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
+	bool isValidCurrentTarget() const;
+	void setCurrentExecutableTarget(
+		AActor* NewActor,
+		class IC_ExecutionTarget* NewTarget,
+		E_ExecutionType Type);
 
-	void performExecution(APawn* pInstigator, APawn* pVictim, E_ExecutionType eType);
-
-public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-	void onBecomeExecutable(APawn* pVictim);
-	void triggerExecution(APawn* pVictim, E_ExecutionType eType);
-
-	bool tryExecuteCurrentTarget();
-
-	void playStunMontage();
-
-	UFUNCTION()
-	void onExecutionFinished(UAnimMontage* Montage, bool bInterrupted, class AC_EnemyCharacter* pVictim);
-
+	void performExecution(APawn* Instigator, APawn* Victim, E_ExecutionType Type);
 		
 };

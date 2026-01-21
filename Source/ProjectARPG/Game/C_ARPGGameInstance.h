@@ -19,7 +19,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Database")
 	TSubclassOf<UC_ItemDataBase> m_ItemDBClass;
 
-
 	UPROPERTY()
 	UC_ItemDataBase* m_ItemDB;
 

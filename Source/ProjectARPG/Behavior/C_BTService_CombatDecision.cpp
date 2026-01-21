@@ -5,6 +5,7 @@
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
 
 void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
@@ -28,9 +29,6 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 		return;
 
 	if (!pEnemy->canDecideAction())
-		return;
-
-	if (pEnemy->isExecutingAction())
 		return;
 
 	AActor* Target =
@@ -69,25 +67,17 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	float GuardW = Profile.fGuardProbability;
 	float RepoW = 0.3f;
 
-	const bool bCanAttack =
-		pEnemy->canConsiderAttack(Dist);
-
-	if (!bCanAttack)
-	{
-		AttackW = 0.f;
-		GuardW *= 1.3f;
-		RepoW *= 0.8f;
-	}
-
-	
-
-	if (pEnemy->isPlayerAttacking() && Dist < Profile.fPreferredRange * 0.9f)
-		GuardW *= 1.5f;
-	else
-		GuardW *= 0.6f;
-
+	// 거리 기반 보정
 	if (Dist < Profile.fPreferredRange * 0.8f)
+	{
 		AttackW *= 1.2f;
+		GuardW *= 0.8f;
+	}
+	else if (Dist > Profile.fPreferredRange * 1.1f)
+	{
+		AttackW *= 0.7f;
+		RepoW *= 1.3f;
+	}
 
 	const E_CombatIntent LastIntent =
 		(E_CombatIntent)BB->GetValueAsEnum(AC_EnemyController::LastIntentKey);

@@ -5,6 +5,7 @@
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
 
 UC_BTTask_SelectAttack::UC_BTTask_SelectAttack()
 {
@@ -46,7 +47,7 @@ EBTNodeResult::Type UC_BTTask_SelectAttack::ExecuteTask(UBehaviorTreeComponent& 
 
 	FName SelectedRow = NAME_None;
 
-	if (!pEnemy->decideNextAttack(fDist, SelectedRow))
+	if (!pEnemy->getAttackComponent()->tryExecuteAttack(fDist))
 		return EBTNodeResult::Failed;
 
 	BB->SetValueAsName(AC_EnemyController::SelectAttackKey, SelectedRow);

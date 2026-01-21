@@ -20,33 +20,27 @@ EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerC
     if (!AICon)
         return EBTNodeResult::Failed;
 
-    AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(AICon->GetPawn());
-    if (!pEnemy)
+    AC_EnemyCharacter* Enemy =
+        Cast<AC_EnemyCharacter>(AICon->GetPawn());
+    if (!Enemy)
         return EBTNodeResult::Failed;
 
     UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
     if (!BB)
         return EBTNodeResult::Failed;
 
-
-    const FName AttackRow =
-        BB->GetValueAsName(AC_EnemyController::SelectAttackKey);
-
-    const FS_AttackData* pData = pEnemy->getAttackData(AttackRow);
-    if (!pData)
-        return EBTNodeResult::Failed;
-
-    // 안전: 기존 바인딩 제거
-    pEnemy->m_onAttackFinished.RemoveAll(this);
-    pEnemy->m_onAttackFinished.AddUObject(
+    Enemy->m_onAttackFinished.RemoveAll(this);
+    Enemy->m_onAttackFinished.AddUObject(
         this,
         &UC_BTTask_Attack::onAttackEnded
     );
 
-    bool bStarted = pEnemy->attack(pData);
-    if (!bStarted)
+    // 공격 "시도"
+    if (!Enemy->tryAttack())
     {
-        BB->SetValueAsBool(AC_EnemyController::IntentLockedKey, false);
+        BB->SetValueAsBool(
+            AC_EnemyController::IntentLockedKey,
+            false);
         return EBTNodeResult::Failed;
     }
 
@@ -59,12 +53,11 @@ EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerC
 
 void UC_BTTask_Attack::onAttackEnded()
 {
-	if (!CachedOwnerComp)
-		return;
+    if (!CachedOwnerComp)
+        return;
 
     UBlackboardComponent* BB =
         CachedOwnerComp->GetBlackboardComponent();
-
 
     if (AAIController* AICon = CachedOwnerComp->GetAIOwner())
     {
@@ -79,5 +72,5 @@ void UC_BTTask_Attack::onAttackEnded()
         AC_EnemyController::IntentLockedKey,
         false);
 
-	FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
+    FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 }

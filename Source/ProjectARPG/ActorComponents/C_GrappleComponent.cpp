@@ -11,6 +11,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "ProjectARPG/ActorComponents/C_MoveActionComponent.h"
 
 void UC_GrappleComponent::endPull()
 {
@@ -251,8 +252,10 @@ void UC_GrappleComponent::startPull(AC_GrapplePoint* pTarget)
 	if (!m_pOwner || !pTarget)
 		return;
 
-	if (m_pOwner->getCombatState() == E_CombatState::WallGrabbing)
-		m_pOwner->initWallgrab();
+	if (UC_MoveActionComponent* MoveCom = m_pOwner->GetComponentByClass<UC_MoveActionComponent>())
+	{
+		MoveCom->interruptMovementAction();
+	}
 
 	m_bIsPulling = true;
 	m_pCurrentTarget = pTarget;
@@ -321,15 +324,11 @@ void UC_GrappleComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 		return;
 	}
 
-
-
 	if (!m_bIsPulling || !m_pOwner || !m_pCurrentTarget)
 		return;
 
 	m_fElapsed += DeltaTime;
 	float Alpha = FMath::Clamp(m_fElapsed / m_fDuration, 0.f, 1.f);
-
-	
 
 	// 기본 Lerp 이동 (시작→목적지 까지 정확히 도달)
 	FVector Pos = FMath::Lerp(m_vOwnerPos, m_vTargetPos, Alpha);

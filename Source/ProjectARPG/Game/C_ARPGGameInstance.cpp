@@ -75,7 +75,7 @@ void UC_ARPGGameInstance::collectPlayerData(AC_PlayerCharacter* Player)
 		return;
 
 	m_SaveGame->m_PlayerHP = Player->getHp();
-	m_SaveGame->m_PlayerMaxHP = Player->getMaxHp();
+	//m_SaveGame->m_PlayerMaxHP = Player->getMaxHp();
 }
 
 void UC_ARPGGameInstance::applyPlayerData(AC_PlayerCharacter* Player)
@@ -83,8 +83,8 @@ void UC_ARPGGameInstance::applyPlayerData(AC_PlayerCharacter* Player)
 	if (!Player || !m_SaveGame)
 		return;
 
-	Player->setHp(m_SaveGame->m_PlayerHP);
-	Player->setMaxHp(m_SaveGame->m_PlayerMaxHP);
+	//Player->setHp(m_SaveGame->m_PlayerHP);
+	//Player->setMaxHp(m_SaveGame->m_PlayerMaxHP);
 }
 
 void UC_ARPGGameInstance::respawnPlayer(AC_PlayerCharacter* Player)
