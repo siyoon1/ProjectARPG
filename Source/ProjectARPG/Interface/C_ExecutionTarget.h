@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "ProjectARPG/ActorComponents/C_ExecutionComponent.h"
+#include "ProjectARPG/Enums/C_ExecutionTypes.h"
 #include "C_ExecutionTarget.generated.h"
 
 // This class does not need to be modified.
@@ -25,7 +25,7 @@ public:
 	virtual bool canBeExecuted(E_ExecutionType Type) const = 0;
 
 	// ExecutionComponent가 호출
-	virtual void onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionID ExecID, int32 VariantIndex) = 0;
+	virtual void onExecutionStarted(APawn* ExecutionInstigator, const FS_ExecutionContext& Context) = 0;
 
 	// 애니메이션 끝나면 호출
 	virtual void onExecutionFinished(APawn* ExecutionInstigator) = 0;

@@ -13,7 +13,14 @@
 #include "BrainComponent.h"
 #include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
 #include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
+#include "ProjectARPG/Data/C_ExecutionReactionData.h"
+#include "ProjectARPG/ActorComponents/C_AttackComponent.h"
 
+
+AC_EnemyCharacter::AC_EnemyCharacter()
+{
+	m_EnemyAttackComp = CreateDefaultSubobject<UC_EnemyAttackComponent>(TEXT("EnemyAttackComp"));
+}
 
 void AC_EnemyCharacter::BeginPlay()
 {
@@ -28,7 +35,11 @@ void AC_EnemyCharacter::BeginPlay()
 	setExecutionHintVisible(false);
 	showHpBar(false);
 
-	m_EnemyAttackComp = FindComponentByClass<UC_EnemyAttackComponent>();
+	if (m_EnemyAttackComp == nullptr)
+		UE_LOG(LogTemp, Error,TEXT("m_EnemyAttackComp NULL!!!"))
+	else
+		UE_LOG(LogTemp, Error, TEXT("m_EnemyAttackComp NOT NULL!!!"))
+
 }
 
 bool AC_EnemyCharacter::guardForDuration(float fTime)
@@ -72,6 +83,23 @@ float AC_EnemyCharacter::getDistToTarget() const
 		m_pPlayer->GetActorLocation()
 	);
 }
+
+void AC_EnemyCharacter::applyExecutionFacing(const FS_ExecutionContext& Context)
+{
+	AActor* ExecutionInstigator = Context.Instigator.Get();
+
+	if (!ExecutionInstigator)
+		return;
+
+	if (Context.Type == E_ExecutionType::Stealth)
+		return;
+
+	const FRotator LookAt = (ExecutionInstigator->GetActorLocation() - GetActorLocation()).Rotation();
+
+	SetActorRotation(LookAt);
+}
+
+
 
 
 bool AC_EnemyCharacter::startGuard()
@@ -138,6 +166,41 @@ void AC_EnemyCharacter::onActionCooldownFinished()
 	m_EnemyActionState = E_EnemyActionState::Idle;
 }
 
+bool AC_EnemyCharacter::playAttackByRow(FName AttackRow)
+{
+	const FS_AttackData* AttackData = getAttackData(AttackRow);
+
+	if (!AttackData)
+		return false;
+
+	if (!canDecideAction())
+		return false;
+
+	beginAction();
+
+	if (!m_AttackComp)
+		return false;
+
+	m_AttackComp->startAttack(*AttackData);
+
+	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("[Enemy] Play Attack Montage Row=%s"),
+			*AttackRow.ToString());
+
+		Anim->Montage_Play(AttackData->Anim.Montage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error,
+			TEXT("[Enemy] AnimInstance is NULL"));
+		return false;
+	}
+
+	return true;
+}
+
 bool AC_EnemyCharacter::tryAttack()
 {
 	if (!canDecideAction())
@@ -152,25 +215,22 @@ bool AC_EnemyCharacter::tryAttack()
 
 }
 
-bool AC_EnemyCharacter::playAttack(const FS_AttackData* Data)
+bool AC_EnemyCharacter::playAttack(const FS_AttackData* AttackData)
 {
-	if (!Data)
+	if (!AttackData || !m_AttackComp)
 		return false;
 
-	if (m_pPlayer)
-	{
-		FVector dir = m_pPlayer->GetActorLocation() - GetActorLocation();
-		dir.Z = 0;
-		SetActorRotation(dir.Rotation());
-	}
+	m_AttackComp->startAttack(*AttackData);
 
-	/*if (UAnimInstance* pAnim = GetMesh()->GetAnimInstance())
+	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 	{
-		if (UC_EnemyAnim* pEnemyAnim = Cast<UC_EnemyAnim>(pAnim))
-		{
-			pEnemyAnim->playAttackMontage(pAttackData->pMontage);
-		}
-	}*/
+		UE_LOG(LogTemp, Warning, TEXT("Play Enemy Attack Montage"));
+		Anim->Montage_Play(AttackData->Anim.Montage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("AnimInstance is NULL"));
+	}
 
 	return true;
 }
@@ -180,11 +240,6 @@ void AC_EnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-}
-
-UC_EnemyAttackComponent* AC_EnemyCharacter::getAttackComponent() const
-{
-	return m_EnemyAttackComp;
 }
 
 const FS_AttackRuntimeState* AC_EnemyCharacter::getAttackRuntimeState(FName Row) const
@@ -293,7 +348,7 @@ bool AC_EnemyCharacter::canBeExecuted(E_ExecutionType Type) const
 	}
 }
 
-void AC_EnemyCharacter::onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionID ExecID, int32 VariantIndex)
+void AC_EnemyCharacter::onExecutionStarted(APawn* ExecutionInstigator, const FS_ExecutionContext& Context)
 {
 	m_bCanBeExecuted = false;
 
@@ -319,17 +374,21 @@ void AC_EnemyCharacter::onExecutionStarted(APawn* ExecutionInstigator, E_Executi
 	setInCombat(false);
 	setExecutionHintVisible(false);
 
-	/*if(const FS_ExecutionGroup* Arr =
-		m_ExecutionVictimMontages.Find(ExecID))
+	UAnimMontage* Reaction =
+		m_ReactionData->selectMontage(
+			Context.Type,
+			Context.Index);
+
+	
+
+	if (Reaction)
 	{
-		if (Arr->Montages.IsValidIndex(VariantIndex))
+		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 		{
-			if (UC_CombatAnim* Anim = Cast<UC_CombatAnim>(GetMesh()->GetAnimInstance()))
-			{
-				Anim->playExecutionMontage(Arr->Montages[VariantIndex]);
-			}
+			applyExecutionFacing(Context);
+			Anim->Montage_Play(Reaction);
 		}
-	}*/
+	}
 }
 
 void AC_EnemyCharacter::onExecutionFinished(APawn* ExecutionInstigator)

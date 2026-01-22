@@ -13,19 +13,25 @@ enum class E_ExecutionType : uint8
 	Stealth			UMETA(DisplayName = "Stealth")
 };
 
-enum class E_ExecutionID : uint8
-{
-
-};
-
-USTRUCT()
-struct FS_ExecutionSelection
+USTRUCT(BlueprintType)
+struct FS_ExecutionContext
 {
 	GENERATED_BODY()
 
-	FName ExecutionID;
+	UPROPERTY(BlueprintReadOnly)
+	E_ExecutionType Type;
 
-	int32 VariantIndex;
+	UPROPERTY(BlueprintReadOnly)
+	int32 Index;
+
+	UPROPERTY(BlueprintReadOnly)
+	TWeakObjectPtr<AActor> Instigator;
+
+	UPROPERTY(BlueprintReadOnly)
+	TWeakObjectPtr<AActor> Victim;
+
+	UPROPERTY(BlueprintReadOnly)
+	FVector InstigatorForward;
 };
 
 class PROJECTARPG_API C_ExecutionTypes

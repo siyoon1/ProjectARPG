@@ -112,10 +112,6 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 		AC_EnemyController::IntentKey,
 		(uint8)Intent);
 
-	BB->SetValueAsBool(
-		AC_EnemyController::IntentLockedKey,
-		true);
-
 	BB->SetValueAsEnum(
 		AC_EnemyController::LastIntentKey,
 		(uint8)Intent);

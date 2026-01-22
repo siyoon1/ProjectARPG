@@ -4,6 +4,7 @@
 #include "C_BTTask_Attack.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
+#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UC_BTTask_Attack::UC_BTTask_Attack()
@@ -14,6 +15,7 @@ UC_BTTask_Attack::UC_BTTask_Attack()
 
 EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+
     CachedOwnerComp = &OwnerComp;
 
     AAIController* AICon = OwnerComp.GetAIOwner();
@@ -29,14 +31,23 @@ EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerC
     if (!BB)
         return EBTNodeResult::Failed;
 
+    UC_EnemyAttackComponent* EnemyAttackComp =
+        Enemy->getEnemyAttackComponent();
+    if (!EnemyAttackComp)
+        return EBTNodeResult::Failed;
+
+    const float Dist =
+        BB->GetValueAsFloat(AC_EnemyController::DistKey);
+
+    // 공격 종료 콜백 바인딩
     Enemy->m_onAttackFinished.RemoveAll(this);
     Enemy->m_onAttackFinished.AddUObject(
         this,
         &UC_BTTask_Attack::onAttackEnded
     );
 
-    // 공격 "시도"
-    if (!Enemy->tryAttack())
+    // 공격 시도
+    if (!EnemyAttackComp->tryExecuteAttack(Dist))
     {
         BB->SetValueAsBool(
             AC_EnemyController::IntentLockedKey,

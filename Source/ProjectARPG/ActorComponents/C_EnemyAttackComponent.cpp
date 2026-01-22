@@ -35,27 +35,43 @@ void UC_EnemyAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 bool UC_EnemyAttackComponent::tryExecuteAttack(float fDist)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] tryExecuteAttack Dist=%.1f"), fDist);
+
+
 	if (!m_OwnerEnemy)
 		return false;
 
 	FName AttackRow;
 	if (!decideNextAttack(fDist, AttackRow))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] decideNextAttack FAILED"));
 		return false;
+	}
 
+
+	UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] Selected AttackRow = %s"), *AttackRow.ToString());
 	return executeAttack(AttackRow);
 }
 
 void UC_EnemyAttackComponent::getAttackCandidates(float fDist, TArray<FName>& OutCandidates) const
 {
+	UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] getAttackCandidates Dist=%.1f"), fDist);
+
 	OutCandidates.Empty();
 
-	if (!m_AttackDataTable)
-		return;
+	const UDataTable* DT = m_OwnerEnemy->getAttackDataTable();
 
-	for (const auto& Row : m_AttackDataTable->GetRowMap())
+	if (!DT)
+	{
+		UE_LOG(LogTemp, Error,
+			TEXT("[EnemyAttack] Owner AttackDataTable NULL"));
+		return;
+	}
+
+	for (const auto& Row : DT->GetRowMap())
 	{
 		const FS_AttackData* Data =
-			m_AttackDataTable->FindRow<FS_AttackData>(Row.Key, TEXT("EnemyAttack"));
+			m_OwnerEnemy->getAttackData(Row.Key);
 
 		if (!Data)
 			continue;
@@ -84,11 +100,13 @@ bool UC_EnemyAttackComponent::decideNextAttack(float fDist, FName& OutAttackRow)
 	for (FName Row : Candidates)
 	{
 		const FS_AttackData* Data =
-			m_AttackDataTable->FindRow<FS_AttackData>(Row, TEXT("WeightCalc"));
+			m_OwnerEnemy->getAttackData(Row);
+
+		if (!Data)
+			continue;
 
 		float Weight = Data->AI.BaseWeight;
 
-		// 거리 선호 보정
 		const float DistFactor =
 			1.f - FMath::Abs(fDist - Data->AI.IdealRange) / Data->AI.IdealRange;
 
@@ -137,17 +155,14 @@ bool UC_EnemyAttackComponent::isAttackInRange(const FS_AttackData& Data, float f
 
 bool UC_EnemyAttackComponent::executeAttack(FName Row)
 {
-	if (!m_AttackDataTable || !m_OwnerEnemy)
+	if (!m_OwnerEnemy)
 		return false;
 
-	const FS_AttackData* Data =
-		m_AttackDataTable->FindRow<FS_AttackData>(Row, TEXT("Execute"));
+	m_OwnerEnemy->markAttackUsed(Row,
+		m_OwnerEnemy->getAttackData(Row)->AI.MinReuseTime);
 
-	if (!Data)
-		return false;
+	return m_OwnerEnemy->playAttackByRow(Row);
 
-	m_OwnerEnemy->markAttackUsed(Row, Data->AI.MinReuseTime);
 
-	return m_OwnerEnemy->playAttack(Data);
 }
 

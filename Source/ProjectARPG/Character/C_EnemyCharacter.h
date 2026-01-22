@@ -94,8 +94,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UC_DetectComponent> m_DetectCom;
 
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<class UC_EnemyAttackComponent> m_EnemyAttackComp;
+	
 
 
 	UPROPERTY()
@@ -113,6 +112,9 @@ protected:
 	E_CombatIntent m_CombatIntent;
 	TMap<FName, FS_AttackRuntimeState> m_AttackStates;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UC_EnemyAttackComponent> m_EnemyAttackComp;
+
 	UPROPERTY()
 	E_EnemyActionState m_EnemyActionState = E_EnemyActionState::Idle;
 
@@ -121,11 +123,7 @@ protected:
 
 	FS_EnemyCombatProfile m_CurrentCombatProfile;
 
-	/*UPROPERTY(EditAnywhere, Category = "Execution", meta = (AllowPrivateAccess = "true"))
-	TMap<E_ExecutionID, FS_ExecutionGroup> m_ExecutionVictimMontages;*/
-
 	
-
 public:
 	UPROPERTY(BlueprintAssignable, Category = "BossStatus")
 	FOnBossCombatStateChanged m_onBossStateChanged;
@@ -133,11 +131,18 @@ public:
 	FOnAttackFinished m_onAttackFinished;
 	FOnStepBackFinished m_onStepBackFinished;
 	FOnGuardFinished m_onGuardFinished;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Execution")
+	class UC_ExecutionReactionData* m_ReactionData;
 	
 
 private:
 	void applyCombatProfile();
 	float getDistToTarget() const;
+	void applyExecutionFacing(const struct FS_ExecutionContext& Context);
+
+public:
+	AC_EnemyCharacter();
 
 protected:
 	void BeginPlay() override;
@@ -146,8 +151,10 @@ protected:
 public:
 	void Tick(float DeltaTime) override;
 
-	UFUNCTION(BlueprintCallable)
-	UC_EnemyAttackComponent* getAttackComponent() const;
+	inline UC_EnemyAttackComponent* getEnemyAttackComponent() const
+	{
+		return m_EnemyAttackComp;
+	}
 
 	// Runtime 사용 조회
 	const FS_AttackRuntimeState* getAttackRuntimeState(FName Row) const;
@@ -167,7 +174,7 @@ public:
 
 	//인살 관련
 	virtual bool canBeExecuted(E_ExecutionType Type) const override;
-	virtual void onExecutionStarted(APawn* ExecutionInstigator, E_ExecutionID ExecID, int32 VariantIndex) override;
+	virtual void onExecutionStarted(APawn* ExecutionInstigator, const FS_ExecutionContext& Context) override;
 	virtual void onExecutionFinished(APawn* ExecutionInstigator) override;
 	virtual void setExecutionHintVisible(bool bVisible) override;
 
@@ -193,10 +200,12 @@ public:
 	void finishAction(float fCooldown);
 	void onActionCooldownFinished();
 
+	bool playAttackByRow(FName AttackRow);
+
 	bool tryAttack();
 
 	// 실제 공격 실행
-	bool playAttack(const FS_AttackData* Data);
+	bool playAttack(const FS_AttackData* AttackData);
 
 	void endAttack();
 

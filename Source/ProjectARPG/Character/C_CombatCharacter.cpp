@@ -185,6 +185,11 @@ FName AC_CombatCharacter::getCurrentAttackRow() const
 	return m_CurrentAttackRow;
 }
 
+const UDataTable* AC_CombatCharacter::getAttackDataTable() const
+{
+	return m_pAttackDataTable;
+}
+
 void AC_CombatCharacter::setActionState(E_ActionState eNewState)
 {
 	if (m_ActionState != eNewState)

@@ -8,7 +8,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../Camera/C_PlayerCameraManager.h"
-#include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "ProjectARPG/ActorComponents/C_ParryComponent.h"
 #include "Components/SphereComponent.h"
 #include "Engine/OverlapResult.h"
@@ -18,6 +17,8 @@
 #include "ProjectARPG/ActorComponents/C_InteractionComponent.h"
 #include "ProjectARPG/ActorComponents/C_MoveActionComponent.h"
 #include "ProjectARPG/ActorComponents/C_PlayerExecutionComponent.h"
+#include "ProjectARPG/Enums/C_ExecutionTypes.h"
+#include "ProjectARPG/Data/C_PlayerExecutionData.h"
 
 
 
@@ -42,11 +43,6 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 void AC_PlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UE_LOG(LogTemp, Warning, TEXT("ExecutionComp: %s"),
-		m_ExecutionComp ? TEXT("VALID") : TEXT("NULL"));
-
-	UE_LOG(LogTemp, Warning, TEXT("[Init] BeginPlay ActionState=%d"), (int)m_ActionState);
 
 	GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = m_fDefaultCrouched;
@@ -114,6 +110,16 @@ void AC_PlayerCharacter::onActionFinished()
 	m_ActionState = E_ActionState::Free;
 	m_CombatMode = E_CombatMode::None;
 	setCombatState(E_CombatState::Idle);
+	initJump();
+}
+
+void AC_PlayerCharacter::onExecutionFinished()
+{
+	onActionFinished();
+
+	EnableInput(nullptr);
+
+	GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
 }
 
 void AC_PlayerCharacter::setCombatState(E_CombatState eNewState)
@@ -484,7 +490,7 @@ AActor* AC_PlayerCharacter::getCurrentEnemy()
 
 	if (bHit)
 	{
-		if (AC_EnemyCharacter* pEnemy = Cast<AC_EnemyCharacter>(HitResult.GetActor()))
+		if (AC_CombatCharacter* pEnemy = Cast<AC_CombatCharacter>(HitResult.GetActor()))
 		{
 			return pEnemy;
 		}
@@ -551,19 +557,28 @@ void AC_PlayerCharacter::resetPosture()
 		//m_fCurrentPosture = m_fMaxPosture;
 }
 
-//void AC_PlayerCharacter::playPlayerExecutionMontage(E_ExecutionID ExecID, int32 VariantIndex)
-//{
-//	const FS_ExecutionGroup* Arr =
-//		m_PlayerExecutionMontages.Find(ExecID);
-//
-//	if (!Arr || !Arr->Montages.IsValidIndex(VariantIndex))
-//		return;
-//
-//	if (UC_CombatAnim* Anim = Cast<UC_CombatAnim>(GetMesh()->GetAnimInstance()))
-//	{
-//		Anim->playExecutionMontage(Arr->Montages[VariantIndex]);
-//	}
-//}
+void AC_PlayerCharacter::playPlayerExecutionMontage(const FS_ExecutionContext& Context)
+{
+	UAnimMontage* Montage =
+		m_PlayerExecutionData->selectMontage(
+			Context.Type,
+			Context.Index);
+
+	if (Montage)
+	{
+		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+		{
+			applyExecutionWarp(Context);
+
+
+			Anim->Montage_Play(Montage);
+
+			float Length = Montage->GetPlayLength();
+
+			m_CamMgr->executionEffect(Length * 0.5f);
+		}
+	}
+}
 
 AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()
 {
@@ -709,7 +724,6 @@ bool AC_PlayerCharacter::isPulling() const
 
 bool AC_PlayerCharacter::isPlayerControlled() const
 {
-
 	return Cast<APlayerController>(GetController()) != nullptr;
 }
 
@@ -739,6 +753,21 @@ bool AC_PlayerCharacter::tryStartExecution()
 	setCombatState(E_CombatState::Executing);
 
 	return m_ExecutionComp->tryExecuteCurrentTarget();
+}
+
+void AC_PlayerCharacter::applyExecutionWarp(const FS_ExecutionContext& Context)
+{
+	AActor* Victhim = Context.Victim.Get();
+
+	if (!Victhim)
+		return;
+
+	if (Context.Type == E_ExecutionType::Stealth)
+		return;
+
+	const FRotator TargetRot = (Victhim->GetActorLocation() - GetActorLocation()).Rotation();
+
+	SetActorRotation(TargetRot);
 }
 
 void AC_PlayerCharacter::interruptMoveAction()

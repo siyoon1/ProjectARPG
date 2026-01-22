@@ -203,6 +203,8 @@ public:
 	void setCurrentAttackRow(FName RowName);
 	FName getCurrentAttackRow() const;
 
+	const UDataTable* getAttackDataTable() const;
+
 
 
 	void applyAttack(const FS_AttackData& sData);

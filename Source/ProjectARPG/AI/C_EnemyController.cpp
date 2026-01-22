@@ -12,7 +12,6 @@ const FName AC_EnemyController::StartPosKey = TEXT("StartPos");
 const FName AC_EnemyController::PatrolPosKey = TEXT("PatrolPos");
 const FName AC_EnemyController::DistKey = TEXT("DistanceToTarget");
 const FName AC_EnemyController::IntentLockedKey = TEXT("bIntentLocked");
-const FName AC_EnemyController::SelectAttackKey = TEXT("SelectAttack");
 const FName AC_EnemyController::AttackMoveLocationKey = TEXT("AttackMovePos");
 const FName AC_EnemyController::IntentKey = TEXT("Intent");
 const FName AC_EnemyController::LastIntentKey = TEXT("LastIntent");

@@ -17,8 +17,6 @@ protected:
 	UPROPERTY()
 	class AC_EnemyCharacter* m_OwnerEnemy;
 
-	UDataTable* m_AttackDataTable;
-
 public:	
 	// Sets default values for this component's properties
 	UC_EnemyAttackComponent();

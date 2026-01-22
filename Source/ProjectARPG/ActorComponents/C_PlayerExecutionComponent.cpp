@@ -56,17 +56,46 @@ bool UC_PlayerExecutionComponent::isValidCurrentTarget() const
 	if (m_CurrentExecutionType == E_ExecutionType::None)
 		return false;
 
+	if (!isTargetInExecutionRange())
+		return false;
+
 	return true;
+}
+
+bool UC_PlayerExecutionComponent::isTargetInExecutionRange() const
+{
+	if (!m_CurrentTargetActor.IsValid() || !m_OwnerPlayer)
+		return false;
+
+	USphereComponent* Sphere = m_OwnerPlayer->getExecutionSphere();
+	if (!Sphere)
+		return false;
+
+
+	return Sphere->IsOverlappingActor(m_CurrentTargetActor.Get());
+}
+
+bool UC_PlayerExecutionComponent::isBehindTarget(AActor* Target)
+{
+	if (!m_OwnerPlayer || !Target)
+		return false;
+
+	const FVector ToPlayer = (m_OwnerPlayer->GetActorLocation() - Target->GetActorLocation()).GetSafeNormal();
+
+	const float Dot = FVector::DotProduct(Target->GetActorForwardVector(), ToPlayer);
+
+
+	return Dot < -0.5f;
 }
 
 void UC_PlayerExecutionComponent::findNewExecutionTarget()
 {
 	USphereComponent* ExecSphere = m_OwnerPlayer->getExecutionSphere();
 	if (!ExecSphere)
-	{
 		return;
-	}
 
+
+	clearCurrentTarget();
 
 	TArray<AActor*> Overlaps;
 	ExecSphere->GetOverlappingActors(Overlaps);
@@ -79,6 +108,16 @@ void UC_PlayerExecutionComponent::findNewExecutionTarget()
 		IC_ExecutionTarget* Target = Cast<IC_ExecutionTarget>(Act);
 		if (!Target)
 			continue;
+
+		if (isBehindTarget(Act) && Target->canBeExecuted(E_ExecutionType::Stealth))
+		{
+			setCurrentExecutableTarget(Act, Target, E_ExecutionType::Stealth);
+
+			Target->setExecutionHintVisible(true);
+			return;
+		}
+
+
 
 		const bool bCan = Target->canBeExecuted(E_ExecutionType::PostureBreak);
 
@@ -94,8 +133,6 @@ void UC_PlayerExecutionComponent::findNewExecutionTarget()
 			return;
 		}
 	}
-
-	clearCurrentTarget();
 }
 
 void UC_PlayerExecutionComponent::setCurrentExecutableTarget(AActor* NewActor, IC_ExecutionTarget* NewTarget, E_ExecutionType Type)
@@ -118,33 +155,10 @@ void UC_PlayerExecutionComponent::clearCurrentTarget()
 	m_CurrentExecutionType = E_ExecutionType::None;
 }
 
-bool UC_PlayerExecutionComponent::selectExecution(E_ExecutionType Type, FS_ExecutionSelection& OutSelection)
+bool UC_PlayerExecutionComponent::selectExecution(E_ExecutionType Type, FS_ExecutionContext& OutContext)
 {
-	const FS_ExecutionSelection* Selection = nullptr;
-
-	/*switch (Type)
-	{
-	case E_ExecutionType::PostureBreak:
-		Selection = m_PostureMontage;
-		break;
-	case E_ExecutionType::Stealth:
-		Selection = m_StealthMontage;
-		break;
-
-	default:
-		return false;
-	}*/
-
-	if (!Selection || Selection->VariantIndex <= 0)
-		return false;
-
-	OutSelection.ExecutionID = Selection->ExecutionID;
-
-	OutSelection.VariantIndex =
-		(Selection->VariantIndex == 1)
-		? 0
-		: FMath::RandRange(0, Selection->VariantIndex - 1);
-
+	OutContext.Type = Type;
+	OutContext.Index = FMath::Rand();
 	return true;
 }
 
@@ -174,18 +188,19 @@ void UC_PlayerExecutionComponent::performExecution(APawn* Instigator, APawn* Vic
 	if (!Player || !Target)
 		return;
 
-	FS_ExecutionSelection Selection;
-	if (!selectExecution(Type, Selection))
+	FS_ExecutionContext Context;
+	if (!selectExecution(Type, Context))
 		return;
 
 	Player->DisableInput(nullptr);
 	Player->GetCharacterMovement()->StopMovementImmediately();
 	Player->setCombatState(E_CombatState::Executing);
 
-	/*Player->playPlayerExecutionMontage(Selection.ExecutionID, Selection.VariantIndex);
-	Target->onExecutionStarted(Player, Selection.ExecutionID, Selection.VariantIndex);*/
+	Context.Instigator = Player;
+	Context.Victim = Victim;
 
-	UE_LOG(LogTemp, Error, TEXT("call!!!"));
+	Player->playPlayerExecutionMontage(Context);
+	Target->onExecutionStarted(Player, Context);
 }
 
 bool UC_PlayerExecutionComponent::canStartExecution() const

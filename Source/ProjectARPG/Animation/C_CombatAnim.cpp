@@ -60,11 +60,3 @@ void UC_CombatAnim::playParryMontage(E_ParryDirection eDir)
     }
 }
 
-void UC_CombatAnim::playExecutionMontage(UAnimMontage* Montage)
-{
-    if (!Montage)
-        return;
-
-    Montage_Play(Montage, 1.f);
-}
-

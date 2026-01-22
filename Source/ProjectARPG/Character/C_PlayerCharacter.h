@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "C_CombatCharacter.h"
-#include "ProjectARPG/Enums/C_ExecutionTypes.h"
 #include "C_PlayerCharacter.generated.h"
 
 /**
@@ -120,9 +119,8 @@ protected:
 	TObjectPtr<class UC_PlayerExecutionComponent> m_ExecutionComp{};
 
 public:
-	/*UPROPERTY(EditAnywhere, Category = "Execution", meta = (AllowPrivateAccess = "true"))
-	TMap<E_ExecutionID, FS_ExecutionGroup> m_PlayerExecutionMontages;*/
-
+	UPROPERTY(EditDefaultsOnly, Category = "Execution")
+	class UC_PlayerExecutionData* m_PlayerExecutionData;
 
 public:
 	AC_PlayerCharacter();
@@ -170,6 +168,8 @@ private:
 	//인살 시도 함수
 	bool tryStartExecution();
 
+	void applyExecutionWarp(const struct FS_ExecutionContext& Context);
+
 	
 
 
@@ -193,6 +193,7 @@ protected:
 
 public:
 	void onActionFinished();
+	void onExecutionFinished();
 
 
 	void setCombatState(E_CombatState eNewState) override;
@@ -209,7 +210,7 @@ public:
 	void restoreHP();
 	void resetPosture();
 
-	//void playPlayerExecutionMontage(E_ExecutionID ExecID, int32 VariantIndex);
+	void playPlayerExecutionMontage(const FS_ExecutionContext& Context);
 
 	//락온 함수
 	UFUNCTION(BlueprintCallable)

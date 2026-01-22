@@ -41,9 +41,11 @@ private:
 	void updateExecutionTarget();
 	void findNewExecutionTarget();
 	void clearCurrentTarget();
-	bool selectExecution(E_ExecutionType Type, struct FS_ExecutionSelection& OutSelection);
+	bool selectExecution(E_ExecutionType Type, struct FS_ExecutionContext& OutContext);
 
 	bool isValidCurrentTarget() const;
+	bool isTargetInExecutionRange() const;
+	bool isBehindTarget(AActor* Target);
 	void setCurrentExecutableTarget(AActor* NewActor, class IC_ExecutionTarget* NewTarget, E_ExecutionType Type);
 
 	void performExecution(APawn* Instigator, APawn* Victim, E_ExecutionType Type);

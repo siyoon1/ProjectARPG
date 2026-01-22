@@ -20,6 +20,8 @@ private:
 	bool m_bIsSprinting = false;
 	bool m_bIsParrying = false;
 	FTimerHandle m_TimerHandle_Reset;
+	FTimerHandle m_TimerHandle_HitStop;
+	FTimerHandle m_TimerHandle_Shake;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PostProcess")

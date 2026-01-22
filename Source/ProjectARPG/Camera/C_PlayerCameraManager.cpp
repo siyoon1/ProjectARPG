@@ -18,7 +18,7 @@ void AC_PlayerCameraManager::Tick(float DeltaSeconds)
 
 	if (m_bIsExecuting)
 	{
-		fTargetFOV = DefaultFOV - 20.f;
+		fTargetFOV = DefaultFOV - 30.f;
 		
 	}
 	if (m_bIsParrying)
@@ -68,16 +68,45 @@ void AC_PlayerCameraManager::stopSprintEffect()
 
 void AC_PlayerCameraManager::executionEffect(float fLength)
 {
-	m_bIsExecuting = true;
+	
 	PrimaryActorTick.bCanEverTick = true;
 
 	m_PostProcessSettings.bOverride_MotionBlurAmount = true;
 	m_PostProcessSettings.MotionBlurAmount = 0.9f;
 
+	m_PostProcessSettings.bOverride_ColorSaturation = true;
+	m_PostProcessSettings.ColorSaturation = FVector4(0.45f, 0.45f, 0.45f, 1.f);
+
 	
 	if (UWorld* pWorld = GetWorld())
 	{
-		pWorld->GetWorldSettings()->SetTimeDilation(0.7f);
+		const float HitStopTime = 0.04f;
+		m_bIsExecuting = true;
+		pWorld->GetWorldSettings()->SetTimeDilation(0.3f);
+
+		pWorld->GetTimerManager().SetTimer(
+			m_TimerHandle_HitStop,
+			[this]()
+			{
+				if (UWorld* InnerWorld = GetWorld())
+				{
+					// 히트스톱 후 슬로우 상태로 복귀
+					InnerWorld->GetWorldSettings()->SetTimeDilation(0.7f);
+				}
+ 
+				playHitCameraShake(1.2f);
+			},
+			HitStopTime,
+			false);
+
+		pWorld->GetTimerManager().SetTimer(
+			m_TimerHandle_Shake,
+			[this]()
+			{
+				playHitCameraShake(0.4f);
+			},
+			0.15f,
+			false);
 
 		pWorld->GetTimerManager().SetTimer(m_TimerHandle_Reset, [this]()
 			{
@@ -99,8 +128,6 @@ void AC_PlayerCameraManager::executionEffect(float fLength)
 			}, fLength, false);
 	}
 		
-	
-
 	
 	
 }
