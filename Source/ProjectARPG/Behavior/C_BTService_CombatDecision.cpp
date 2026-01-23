@@ -5,7 +5,7 @@
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
+#include "ProjectARPG/AI/C_AIAttackComponent.h"
 
 void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {

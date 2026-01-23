@@ -10,6 +10,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, fCurrentHp, fl
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPostureChanged, float, fCurrentPosture, float, fMaxPosture);
 DECLARE_MULTICAST_DELEGATE(FOnPostureBroken);
 
+UENUM()
+enum class E_PostureBreakCause : uint8
+{
+	Unknown,
+	Damage,
+	Parry
+};
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTARPG_API UC_CombatStatComponent : public UActorComponent
@@ -22,6 +30,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
 	FName m_StatRowName;
+
+	E_PostureBreakCause m_LastBreakCause = E_PostureBreakCause::Unknown;
+	AActor* m_LastBreaker;
 
 private:
 	UPROPERTY(EditAnywhere)
@@ -59,6 +70,8 @@ public:
 
 	void applyDamage(float HpDamage, float PostureDamage);
 
+	void applyPostureDamage(float PostureDamage, E_PostureBreakCause Cause, AActor* Instigator);
+
 	UFUNCTION(BlueprintCallable)
 	inline float getCurrentHp() const { return m_CurrentHp; }
 	UFUNCTION(BlueprintCallable)
@@ -69,6 +82,9 @@ public:
 	inline float getMaxPosture() const { return m_MaxPosture; }
 
 	inline bool isPostureBroken() const { return m_bPostureBroken; }
+
+	inline const E_PostureBreakCause getBreakCause() const { return m_LastBreakCause; }
+	inline AActor* getLastBreak() const { return m_LastBreaker; }
 
 	
 

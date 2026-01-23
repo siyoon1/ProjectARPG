@@ -4,12 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "ProjectARPG/Data/C_AttackData.h"
-#include "C_CombatInterface.generated.h"
+#include "C_ExecutionRequester.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class UC_CombatInterface : public UInterface
+class UC_ExecutionRequester : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -17,14 +16,12 @@ class UC_CombatInterface : public UInterface
 /**
  * 
  */
-class PROJECTARPG_API IC_CombatInterface
+class PROJECTARPG_API IC_ExecutionRequester
 {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")
-	void takeDamage(float Damage, float PostureDamage, AActor* pAttacker);
-
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void requestExecution(AActor* Target);
 };
-

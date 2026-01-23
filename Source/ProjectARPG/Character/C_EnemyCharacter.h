@@ -113,7 +113,7 @@ protected:
 	TMap<FName, FS_AttackRuntimeState> m_AttackStates;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UC_EnemyAttackComponent> m_EnemyAttackComp;
+	TObjectPtr<class UC_AIAttackComponent> m_AIAttackComp;
 
 	UPROPERTY()
 	E_EnemyActionState m_EnemyActionState = E_EnemyActionState::Idle;
@@ -151,9 +151,9 @@ protected:
 public:
 	void Tick(float DeltaTime) override;
 
-	inline UC_EnemyAttackComponent* getEnemyAttackComponent() const
+	inline UC_AIAttackComponent* getEnemyAttackComponent() const
 	{
-		return m_EnemyAttackComp;
+		return m_AIAttackComp;
 	}
 
 	// Runtime 사용 조회
@@ -212,9 +212,10 @@ public:
 	bool playStepBack();
 	void endStepBack();
 
-	bool startGuard();
+	bool startGuard() override;
+	void endGuard() override;
 	bool canReleaseGuard() const;
-	void endGuard();
+	
 
 	bool guardForDuration(float fTime);
 
@@ -235,7 +236,7 @@ public:
 	void onDeath() override;
 
 	//데미지 처리
-	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker) override;
+	void takeDamage_Implementation(float Damage, float PostureDamage, AActor* pAttacker) override;
 
-	void tryParry_Implementation(AActor* ParryOwner) override;
+	void onParried_Implementation(AActor* ParryOwner) override;
 };

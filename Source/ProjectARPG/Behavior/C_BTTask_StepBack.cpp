@@ -6,7 +6,7 @@
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "ProjectARPG/Animation/C_EnemyAnim.h"
-#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
+#include "ProjectARPG/AI/C_AIAttackComponent.h"
 
 UC_BTTask_StepBack::UC_BTTask_StepBack()
 {

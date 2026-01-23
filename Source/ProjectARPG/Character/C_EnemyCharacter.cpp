@@ -11,15 +11,16 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BrainComponent.h"
-#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
 #include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
 #include "ProjectARPG/Data/C_ExecutionReactionData.h"
 #include "ProjectARPG/ActorComponents/C_AttackComponent.h"
+#include "ProjectARPG/AI/C_AIAttackComponent.h"
+#include "ProjectARPG/Interface/C_ExecutionRequester.h"
 
 
 AC_EnemyCharacter::AC_EnemyCharacter()
 {
-	m_EnemyAttackComp = CreateDefaultSubobject<UC_EnemyAttackComponent>(TEXT("EnemyAttackComp"));
+	m_AIAttackComp = CreateDefaultSubobject<UC_AIAttackComponent>(TEXT("EnemyAttackComp"));
 }
 
 void AC_EnemyCharacter::BeginPlay()
@@ -35,7 +36,7 @@ void AC_EnemyCharacter::BeginPlay()
 	setExecutionHintVisible(false);
 	showHpBar(false);
 
-	if (m_EnemyAttackComp == nullptr)
+	if (m_AIAttackComp == nullptr)
 		UE_LOG(LogTemp, Error,TEXT("m_EnemyAttackComp NULL!!!"))
 	else
 		UE_LOG(LogTemp, Error, TEXT("m_EnemyAttackComp NOT NULL!!!"))
@@ -94,6 +95,8 @@ void AC_EnemyCharacter::applyExecutionFacing(const FS_ExecutionContext& Context)
 	if (Context.Type == E_ExecutionType::Stealth)
 		return;
 
+	
+
 	const FRotator LookAt = (ExecutionInstigator->GetActorLocation() - GetActorLocation()).Rotation();
 
 	SetActorRotation(LookAt);
@@ -108,10 +111,20 @@ bool AC_EnemyCharacter::startGuard()
 		return false;
 
 	beginAction();
-	setGuard(true);
+
+	if (!Super::startGuard())
+		return false;
 
 	m_fGuardStartTime = GetWorld()->GetTimeSeconds();
 	return true;
+}
+
+void AC_EnemyCharacter::endGuard()
+{
+	Super::endGuard();
+
+	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
+	finishAction(Cooldown);
 }
 
 bool AC_EnemyCharacter::canReleaseGuard() const
@@ -128,13 +141,7 @@ bool AC_EnemyCharacter::canReleaseGuard() const
 	return true;
 }
 
-void AC_EnemyCharacter::endGuard()
-{
-	setGuard(false);
 
-	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
-	finishAction(Cooldown);
-}
 
 bool AC_EnemyCharacter::canDecideAction() const
 {
@@ -206,12 +213,12 @@ bool AC_EnemyCharacter::tryAttack()
 	if (!canDecideAction())
 		return false;
 
-	if (!m_EnemyAttackComp)
+	if (!m_AIAttackComp)
 		return false;
 
 	const float Dist = getDistToTarget();
 
-	return m_EnemyAttackComp->tryExecuteAttack(Dist);
+	return m_AIAttackComp->tryExecuteAttack(Dist);
 
 }
 
@@ -431,6 +438,24 @@ void AC_EnemyCharacter::onPostureBroken_Internal()
 	m_bCanBeExecuted = true;
 	m_bIsPostureBroken = true;
 	setExecutionHintVisible(true);
+
+	
+	if (!m_StatComp)
+		return;
+
+	if (m_StatComp->getBreakCause() != E_PostureBreakCause::Parry)
+		return;
+
+	AActor* Breaker = m_StatComp->getLastBreak();
+	if (!Breaker)
+		return;
+
+	if (Breaker->GetClass()->ImplementsInterface(UC_ExecutionRequester::StaticClass()))
+	{
+		
+		IC_ExecutionRequester::Execute_requestExecution(Breaker, this);
+	}
+
 }
 
 void AC_EnemyCharacter::setInCombat(bool bCombat)
@@ -490,9 +515,9 @@ void AC_EnemyCharacter::onDeath()
 
 }
 
-void AC_EnemyCharacter::takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker)
+void AC_EnemyCharacter::takeDamage_Implementation(float Damage, float PostureDamage, AActor* pAttacker)
 {
-	Super::takeDamage_Implementation(fDamage, fPostureDamage, bGuardSuccess, pAttacker);
+	Super::takeDamage_Implementation(Damage, PostureDamage, pAttacker);
 
 	if (UC_DetectComponent* pDetect = FindComponentByClass<UC_DetectComponent>())
 	{
@@ -500,8 +525,8 @@ void AC_EnemyCharacter::takeDamage_Implementation(float fDamage, float fPostureD
 	}
 }
 
-void AC_EnemyCharacter::tryParry_Implementation(AActor* ParryOwner)
+void AC_EnemyCharacter::onParried_Implementation(AActor* ParryOwner)
 {
-	Super::tryParry_Implementation(ParryOwner);
+	Super::onParried_Implementation(ParryOwner);
 
 }

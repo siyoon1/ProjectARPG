@@ -7,14 +7,38 @@
 #include "ProjectARPG/Data/C_AttackData.h"
 #include "C_ParryComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnParryWindowEnded);
+
+UENUM()
+enum class E_ParryResult : uint8
+{
+	None,
+	Failed,
+	Guarded,
+	Parried
+};
+
+USTRUCT()
+struct FS_ParryResult
+{
+	GENERATED_BODY()
+
+	E_ParryResult Result = E_ParryResult::None;
+
+	E_ParryDirection Direction = E_ParryDirection::None;
+
+	float PostureDamageToAttacker = 0.f;
+	float PostureDamageToDefender = 0.f;
+};
+
+
 USTRUCT()
 struct FS_ParryContext
 {
 	GENERATED_BODY()
 
-	bool bActive = false;
-
-	const FS_AttackData* CurrentAttackData = nullptr;
+	bool bWindowOpen = false;
+	float EndTime = 0.f;
 };
 
 
@@ -24,18 +48,13 @@ class PROJECTARPG_API UC_ParryComponent : public UActorComponent
 	GENERATED_BODY()
 
 private:
-	FS_ParryContext m_CurrentParry;
-
-	bool m_bCanParry = false;
+	FS_ParryContext m_ParryContext;
 	
 	FTimerHandle m_ParryTimerHandle;
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage")
-	TObjectPtr<UAnimMontage> m_ParryOwnerMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimMontage")
-	TObjectPtr<UAnimMontage> m_ParriedTargetMontage;
+	UPROPERTY(BlueprintAssignable)
+	FOnParryWindowEnded m_OnParryWindowEnded;
 
 public:	
 	// Sets default values for this component's properties
@@ -49,16 +68,14 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void openParry(const FS_AttackData& AttackData);
-	void closeParry();
+	// 패링 입력시 호출
+	void startParryWindow(float Duration);
 
-	bool canParry() const;
+	// 공격 히트시 호출
+	FS_ParryResult evaluateParry(const FS_AttackData& AttackData, AActor* Attacker) const;
 
-
-	void startParryWindow(float fCanTime);
+	bool isParryWindowOpen() const;
 
 	void endParryWindow();
-
-	bool isCanParry() const;
 
 };

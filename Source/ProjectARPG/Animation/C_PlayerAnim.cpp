@@ -77,6 +77,29 @@ void UC_PlayerAnim::playUpToClimb()
     
 }
 
+void UC_PlayerAnim::playParrySuccessMontage(E_ParryDirection Direction)
+{
+	UAnimMontage* Montage = nullptr;
+
+	switch (Direction)
+	{
+	case E_ParryDirection::Left:
+		Montage = m_ParryLeftMontage;
+		break;
+
+	case E_ParryDirection::Right:
+		Montage = m_ParryRightMontage;
+		break;
+
+	case E_ParryDirection::Both:
+		Montage = m_ParryBothMontage;
+		break;
+	}
+
+	Montage_Play(Montage);
+	
+}
+
 void UC_PlayerAnim::setIsGuarding(bool bNewGuard)
 {
     m_bIsGuarding = bNewGuard;

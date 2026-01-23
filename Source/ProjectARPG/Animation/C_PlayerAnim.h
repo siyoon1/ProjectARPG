@@ -32,12 +32,22 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Climb")
 	TObjectPtr<UAnimMontage> m_pUpToClimbMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Parry")
+	TObjectPtr<UAnimMontage> m_ParryLeftMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Parry")
+	TObjectPtr<UAnimMontage> m_ParryRightMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Parry")
+	TObjectPtr<UAnimMontage> m_ParryBothMontage;
+
 
 public:
 	void playDodgeMontage(E_Direction eDir);
 	void playSprintStartMontage();
 	void playComboMontage(int32 nComboIndex);
 	void playUpToClimb();
+	void playParrySuccessMontage(E_ParryDirection Direction);
 
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))

@@ -19,6 +19,7 @@
 #include "ProjectARPG/ActorComponents/C_PlayerExecutionComponent.h"
 #include "ProjectARPG/Enums/C_ExecutionTypes.h"
 #include "ProjectARPG/Data/C_PlayerExecutionData.h"
+#include "ProjectARPG/ActorComponents/C_AttackComponent.h"
 
 
 
@@ -229,15 +230,7 @@ void AC_PlayerCharacter::guard(const FInputActionInstance& sInst)
 {
 	interruptMoveAction();
 
-	UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance());
-
-	if (!pAnim)
-		return;
-
 	if (!canAct())
-		return;
-
-	if (m_ActionState != E_ActionState::Free)
 		return;
 
 	const float fElapsedTime = sInst.GetElapsedTime();
@@ -250,12 +243,16 @@ void AC_PlayerCharacter::guard(const FInputActionInstance& sInst)
 	if (!GetLastMovementInputVector().IsNearlyZero())
 		return;
 
-	m_ActionState = E_ActionState::Locked;
-	m_CombatMode = E_CombatMode::Guarding;
+	if (!startGuard())
+		return;
 
+	UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance());
 
-	setCombatState(E_CombatState::Guard);
+	if (!pAnim)
+		return;
+
 	pAnim->setIsGuarding(true);
+
 	GetCharacterMovement()->MaxWalkSpeed = 400.f;
 	
 	
@@ -318,38 +315,41 @@ FName AC_PlayerCharacter::getComboAttackRow(int32 ComboIndex) const
 
 void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
 {
-	if (m_CombatMode != E_CombatMode::Guarding)
+	if (!isGuard())
 		return;
 
-	m_ActionState = E_ActionState::Free;
-	m_CombatMode = E_CombatMode::None;
+	endGuard();
 
-	setCombatState(E_CombatState::Idle);
 
 	if (UC_PlayerAnim* pAnim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
 		pAnim->setIsGuarding(false);
-		GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
 	}
+
+	GetCharacterMovement()->MaxWalkSpeed = m_fDefaultSpeed;
 }
 
 void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 {
 	interruptMoveAction();
 
-	if (m_CombatMode == E_CombatMode::Attacking)
+	if (!canAct())
 		return;
 
-	
 	if (m_eState != E_CombatState::Idle)
 		return;
 
-	if (m_ActionState != E_ActionState::Free)
+	if (!m_ParryCom)
 		return;
 
-	AC_CombatCharacter* Target = nullptr;
+	enterCombatMode(E_CombatMode::Parrying, E_ActionState::Locked);
+	setCombatState(E_CombatState::Parrying);
 
-	if (m_pCurrentLockOnTarget)
+	m_ParryCom->startParryWindow(0.25f);
+
+	//AC_CombatCharacter* Target = nullptr;
+
+	/*if (m_pCurrentLockOnTarget)
 	{
 		Target = Cast<AC_CombatCharacter>(m_pCurrentLockOnTarget);
 	}
@@ -359,13 +359,8 @@ void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 	}
 
 	if (!Target)
-		return;
+		return;*/
 
-	m_ActionState = E_ActionState::Locked;
-	m_CombatMode = E_CombatMode::Parrying;
-
-	IC_CombatInterface::Execute_tryParry(Target, this);
-	
 }
 
 void AC_PlayerCharacter::lockOn(const FInputActionValue& sValue)
@@ -555,6 +550,34 @@ void AC_PlayerCharacter::resetPosture()
 {
 	//if (m_fCurrentPosture > 0)
 		//m_fCurrentPosture = m_fMaxPosture;
+}
+
+void AC_PlayerCharacter::onParried_Implementation(AActor* ParryOwner)
+{
+	if (m_AttackComp)
+	{
+		m_AttackComp->endAttack();
+	}
+
+	enterCombatMode(E_CombatMode::None, E_ActionState::Free);
+}
+
+void AC_PlayerCharacter::onParrySuccess_Implementation(AActor* ParryTarget, E_ParryDirection Direction)
+{
+	enterCombatMode(E_CombatMode::None, E_ActionState::Free);
+	setCombatState(E_CombatState::Idle);
+
+	if (UC_PlayerAnim* Anim = Cast<UC_PlayerAnim>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->playParrySuccessMontage(Direction);
+	}
+
+	if (m_CamMgr)
+	{
+		applyHitStop(0.9f, 0.2f);
+		m_CamMgr->playHitCameraShake(0.5f);
+	}
+		
 }
 
 void AC_PlayerCharacter::playPlayerExecutionMontage(const FS_ExecutionContext& Context)

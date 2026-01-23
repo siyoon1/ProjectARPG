@@ -11,7 +11,7 @@ void UC_AnimNotifyState_ParryWindow::NotifyBegin(USkeletalMeshComponent* MeshCom
 	{
 		if (Enemy->getParryComponent() && Enemy->getCurrentAttackData())
 		{
-			Enemy->getParryComponent()->openParry(*Enemy->getCurrentAttackData());
+			
 		}
 	}
 }
@@ -22,7 +22,7 @@ void UC_AnimNotifyState_ParryWindow::NotifyEnd(USkeletalMeshComponent* MeshComp,
 	{
 		if (Enemy->getParryComponent())
 		{
-			Enemy->getParryComponent()->closeParry();
+			
 		}
 	}
 }

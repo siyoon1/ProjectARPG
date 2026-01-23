@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "C_EnemyAttackComponent.h"
+#include "C_AIAttackComponent.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 
 // Sets default values for this component's properties
-UC_EnemyAttackComponent::UC_EnemyAttackComponent()
+UC_AIAttackComponent::UC_AIAttackComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
@@ -16,7 +16,7 @@ UC_EnemyAttackComponent::UC_EnemyAttackComponent()
 
 
 // Called when the game starts
-void UC_EnemyAttackComponent::BeginPlay()
+void UC_AIAttackComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -26,14 +26,14 @@ void UC_EnemyAttackComponent::BeginPlay()
 
 
 // Called every frame
-void UC_EnemyAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UC_AIAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
 }
 
-bool UC_EnemyAttackComponent::tryExecuteAttack(float fDist)
+bool UC_AIAttackComponent::tryExecuteAttack(float fDist)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] tryExecuteAttack Dist=%.1f"), fDist);
 
@@ -53,7 +53,7 @@ bool UC_EnemyAttackComponent::tryExecuteAttack(float fDist)
 	return executeAttack(AttackRow);
 }
 
-void UC_EnemyAttackComponent::getAttackCandidates(float fDist, TArray<FName>& OutCandidates) const
+void UC_AIAttackComponent::getAttackCandidates(float fDist, TArray<FName>& OutCandidates) const
 {
 	UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] getAttackCandidates Dist=%.1f"), fDist);
 
@@ -86,7 +86,7 @@ void UC_EnemyAttackComponent::getAttackCandidates(float fDist, TArray<FName>& Ou
 	}
 }
 
-bool UC_EnemyAttackComponent::decideNextAttack(float fDist, FName& OutAttackRow) const
+bool UC_AIAttackComponent::decideNextAttack(float fDist, FName& OutAttackRow) const
 {
 	TArray<FName> Candidates;
 	getAttackCandidates(fDist, Candidates);
@@ -132,7 +132,7 @@ bool UC_EnemyAttackComponent::decideNextAttack(float fDist, FName& OutAttackRow)
 	return false;
 }
 
-bool UC_EnemyAttackComponent::canUseAttack(FName Row) const
+bool UC_AIAttackComponent::canUseAttack(FName Row) const
 {
 	if (!m_OwnerEnemy)
 		return false;
@@ -147,13 +147,13 @@ bool UC_EnemyAttackComponent::canUseAttack(FName Row) const
 	return (Now - State->LastUsedTime) >= State->Cooldown;
 }
 
-bool UC_EnemyAttackComponent::isAttackInRange(const FS_AttackData& Data, float fDist) const
+bool UC_AIAttackComponent::isAttackInRange(const FS_AttackData& Data, float fDist) const
 {
 	return fDist >= Data.AI.MinRange &&
 		fDist <= Data.AI.MaxRange;
 }
 
-bool UC_EnemyAttackComponent::executeAttack(FName Row)
+bool UC_AIAttackComponent::executeAttack(FName Row)
 {
 	if (!m_OwnerEnemy)
 		return false;
@@ -165,4 +165,3 @@ bool UC_EnemyAttackComponent::executeAttack(FName Row)
 
 
 }
-

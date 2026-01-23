@@ -5,7 +5,6 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
-#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
 
 UC_BTDecorator_CheckMinRange::UC_BTDecorator_CheckMinRange()
 {

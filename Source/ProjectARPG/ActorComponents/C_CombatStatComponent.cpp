@@ -47,19 +47,7 @@ void UC_CombatStatComponent::applyDamage(float HpDamage, float PostureDamage)
 
 	if (PostureDamage > 0.f)
 	{
-		m_CurrentPosture = FMath::Clamp(m_CurrentPosture - PostureDamage, 0.f, m_MaxPosture);
-		m_OnPostureChanged.Broadcast(m_CurrentPosture, m_MaxPosture);
-
-		m_bRecoveryDelayed = true;
-		m_RecoveryDelayTimer = m_RecoveryDelayTime;
-
-		constexpr float PostureBreakThreshold = 3.f;
-
-		if (m_CurrentPosture <= PostureBreakThreshold)
-		{
-			m_CurrentPosture = 0.f;
-			breakPosture();
-		}
+		applyPostureDamage(PostureDamage, E_PostureBreakCause::Damage, nullptr);
 	}
 
 	UE_LOG(LogTemp, Warning,
@@ -68,6 +56,30 @@ void UC_CombatStatComponent::applyDamage(float HpDamage, float PostureDamage)
 		m_CurrentPosture,
 		m_bRecoveryDelayed
 	);
+}
+
+void UC_CombatStatComponent::applyPostureDamage(float PostureDamage, E_PostureBreakCause Cause, AActor* Instigator)
+{
+	if (PostureDamage <= 0.f || m_bPostureBroken)
+		return;
+
+	m_CurrentPosture = FMath::Clamp(m_CurrentPosture - PostureDamage, 0.f, m_MaxPosture);
+	m_OnPostureChanged.Broadcast(m_CurrentPosture, m_MaxPosture);
+
+	m_bRecoveryDelayed = true;
+	m_RecoveryDelayTimer = m_RecoveryDelayTime;
+
+	constexpr float PostureBreakThreshold = 3.f;
+
+	if (m_CurrentPosture <= PostureBreakThreshold)
+	{
+		m_CurrentPosture = 0.f;
+
+		m_LastBreakCause = Cause;
+		m_LastBreaker = Instigator;
+
+		breakPosture();
+	}
 }
 
 

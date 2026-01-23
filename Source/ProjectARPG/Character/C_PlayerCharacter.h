@@ -122,6 +122,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Execution")
 	class UC_PlayerExecutionData* m_PlayerExecutionData;
 
+	UPROPERTY(EditAnywhere)
+	class UAnimMontage* m_ParrySuccessMontage;
+
 public:
 	AC_PlayerCharacter();
 
@@ -210,6 +213,11 @@ public:
 	void restoreHP();
 	void resetPosture();
 
+
+	void onParried_Implementation(AActor* ParryOwner) override;
+	void onParrySuccess_Implementation(AActor* ParryTarget, E_ParryDirection Direction) override;
+
+
 	void playPlayerExecutionMontage(const FS_ExecutionContext& Context);
 
 	//락온 함수
@@ -232,6 +240,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool isWallGrabbing() const;
 
+	inline void setClimbTarget(const FVector& Target) { m_ClimbTarget = Target; }
+	inline const FVector& getClimbTarget() const { return m_ClimbTarget; }
+
 	UFUNCTION(BlueprintCallable)
 	bool isPulling() const;
 
@@ -243,7 +254,8 @@ public:
 
 	void interruptMoveAction();
 
-	void setClimbTarget(const FVector& Target) { m_ClimbTarget = Target; }
-	const FVector& getClimbTarget() const { return m_ClimbTarget; }
+
+
+	
 
 };

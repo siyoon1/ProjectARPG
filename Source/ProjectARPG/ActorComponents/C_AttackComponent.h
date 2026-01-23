@@ -13,6 +13,9 @@ class PROJECTARPG_API UC_AttackComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+private:
+	bool m_bPostureBrokenByParry = false;
+
 protected:
 	UPROPERTY()
 	class AC_CombatCharacter* m_Owner;
@@ -51,6 +54,8 @@ public:
 	void tickTrace();
 
 	inline bool isAttacking() const { return m_CurrentAttackData != nullptr; }
+
+	inline bool isParryBroken() const { return m_bPostureBrokenByParry; }
 
 private:
 	void applyHit(AActor* HitActor);

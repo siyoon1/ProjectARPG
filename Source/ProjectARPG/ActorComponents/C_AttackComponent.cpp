@@ -3,6 +3,8 @@
 
 #include "C_AttackComponent.h"
 #include "ProjectARPG/Character/C_CombatCharacter.h"
+#include "ProjectARPG/ActorComponents/C_ParryComponent.h"
+#include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
 
 // Sets default values for this component's properties
 UC_AttackComponent::UC_AttackComponent()
@@ -98,12 +100,44 @@ void UC_AttackComponent::applyHit(AActor* HitActor)
 	if (Target && Target->isInvincibleAgainst(m_Owner))
 		return;
 
+	UC_ParryComponent* ParryComp = Target->getParryComponent();
+	if (!ParryComp)
+		return;
+
+	if (ParryComp)
+	{
+		FS_ParryResult ParryResult =
+			ParryComp->evaluateParry(*m_CurrentAttackData, m_Owner);
+
+		if (ParryResult.Result == E_ParryResult::Parried)
+		{
+			m_bPostureBrokenByParry = true;
+
+			UE_LOG(LogTemp, Warning, TEXT("[AttackComponent] Parried by %s"),
+				*Target->GetName());
+
+			// 공격자 반응
+			IC_ParryReaction::Execute_onParried(m_Owner, Target);
+
+			// 방어자 성공 반응
+			IC_ParryReaction::Execute_onParrySuccess(Target, m_Owner, ParryResult.Direction);
+
+			// 공격자 체간 피해
+			if (AC_CombatCharacter* AttackerChar = m_Owner)
+			{
+				AttackerChar->getStatComp()->applyPostureDamage(ParryResult.PostureDamageToAttacker,
+					E_PostureBreakCause::Parry, m_Owner);
+			}
+
+			return;
+		}
+	}
+
 	IC_CombatInterface::Execute_takeDamage
 	(
 		HitActor,
 		m_CurrentAttackData->Combat.Damage,
 		m_CurrentAttackData->Combat.PostureDamage,
-		false,
 		m_Owner
 	);
 }
@@ -156,9 +190,7 @@ void UC_AttackComponent::sweepAttack(const FVector& Start, const FVector& End)
 		}
 
 
-	}
-
-	
+	}	
 
 	DrawDebugLine(
 		GetWorld(),

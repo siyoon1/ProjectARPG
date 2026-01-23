@@ -33,49 +33,69 @@ void UC_ParryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	// ...
 }
 
-void UC_ParryComponent::openParry(const FS_AttackData& AttackData)
+void UC_ParryComponent::startParryWindow(float Duration)
 {
-	/*if (!AttackData.bCanParry)
-		return;*/
+	if (!GetWorld())
+		return;
 
-	m_CurrentParry.bActive = true;
-	m_CurrentParry.CurrentAttackData = &AttackData;
+	m_ParryContext.bWindowOpen = true;
+	m_ParryContext.EndTime = GetWorld()->GetTimeSeconds() + Duration;
 
-
-}
-
-void UC_ParryComponent::closeParry()
-{
-	m_CurrentParry.bActive = false;
-	m_CurrentParry.CurrentAttackData = nullptr;
-
-
-}
-
-bool UC_ParryComponent::canParry() const
-{
-	return m_CurrentParry.bActive;
-}
-
-void UC_ParryComponent::startParryWindow(float fCanTime)
-{
-	m_bCanParry = true;
 
 	GetWorld()->GetTimerManager().ClearTimer(m_ParryTimerHandle);
 	GetWorld()->GetTimerManager().SetTimer(m_ParryTimerHandle, this, &UC_ParryComponent::endParryWindow,
-		fCanTime, false);
-	UE_LOG(LogTemp, Warning, TEXT("%s ParryWindow Start (%.2fs)"), *GetOwner()->GetName(), fCanTime);
+		Duration, false);
+}
 
+FS_ParryResult UC_ParryComponent::evaluateParry(const FS_AttackData& AttackData, AActor* Attacker) const
+{
+	FS_ParryResult Result;
+
+	// 패링 윈도우 열려있는지?
+	if (!isParryWindowOpen())
+	{
+		Result.Result = E_ParryResult::Failed;
+		return Result;
+	}
+
+	// 이 공격은 패링이 가능한지?
+	if (!AttackData.Combat.bCanParry)
+	{
+		Result.Result = E_ParryResult::Guarded;
+		return Result;
+	}
+
+	Result.Result = E_ParryResult::Parried;
+	Result.Direction = AttackData.Combat.ParryDirection;
+
+	Result.PostureDamageToAttacker = AttackData.Combat.PostureDamage * 1.5f;
+	Result.PostureDamageToDefender = AttackData.Combat.PostureDamage * 0.2f;
+
+	return Result;
+}
+
+bool UC_ParryComponent::isParryWindowOpen() const
+{
+	if (!m_ParryContext.bWindowOpen)
+		return false;
+
+	return GetWorld() &&
+		GetWorld()->GetTimeSeconds() <= m_ParryContext.EndTime;
 }
 
 void UC_ParryComponent::endParryWindow()
 {
-	m_bCanParry = false;
+	if (!m_ParryContext.bWindowOpen)
+		return;
+
+	m_ParryContext.bWindowOpen = false;
+
+	m_OnParryWindowEnded.Broadcast();
+
+	
 	UE_LOG(LogTemp, Warning, TEXT("%s ParryWindow End"), *GetOwner()->GetName());
+
+	
 }
 
-bool UC_ParryComponent::isCanParry() const
-{
-	return m_bCanParry;
-}
 

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "C_BaseCharacter.h"
 #include "ProjectARPG/Interface/C_CombatInterface.h"
+#include "ProjectARPG/Interface/C_ParryReaction.h"
 #include "ProjectARPG/Data/C_AttackData.h"
 #include "C_CombatCharacter.generated.h"
 
@@ -69,7 +70,7 @@ enum class E_HitResult : uint8
  * 
  */
 UCLASS(Blueprintable)
-class PROJECTARPG_API AC_CombatCharacter : public AC_BaseCharacter, public IC_CombatInterface
+class PROJECTARPG_API AC_CombatCharacter : public AC_BaseCharacter, public IC_CombatInterface, public IC_ParryReaction
 {
 	GENERATED_BODY()
 
@@ -80,6 +81,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<class UC_AttackComponent> m_AttackComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<class UC_ParryComponent> m_ParryCom;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	E_ActionState m_ActionState = E_ActionState::Free;
@@ -125,12 +129,11 @@ protected:
 	FVector m_vLastTraceEnd{};
 	TArray<AActor*> m_HitActors{};
 
-	bool m_bExecutionAvailable = false;
-
 	bool m_bIsPostureBroken = false;
 	bool m_bIsGuarding = false;
 	
 	FTimerHandle m_timerHandle_PostureBroken;
+	FTimerHandle m_ParriedTimer;
 
 	//히트 스탑 관련
 	UAnimMontage* m_lastMontage = nullptr;
@@ -150,8 +153,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Status")
 	FOnLifeNodeChanged m_OnLifeNodeChanged;
 
-	UPROPERTY()
-	TObjectPtr<class UC_ParryComponent> m_pParryCom;
+	
 
 	UPROPERTY()
 	TObjectPtr<class AC_PlayerCameraManager> m_CamMgr;
@@ -163,8 +165,6 @@ protected:
 	virtual void onPostureBroken();
 
 	virtual void onPostureBroken_Internal();
-
-	virtual void enterExecutionReady();
 
 	void playHitMontage(E_Direction eDir);
 
@@ -183,8 +183,11 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	// 상태 set, get
+	inline UC_CombatStatComponent* getStatComp() const { return m_StatComp; }
 
+	// 상태
+
+	bool canAct() const;
 	void setActionState(E_ActionState eNewState);
 	E_ActionState getActionState() const;
 
@@ -193,6 +196,8 @@ public:
 
 	FVector getTraceStartLocation() const;
 	FVector getTraceEndLocation() const;
+
+	void enterCombatMode(E_CombatMode NewMode, E_ActionState NewActionState);
 
 
 	// 공격
@@ -205,24 +210,38 @@ public:
 
 	const UDataTable* getAttackDataTable() const;
 
-
-
 	void applyAttack(const FS_AttackData& sData);
 	const FS_AttackData* getAttackData(FName RowName) const;
 	const FS_AttackData* getCurrentAttackData() const;
 
+
 	// 가드
+	virtual bool startGuard();
+	virtual void endGuard();
+
 	bool isGuardingFront(AActor* pAttacker) const;
 	void setGuard(bool bSet);
 	bool isGuard() const;
 
-	bool canAct() const;
+	
 
 	virtual bool isInvincibleAgainst(AActor* pAttacker) const;
 
 	// 죽음
 	virtual void onDeath();
 	bool isDead() const;
+
+	// 패링
+	UFUNCTION()
+	void endParried();
+
+	void onParried_Implementation(AActor* ParryOwner);
+
+	UC_ParryComponent* getParryComponent() const;
+
+	UFUNCTION()
+	void onParryWindowEnded();
+
 	
 
 
@@ -233,15 +252,8 @@ public:
 	float getPosture() const;
 
 	UFUNCTION()
-	void takeDamage_Implementation(float fDamage, float fPostureDamage, bool bGuardSuccess, AActor* pAttacker);
+	void takeDamage_Implementation(float Damage, float PostureDamage, AActor* pAttacker);
 
-	UFUNCTION()
-	void tryParry_Implementation(AActor* ParryOwner);
-
-	UFUNCTION()
-	void onParrySuccess_Implementation(AActor* ParryTarget);
-
-	UC_ParryComponent* getParryComponent() const;
 
 	void setRuntimeParryDir(E_ParryDirection eDir);
 

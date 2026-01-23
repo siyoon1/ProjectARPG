@@ -4,7 +4,7 @@
 #include "C_BTTask_Attack.h"
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
-#include "ProjectARPG/ActorComponents/C_EnemyAttackComponent.h"
+#include "ProjectARPG/AI/C_AIAttackComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UC_BTTask_Attack::UC_BTTask_Attack()
@@ -31,7 +31,7 @@ EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerC
     if (!BB)
         return EBTNodeResult::Failed;
 
-    UC_EnemyAttackComponent* EnemyAttackComp =
+    UC_AIAttackComponent* EnemyAttackComp =
         Enemy->getEnemyAttackComponent();
     if (!EnemyAttackComp)
         return EBTNodeResult::Failed;
