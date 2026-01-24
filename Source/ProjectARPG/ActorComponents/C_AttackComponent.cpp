@@ -126,7 +126,7 @@ void UC_AttackComponent::applyHit(AActor* HitActor)
 			if (AC_CombatCharacter* AttackerChar = m_Owner)
 			{
 				AttackerChar->getStatComp()->applyPostureDamage(ParryResult.PostureDamageToAttacker,
-					E_PostureBreakCause::Parry, m_Owner);
+					E_PostureBreakCause::Parry, Target);
 			}
 
 			return;

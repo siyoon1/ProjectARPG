@@ -20,6 +20,7 @@
 #include "ProjectARPG/Enums/C_ExecutionTypes.h"
 #include "ProjectARPG/Data/C_PlayerExecutionData.h"
 #include "ProjectARPG/ActorComponents/C_AttackComponent.h"
+#include "ProjectARPG/ActorComponents/C_LockOnComponent.h"
 
 
 
@@ -799,6 +800,21 @@ void AC_PlayerCharacter::interruptMoveAction()
 	{
 		m_pMoveActionCom->interruptMovementAction();
 	}
+}
+
+void AC_PlayerCharacter::requestExecution_Implementation(AActor* Target)
+{
+	UE_LOG(LogTemp, Error, TEXT("requestExecution called"));
+
+	if(!Target)
+		return;
+
+	APawn* VictimPawn = Cast<APawn>(Target);
+	if (!VictimPawn)
+		return;
+
+	if (m_ExecutionComp)
+		m_ExecutionComp->forceExecute(this, VictimPawn, E_ExecutionType::PostureBreak);
 }
 
 void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)

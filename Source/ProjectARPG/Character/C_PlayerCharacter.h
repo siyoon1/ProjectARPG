@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "C_CombatCharacter.h"
+#include "ProjectARPG/Interface/C_ExecutionRequester.h"
 #include "C_PlayerCharacter.generated.h"
 
 /**
  * 
  */
 UCLASS(Blueprintable)
-class PROJECTARPG_API AC_PlayerCharacter : public AC_CombatCharacter
+class PROJECTARPG_API AC_PlayerCharacter : public AC_CombatCharacter, public IC_ExecutionRequester
 {
 	GENERATED_BODY()
 
@@ -253,6 +254,9 @@ public:
 	void initJump();
 
 	void interruptMoveAction();
+
+	UFUNCTION()
+	void requestExecution_Implementation(AActor* Target);
 
 
 

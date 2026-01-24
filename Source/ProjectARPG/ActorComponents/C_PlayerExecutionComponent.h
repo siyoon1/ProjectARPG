@@ -34,6 +34,7 @@ protected:
 
 public:
 	bool tryExecuteCurrentTarget();
+	void forceExecute(APawn* ExecutionInstigator, APawn* Victim, E_ExecutionType Type);
 	bool canStartExecution() const;
 	E_ExecutionType getCurrentExecutionType() const;
 

@@ -177,6 +177,37 @@ bool UC_PlayerExecutionComponent::tryExecuteCurrentTarget()
 	return true;
 }
 
+void UC_PlayerExecutionComponent::forceExecute(APawn* ExecutionInstigator, APawn* Victim, E_ExecutionType Type)
+{
+	if (!ExecutionInstigator || !Victim)
+		return;
+
+	IC_ExecutionTarget* Target = Cast<IC_ExecutionTarget>(Victim);
+	if (!Target)
+		return;
+
+	FS_ExecutionContext Context;
+	if (!selectExecution(Type, Context))
+		return;
+
+	AC_PlayerCharacter* Player = Cast<AC_PlayerCharacter>(ExecutionInstigator);
+	if (!Player)
+		return;
+
+	clearCurrentTarget();
+
+	Player->DisableInput(nullptr);
+	Player->GetCharacterMovement()->StopMovementImmediately();
+	Player->setCombatState(E_CombatState::Executing);
+
+	Context.Instigator = Player;
+	Context.Victim = Victim;
+
+	Player->playPlayerExecutionMontage(Context);
+	Target->onExecutionStarted(Player, Context);
+
+}
+
 void UC_PlayerExecutionComponent::performExecution(APawn* Instigator, APawn* Victim, E_ExecutionType Type)
 {
 	if (!Instigator || !Victim)
