@@ -119,6 +119,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UC_PlayerExecutionComponent> m_ExecutionComp{};
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UC_LockOnComponent> m_LockOnComp{};
+
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Execution")
 	class UC_PlayerExecutionData* m_PlayerExecutionData;
@@ -174,8 +177,9 @@ private:
 
 	void applyExecutionWarp(const struct FS_ExecutionContext& Context);
 
-	
+	void applyLockOnRotation(float DeltaTime);
 
+	void releaseLockOnState();
 
 protected:
 	void sprint(const struct FInputActionInstance& sInst);

@@ -52,17 +52,17 @@ void UC_LockOnComponent::toggleLockOn()
 
 void UC_LockOnComponent::clearLockOn()
 {
-
+	m_CurrentTarget = nullptr;
 }
 
 bool UC_LockOnComponent::isLockOn() const
 {
-	return false;
+	return m_CurrentTarget.IsValid();
 }
 
 AActor* UC_LockOnComponent::getCurrentTarget() const
 {
-	return nullptr;
+	return m_CurrentTarget.Get();
 }
 
 bool UC_LockOnComponent::getLockOnRotation(FRotator& OutRot) const
@@ -103,7 +103,7 @@ AActor* UC_LockOnComponent::findTarget()
 
 	const FVector CamForward = CamRot.Vector();
 
-	TArray<FOverlapResult> Results; {};
+	TArray<FOverlapResult> Results{};
 	FCollisionQueryParams Params{};
 	Params.AddIgnoredActor(m_OwnerPawn);
 
@@ -111,8 +111,8 @@ AActor* UC_LockOnComponent::findTarget()
 		Results,
 		m_OwnerPawn->GetActorLocation(),
 		FQuat::Identity,
-		ECC_GameTraceChannel3,
-		FCollisionShape::MakeSphere(600.f),
+		m_DetectChannel,
+		FCollisionShape::MakeSphere(m_DetectRadius),
 		Params
 	);
 

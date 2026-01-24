@@ -36,6 +36,7 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 	m_pCamera->bUsePawnControlRotation = false;
 
 	m_ExecutionComp = CreateDefaultSubobject<UC_PlayerExecutionComponent>(TEXT("ExecutionComp"));
+	m_LockOnComp = CreateDefaultSubobject<UC_LockOnComponent>(TEXT("LockOnComp"));
 
 	m_pExecutionDetectSphere = nullptr;
 
@@ -93,7 +94,14 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 
 
 	// 락온 기능
-	setLockOn(DeltaTime);
+	if (m_LockOnComp && m_LockOnComp->isLockOn())
+	{
+		applyLockOnRotation(DeltaTime);
+	}
+	else
+	{
+		releaseLockOnState();
+	}
 
 }
 
@@ -366,17 +374,9 @@ void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::lockOn(const FInputActionValue& sValue)
 {
-	if (m_pCurrentLockOnTarget)
+	if (m_LockOnComp)
 	{
-		m_pCurrentLockOnTarget = nullptr;
-		return;
-	}
-
-	AC_CombatCharacter* pTarget = findLockOnTarget();
-
-	if (pTarget)
-	{
-		m_pCurrentLockOnTarget = pTarget;
+		m_LockOnComp->toggleLockOn();
 	}
 }
 
@@ -684,7 +684,10 @@ void AC_PlayerCharacter::setLockOn(float fDelta)
 
 bool AC_PlayerCharacter::isLockOn() const
 {
-	return m_bIsLockOn;
+	if (!m_LockOnComp)
+		return false;
+
+	return m_LockOnComp->isLockOn();
 }
 
 bool AC_PlayerCharacter::canGrabWallAtLoc(const FVector& checkLoc)
@@ -792,6 +795,34 @@ void AC_PlayerCharacter::applyExecutionWarp(const FS_ExecutionContext& Context)
 	const FRotator TargetRot = (Victhim->GetActorLocation() - GetActorLocation()).Rotation();
 
 	SetActorRotation(TargetRot);
+}
+
+void AC_PlayerCharacter::applyLockOnRotation(float DeltaTime)
+{
+	FRotator TargetRot;
+	if (!m_LockOnComp->getLockOnRotation(TargetRot))
+		return;
+
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	bUseControllerRotationYaw = true;
+
+	FRotator NewRot = FMath::RInterpTo(
+		Controller->GetControlRotation(),
+		TargetRot,
+		DeltaTime,
+		3.f
+	);
+
+	Controller->SetControlRotation(NewRot);
+}
+
+void AC_PlayerCharacter::releaseLockOnState()
+{
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
 }
 
 void AC_PlayerCharacter::interruptMoveAction()
