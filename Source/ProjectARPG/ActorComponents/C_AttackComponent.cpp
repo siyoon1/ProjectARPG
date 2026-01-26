@@ -135,19 +135,24 @@ void UC_AttackComponent::applyHit(AActor* HitActor)
 		}
 	}
 
+	const bool bGuarded =
+		Target->isGuard() &&
+		Target->isGuardingFront(m_Owner);
+
+	E_HitResult HitResult = bGuarded
+		? E_HitResult::Guarded
+		: E_HitResult::Normal;
+
 	IC_CombatInterface::Execute_takeDamage
 	(
 		HitActor,
 		m_CurrentAttackData->Combat.Damage,
 		m_CurrentAttackData->Combat.PostureDamage,
+		HitResult,
 		m_Owner
 	);
 
-	if (AC_CombatCharacter* TargetChar =
-		Cast<AC_CombatCharacter>(HitActor))
-	{
-		
-	}
+	Target->onHitConfirmed(HitResult, m_Owner);
 }
 
 void UC_AttackComponent::sweepAttack(const FVector& Start, const FVector& End)

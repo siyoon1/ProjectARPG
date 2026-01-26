@@ -57,15 +57,7 @@ enum class E_Direction : uint8
 	Right       UMETA(DisplayName = "Right")
 };
 
-UENUM()
-enum class E_HitResult : uint8
-{
-	Normal,
-	Guarded,
-	Parried,
-	PostureBroken,
-	Execution
-};
+
 /**
  * 
  */
@@ -212,7 +204,8 @@ public:
 	const FS_AttackData* getAttackData(FName RowName) const;
 	const FS_AttackData* getCurrentAttackData() const;
 
-	void applyHitPushBack(const FVector& From, float Strength);
+	void onHitConfirmed(E_HitResult Result, AActor* Attacker);
+	void applyHitPushBack(const FVector& From, E_HitResult Result);
 
 
 	// °¡µå
@@ -252,7 +245,7 @@ public:
 	float getPosture() const;
 
 	UFUNCTION()
-	void takeDamage_Implementation(float Damage, float PostureDamage, AActor* pAttacker);
+	void takeDamage_Implementation(float Damage, float PostureDamage, E_HitResult HitResult, AActor* pAttacker);
 
 
 	void setRuntimeParryDir(E_ParryDirection eDir);

@@ -154,9 +154,53 @@ void AC_CombatCharacter::applyAttackerHitFeedback(E_HitResult HitResult, AActor*
 
 }
 
-void AC_CombatCharacter::applyHitPushBack(const FVector& From, float Strength)
+void AC_CombatCharacter::onHitConfirmed(E_HitResult Result, AActor* Attacker)
 {
+	switch (Result)
+	{
+	case E_HitResult::Normal:
+	case E_HitResult::PostureBroken:
+	{
+		E_Direction HitDir = getHitDirection(Attacker);
+		playHitMontage(HitDir);
+		break;
+	}
+
+	case E_HitResult::Guarded:
 	
+		break;
+	}
+
+	applyHitFeedback(Result, Attacker);
+	applyHitPushBack(Attacker->GetActorLocation(), Result);
+}
+
+void AC_CombatCharacter::applyHitPushBack(const FVector& From, E_HitResult Result)
+{
+	FVector PushDir = (GetActorLocation() - From).GetSafeNormal();
+
+	float PushStrength = 0.f;
+
+	switch (Result)
+	{
+	case E_HitResult::Normal:
+		PushStrength = 220.f;
+		break;
+
+	case E_HitResult::Guarded:
+		PushStrength = 80.f;   // 막아도 밀림
+		break;
+
+	case E_HitResult::PostureBroken:
+		PushStrength = 400.f;
+		break;
+	}
+
+	LaunchCharacter(
+		PushDir * PushStrength,
+		true,
+		false
+	);
 }
 
 
@@ -354,39 +398,29 @@ float AC_CombatCharacter::getPosture() const
 }
 
 
-void AC_CombatCharacter::takeDamage_Implementation(float Damage, float PostureDamage, AActor* pAttacker)
+void AC_CombatCharacter::takeDamage_Implementation(float Damage, float PostureDamage, E_HitResult HitResult, AActor* pAttacker)
 {
 	if (isInvincibleAgainst(pAttacker))
 		return;
 
-	// 가드
-	const bool bGuardSuccess =
-		isGuard() &&
-		isGuardingFront(pAttacker);
-
 	float FinalDamage = Damage;
 	float FinalPostureDamage = PostureDamage;
 
-	if (bGuardSuccess)
+	switch (HitResult)
 	{
+	case E_HitResult::Guarded:
 		FinalDamage *= 0.2f;
-		FinalPostureDamage *= 0.7f; 
-		
-		m_StatComp->applyDamage(FinalDamage, FinalPostureDamage);
-		applyHitFeedback(E_HitResult::Guarded, pAttacker);
-		return;
+		FinalPostureDamage *= 0.7f;
+		break;
+
+	case E_HitResult::PostureBroken:
+		break;
+
+	default:
+		break;
 	}
 
-
-
-	m_StatComp->applyDamage(Damage, PostureDamage);
-
-	E_HitResult HitResult = E_HitResult::Normal;
-
-	if (m_StatComp->isPostureBroken())
-		HitResult = E_HitResult::PostureBroken;
-
-	applyHitFeedback(HitResult, pAttacker);
+	m_StatComp->applyDamage(FinalDamage, FinalPostureDamage);
 	
 }
 

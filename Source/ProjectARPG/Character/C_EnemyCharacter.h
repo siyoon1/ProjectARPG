@@ -239,7 +239,7 @@ public:
 	void onDeath() override;
 
 	//데미지 처리
-	void takeDamage_Implementation(float Damage, float PostureDamage, AActor* pAttacker) override;
+	void takeDamage_Implementation(float Damage, float PostureDamage, E_HitResult HitResult, AActor* pAttacker) override;
 
 	void onParried_Implementation(AActor* ParryOwner) override;
 

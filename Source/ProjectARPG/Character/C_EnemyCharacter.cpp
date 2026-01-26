@@ -149,6 +149,9 @@ bool AC_EnemyCharacter::startGuard()
 
 void AC_EnemyCharacter::endGuard()
 {
+	if (!isGuard())
+		return;
+
 	Super::endGuard();
 
 	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
@@ -166,7 +169,7 @@ bool AC_EnemyCharacter::canReleaseGuard() const
 		return true;
 
 	// 중간 구간: AI 판단 여지
-	return true;
+	return FMath::RandRange(0.f, 1.f) < 0.02f;
 }
 
 
@@ -541,9 +544,9 @@ void AC_EnemyCharacter::onDeath()
 
 }
 
-void AC_EnemyCharacter::takeDamage_Implementation(float Damage, float PostureDamage, AActor* pAttacker)
+void AC_EnemyCharacter::takeDamage_Implementation(float Damage, float PostureDamage, E_HitResult HitResult, AActor* pAttacker)
 {
-	Super::takeDamage_Implementation(Damage, PostureDamage, pAttacker);
+	Super::takeDamage_Implementation(Damage, PostureDamage, HitResult, pAttacker);
 
 	if (UC_DetectComponent* pDetect = FindComponentByClass<UC_DetectComponent>())
 	{

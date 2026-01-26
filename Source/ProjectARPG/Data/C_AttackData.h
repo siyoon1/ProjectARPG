@@ -6,6 +6,16 @@
 #include "Engine/DataTable.h"
 #include "C_AttackData.generated.h"
 
+UENUM()
+enum class E_HitResult : uint8
+{
+	Normal,
+	Guarded,
+	Parried,
+	PostureBroken,
+	Execution
+};
+
 UENUM(BlueprintType)
 enum class E_AttackProperty : uint8
 {
@@ -15,6 +25,8 @@ enum class E_AttackProperty : uint8
 	Sweep,
 	GuardBreak
 };
+
+
 
 UENUM(BlueprintType)
 enum class E_ParryDirection : uint8
