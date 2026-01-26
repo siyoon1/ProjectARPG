@@ -9,6 +9,7 @@
 #include "Components/CapsuleComponent.h"
 #include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
 #include "ProjectARPG/ActorComponents/C_AttackComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 
 AC_CombatCharacter::AC_CombatCharacter()
@@ -50,7 +51,6 @@ void AC_CombatCharacter::BeginPlay()
 void AC_CombatCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 
 }
 
@@ -153,6 +153,12 @@ void AC_CombatCharacter::applyAttackerHitFeedback(E_HitResult HitResult, AActor*
 	
 
 }
+
+void AC_CombatCharacter::applyHitPushBack(const FVector& From, float Strength)
+{
+	
+}
+
 
 void AC_CombatCharacter::startAttack(const FS_AttackData& AttackData)
 {

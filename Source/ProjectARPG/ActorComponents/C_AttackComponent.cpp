@@ -6,6 +6,7 @@
 #include "ProjectARPG/ActorComponents/C_ParryComponent.h"
 #include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
 
+
 // Sets default values for this component's properties
 UC_AttackComponent::UC_AttackComponent()
 {
@@ -48,6 +49,8 @@ void UC_AttackComponent::endAttack()
 	m_CurrentAttackData = nullptr;
 	m_bTracing = false;
 	m_HitActors.Empty();
+
+
 }
 
 void UC_AttackComponent::startTrace()
@@ -100,14 +103,13 @@ void UC_AttackComponent::applyHit(AActor* HitActor)
 	if (Target && Target->isInvincibleAgainst(m_Owner))
 		return;
 
-	UC_ParryComponent* ParryComp = Target->getParryComponent();
-	if (!ParryComp)
+	if (!Target->getParryComponent())
 		return;
 
-	if (ParryComp)
+	if (Target->getParryComponent())
 	{
 		FS_ParryResult ParryResult =
-			ParryComp->evaluateParry(*m_CurrentAttackData, m_Owner);
+			Target->getParryComponent()->evaluateParry(*m_CurrentAttackData, m_Owner);
 
 		if (ParryResult.Result == E_ParryResult::Parried)
 		{
@@ -140,6 +142,12 @@ void UC_AttackComponent::applyHit(AActor* HitActor)
 		m_CurrentAttackData->Combat.PostureDamage,
 		m_Owner
 	);
+
+	if (AC_CombatCharacter* TargetChar =
+		Cast<AC_CombatCharacter>(HitActor))
+	{
+		
+	}
 }
 
 void UC_AttackComponent::sweepAttack(const FVector& Start, const FVector& End)

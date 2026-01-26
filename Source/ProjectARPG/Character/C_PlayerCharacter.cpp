@@ -97,6 +97,7 @@ void AC_PlayerCharacter::Tick(float DeltaTime)
 	if (m_LockOnComp && m_LockOnComp->isLockOn())
 	{
 		applyLockOnRotation(DeltaTime);
+		applyLockOnCharacterRotation(DeltaTime);
 	}
 	else
 	{
@@ -355,21 +356,6 @@ void AC_PlayerCharacter::parry(const FInputActionValue& sValue)
 	setCombatState(E_CombatState::Parrying);
 
 	m_ParryCom->startParryWindow(0.25f);
-
-	//AC_CombatCharacter* Target = nullptr;
-
-	/*if (m_pCurrentLockOnTarget)
-	{
-		Target = Cast<AC_CombatCharacter>(m_pCurrentLockOnTarget);
-	}
-	else
-	{
-		Target = Cast<AC_CombatCharacter>(getCurrentEnemy());
-	}
-
-	if (!Target)
-		return;*/
-
 }
 
 void AC_PlayerCharacter::lockOn(const FInputActionValue& sValue)
@@ -604,90 +590,9 @@ void AC_PlayerCharacter::playPlayerExecutionMontage(const FS_ExecutionContext& C
 	}
 }
 
-AC_CombatCharacter* AC_PlayerCharacter::findLockOnTarget()
-{
-	const float fDetectRadius = 500.f;
-
-	FVector vCenter = GetActorLocation();
-
-	TArray<FOverlapResult> listResult{};
-
-	FCollisionQueryParams Params{};
-	Params.AddIgnoredActor(this);
-
-	bool bHasHit = GetWorld()->OverlapMultiByChannel(
-		listResult,
-		vCenter,
-		FQuat::Identity,
-		ECC_GameTraceChannel3,
-		FCollisionShape::MakeSphere(fDetectRadius),
-		Params
-		);
-
-	DrawDebugSphere(GetWorld(), vCenter, fDetectRadius, 16, FColor::Red, false, 1.0f);
-
-	AC_CombatCharacter* pTarget = nullptr;
-
-	if (bHasHit)
-	{
-		
-		for (const FOverlapResult& object : listResult)
-		{
-			pTarget = Cast<AC_CombatCharacter>(object.GetActor());
-			
-			if (!pTarget || pTarget == this)
-				continue;
-
-		}
-
-	}
-	else
-		return nullptr;
-
-	if (pTarget)
-		UE_LOG(LogTemp, Warning, TEXT("LockOn Target: %s"), *pTarget->GetName());
-
-	return pTarget;
-}
-
-void AC_PlayerCharacter::setLockOn(float fDelta)
-{
-	if (!m_pCurrentLockOnTarget)
-	{
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-		bUseControllerRotationYaw = false;
-		bUseControllerRotationRoll = false;
-		bUseControllerRotationPitch = false;
-		m_bIsLockOn = false;
-		return;
-	}
-
-	m_bIsLockOn = true;
-	GetCharacterMovement()->bOrientRotationToMovement = false;
-	bUseControllerRotationYaw = true;
-	bUseControllerRotationRoll = true;
-	bUseControllerRotationPitch = true;
-
-	FVector vTargetLoc = m_pCurrentLockOnTarget->GetActorLocation();
-	FVector vCameraLoc = m_pSpringArm->GetComponentLocation();
-	FVector vDir = (vTargetLoc - vCameraLoc).GetSafeNormal();
-
-	FRotator rTargetRot = vDir.Rotation();
-
-	rTargetRot.Pitch -= 15.f;
-
-	FRotator rNewRot = FMath::RInterpTo(m_pSpringArm->GetComponentRotation(), rTargetRot, fDelta, 3.f);
-
-	Controller->SetControlRotation(rNewRot);
-}
-
-
 bool AC_PlayerCharacter::isLockOn() const
 {
-	if (!m_LockOnComp)
-		return false;
-
-	return m_LockOnComp->isLockOn();
+	return m_LockOnComp && m_LockOnComp->isLockOn();
 }
 
 bool AC_PlayerCharacter::canGrabWallAtLoc(const FVector& checkLoc)
@@ -799,14 +704,23 @@ void AC_PlayerCharacter::applyExecutionWarp(const FS_ExecutionContext& Context)
 
 void AC_PlayerCharacter::applyLockOnRotation(float DeltaTime)
 {
-	FRotator TargetRot;
-	if (!m_LockOnComp->getLockOnRotation(TargetRot))
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+
+	if (m_eState == E_CombatState::Executing)
 		return;
 
-	GetCharacterMovement()->bOrientRotationToMovement = false;
-	bUseControllerRotationYaw = true;
+	if (!m_LockOnComp || !Controller || !m_pSpringArm)
+		return;
 
-	FRotator NewRot = FMath::RInterpTo(
+	FRotator TargetRot;
+	if (!m_LockOnComp->getLockOnRotation(
+		m_pSpringArm->GetComponentLocation(),
+		TargetRot))
+	{
+		return;
+	}
+
+	const FRotator NewRot = FMath::RInterpTo(
 		Controller->GetControlRotation(),
 		TargetRot,
 		DeltaTime,
@@ -814,6 +728,30 @@ void AC_PlayerCharacter::applyLockOnRotation(float DeltaTime)
 	);
 
 	Controller->SetControlRotation(NewRot);
+}
+
+void AC_PlayerCharacter::applyLockOnCharacterRotation(float DeltaTime)
+{
+	AActor* Target = m_LockOnComp
+		? m_LockOnComp->getCurrentTarget()
+		: nullptr;
+
+	if (!Target)
+		return;
+
+	FVector ToTarget = Target->GetActorLocation() - GetActorLocation();
+	ToTarget.Z = 0.f;
+
+	FRotator TargetRot = ToTarget.Rotation();
+
+	FRotator NewRot = FMath::RInterpTo(
+		GetActorRotation(),
+		TargetRot,
+		DeltaTime,
+		10.f
+	);
+
+	SetActorRotation(NewRot);
 }
 
 void AC_PlayerCharacter::releaseLockOnState()

@@ -40,21 +40,39 @@ void UC_BTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 
 	AActor* pTarget = DetectComp->getDetectedTarget();
 
-	if (!pTarget)
+	if (!pTarget || !DetectComp->isDetecting())
 	{
 		BB->ClearValue(AC_EnemyController::TargetActorKey);
 		BB->SetValueAsFloat(AC_EnemyController::DistKey, -1.f);
 		return;
 	}
 
-	if (DetectComp->isDetecting())
-	{
-		BB->SetValueAsObject(AC_EnemyController::TargetActorKey, pTarget);
-	}
+
+
+	BB->SetValueAsObject(AC_EnemyController::TargetActorKey, pTarget);
+	
+
+	float Dist =
+		FVector::Dist(
+			pOwner->GetActorLocation(),
+			pTarget->GetActorLocation());
+
+	float OwnerRadius = 0.f, OwnerHalf = 0.f;
+	float TargetRadius = 0.f, TargetHalf = 0.f;
+
+	pOwner->GetSimpleCollisionCylinder(OwnerRadius, OwnerHalf);
+	pTarget->GetSimpleCollisionCylinder(TargetRadius, TargetHalf);
+
+	Dist -= (OwnerRadius + TargetRadius);
+	Dist = FMath::Max(0.f, Dist);
+
+	BB->SetValueAsFloat(
+		AC_EnemyController::DistKey,
+		Dist);
 	
 
 
-	if (pTarget)
+	/*if (pTarget)
 	{
 		const float fDist = FVector::Dist(pOwner->GetActorLocation(), pTarget->GetActorLocation());
 
@@ -63,5 +81,5 @@ void UC_BTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	else
 	{
 		BB->SetValueAsFloat(AC_EnemyController::DistKey, -1.f);
-	}
+	}*/
 }

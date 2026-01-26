@@ -16,11 +16,21 @@
 #include "ProjectARPG/ActorComponents/C_AttackComponent.h"
 #include "ProjectARPG/AI/C_AIAttackComponent.h"
 #include "ProjectARPG/Interface/C_ExecutionRequester.h"
+#include "ProjectARPG/ActorComponents/C_LockOnComponent.h"
+#include "Components/BillboardComponent.h"
 
 
 AC_EnemyCharacter::AC_EnemyCharacter()
 {
 	m_AIAttackComp = CreateDefaultSubobject<UC_AIAttackComponent>(TEXT("EnemyAttackComp"));
+
+	m_wHpBarCom = CreateDefaultSubobject<UWidgetComponent>(TEXT("HpBarComp"));
+	m_wHpBarCom->SetupAttachment(RootComponent);
+	m_wHpBarCom->SetWidgetSpace(EWidgetSpace::Screen);
+
+	m_wLockOnCom = CreateDefaultSubobject<UWidgetComponent>(TEXT("LockOnComp"));
+	m_wLockOnCom->SetupAttachment(RootComponent);
+	m_wLockOnCom->SetWidgetSpace(EWidgetSpace::Screen);
 }
 
 void AC_EnemyCharacter::BeginPlay()
@@ -31,15 +41,33 @@ void AC_EnemyCharacter::BeginPlay()
 
 	m_pPlayer = Cast< AC_CombatCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
 
+	if (m_wLockOnCom)
+		m_wLockOnCom->SetVisibility(false);
+
+	if (m_wHpBarCom)
+		m_wHpBarCom->SetVisibility(false);
+
 	applyCombatProfile();
 
 	setExecutionHintVisible(false);
-	showHpBar(false);
 
-	if (m_AIAttackComp == nullptr)
-		UE_LOG(LogTemp, Error,TEXT("m_EnemyAttackComp NULL!!!"))
-	else
-		UE_LOG(LogTemp, Error, TEXT("m_EnemyAttackComp NOT NULL!!!"))
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		if (APawn* PlayerPawn = PC->GetPawn())
+		{
+			if (UC_LockOnComponent* LockOn =
+				PlayerPawn->FindComponentByClass<UC_LockOnComponent>())
+			{
+				LockOn->OnLockOnStarted.AddDynamic(
+					this, &AC_EnemyCharacter::onLockOnStarted);
+
+				LockOn->OnLockOnEnded.AddDynamic(
+					this, &AC_EnemyCharacter::onLockOnEnded);
+			}
+		}
+	}
+
+
 
 }
 
@@ -295,8 +323,6 @@ void AC_EnemyCharacter::endAttack()
 
 void AC_EnemyCharacter::showHpBar(bool bShow)
 {
-	m_wHpBarCom = GetComponentByClass<UWidgetComponent>();
-
 	if (m_eEnemyTier == E_EnemyTier::Boss || m_eEnemyTier == E_EnemyTier::MiniBoss)
 		return;
 
@@ -529,4 +555,22 @@ void AC_EnemyCharacter::onParried_Implementation(AActor* ParryOwner)
 {
 	Super::onParried_Implementation(ParryOwner);
 
+}
+
+void AC_EnemyCharacter::onLockOnStarted(AActor* Target)
+{
+	if (Target != this)
+		return;
+
+	if (m_wLockOnCom)
+		m_wLockOnCom->SetVisibility(true);
+}
+
+void AC_EnemyCharacter::onLockOnEnded(AActor* Target)
+{
+	if (Target != this)
+		return;
+
+	if (m_wLockOnCom)
+		m_wLockOnCom->SetVisibility(false);
 }

@@ -44,6 +44,7 @@ private:
 	void clearCurrentTarget();
 	bool selectExecution(E_ExecutionType Type, struct FS_ExecutionContext& OutContext);
 
+	void alignExecutionTransform(FS_ExecutionContext& Context);
 	bool isValidCurrentTarget() const;
 	bool isTargetInExecutionRange() const;
 	bool isBehindTarget(AActor* Target);

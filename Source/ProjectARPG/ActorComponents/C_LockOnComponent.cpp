@@ -3,6 +3,7 @@
 
 #include "C_LockOnComponent.h"
 #include "Engine/OverlapResult.h"
+#include "ProjectARPG/Character/C_CombatCharacter.h"
 
 // Sets default values for this component's properties
 UC_LockOnComponent::UC_LockOnComponent()
@@ -30,7 +31,16 @@ void UC_LockOnComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	if (m_CurrentTarget.IsValid())
+	{
+		AC_CombatCharacter* LockTarget =
+			Cast<AC_CombatCharacter>(m_CurrentTarget.Get());
+
+		if (LockTarget && LockTarget->isDead())
+		{
+			clearLockOn();
+		}
+	}
 }
 
 void UC_LockOnComponent::toggleLockOn()
@@ -46,13 +56,19 @@ void UC_LockOnComponent::toggleLockOn()
 		return;
 
 	m_CurrentTarget = Target;
-
+	OnLockOnStarted.Broadcast(Target);
 
 }
 
 void UC_LockOnComponent::clearLockOn()
 {
-	m_CurrentTarget = nullptr;
+	if (m_CurrentTarget.IsValid())
+	{
+		AActor* OldTarget = m_CurrentTarget.Get();
+		m_CurrentTarget = nullptr;
+
+		OnLockOnEnded.Broadcast(OldTarget);
+	}
 }
 
 bool UC_LockOnComponent::isLockOn() const
@@ -65,22 +81,14 @@ AActor* UC_LockOnComponent::getCurrentTarget() const
 	return m_CurrentTarget.Get();
 }
 
-bool UC_LockOnComponent::getLockOnRotation(FRotator& OutRot) const
+bool UC_LockOnComponent::getLockOnRotation(const FVector& CameraLocation, FRotator& OutRot) const
 {
 	if (!m_CurrentTarget.IsValid())
 		return false;
 
-	APawn* OwnerPawn = Cast<APawn>(GetOwner());
-	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+	FVector Dir =
+		(m_CurrentTarget->GetActorLocation() - CameraLocation).GetSafeNormal();
 
-	if (!PC)
-		return false;
-
-	FVector CamLoc;
-	FRotator CamRot;
-	PC->GetPlayerViewPoint(CamLoc, CamRot);
-
-	FVector Dir = (m_CurrentTarget->GetActorLocation() - CamLoc).GetSafeNormal();
 	OutRot = Dir.Rotation();
 	OutRot.Pitch -= 15.f;
 
@@ -98,13 +106,12 @@ AActor* UC_LockOnComponent::findTarget()
 
 	FVector CamLoc;
 	FRotator CamRot;
-
 	PC->GetPlayerViewPoint(CamLoc, CamRot);
 
 	const FVector CamForward = CamRot.Vector();
 
-	TArray<FOverlapResult> Results{};
-	FCollisionQueryParams Params{};
+	TArray<FOverlapResult> Results;
+	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(m_OwnerPawn);
 
 	bool bHit = GetWorld()->OverlapMultiByChannel(
@@ -119,12 +126,12 @@ AActor* UC_LockOnComponent::findTarget()
 	if (!bHit)
 		return nullptr;
 
-	AActor* BestTarget = nullptr;
+	AC_CombatCharacter* BestTarget = nullptr;
 	float BestScore = -1.f;
 
 	for (auto& Hit : Results)
 	{
-		AActor* Target = Hit.GetActor();
+		AC_CombatCharacter* Target = Cast<AC_CombatCharacter>(Hit.GetActor());
 		if (!Target)
 			continue;
 

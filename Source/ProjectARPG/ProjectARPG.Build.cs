@@ -9,6 +9,6 @@ public class ProjectARPG : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", 
-			"NavigationSystem", "UMG", "Niagara", "CableComponent"});
+			"NavigationSystem", "UMG", "Niagara", "CableComponent", "Slate", "SlateCore"});
 	}
 }

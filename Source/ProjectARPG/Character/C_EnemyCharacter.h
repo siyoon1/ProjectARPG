@@ -85,6 +85,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Widget", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UWidgetComponent> m_wHpBarCom;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Widget", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UWidgetComponent> m_wLockOnCom;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	E_EnemyTier m_eEnemyTier;
 
@@ -239,4 +242,11 @@ public:
 	void takeDamage_Implementation(float Damage, float PostureDamage, AActor* pAttacker) override;
 
 	void onParried_Implementation(AActor* ParryOwner) override;
+
+
+	// ¶ô¿Â
+	UFUNCTION()
+	void onLockOnStarted(AActor* Target);
+	UFUNCTION()
+	void onLockOnEnded(AActor* Target);
 };

@@ -95,10 +95,6 @@ private:
 	float m_fDefaultJumpVelocity = 560.f;
 	float m_fDefaultAirControl = 0.35f;
 
-	//플레이어 락온 관련 변수
-	AC_CombatCharacter* m_pCurrentLockOnTarget{};
-	bool m_bIsLockOn = false;
-
 	//플레이어 클라이밍
 	FVector2D m_vCurrentMoveInput{};
 	FVector m_vWallHitLocation{};
@@ -160,12 +156,6 @@ private:
 
 	//전방에 적 찾기
 	AActor* getCurrentEnemy();
-
-	//락온 대상 찾기
-	AC_CombatCharacter* findLockOnTarget();
-
-	//락온 지정
-	void setLockOn(float fDelta);
 	
 	bool canGrabWallAtLoc(const FVector& checkLoc);
 
@@ -178,6 +168,7 @@ private:
 	void applyExecutionWarp(const struct FS_ExecutionContext& Context);
 
 	void applyLockOnRotation(float DeltaTime);
+	void applyLockOnCharacterRotation(float DeltaTime);
 
 	void releaseLockOnState();
 

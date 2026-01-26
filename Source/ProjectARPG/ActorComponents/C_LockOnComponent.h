@@ -18,7 +18,7 @@ class PROJECTARPG_API UC_LockOnComponent : public UActorComponent
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "LockOn")
-	float m_DetectRadius = 500.f;
+	float m_DetectRadius = 1000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "LockOn")
 	TEnumAsByte<ECollisionChannel> m_DetectChannel = ECC_GameTraceChannel3;
@@ -30,10 +30,10 @@ private:
 	APawn* m_OwnerPawn;
 
 public:
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnLockOnTarget OnLockOnStarted;
 
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnLockOnTarget OnLockOnEnded;
 
 public:	
@@ -55,7 +55,7 @@ public:
 	bool isLockOn() const;
 	AActor* getCurrentTarget() const;
 
-	bool getLockOnRotation(FRotator& OutRot) const;
+	bool getLockOnRotation(const FVector& CameraLocation, FRotator& OutRot) const;
 
 private:
 	AActor* findTarget();

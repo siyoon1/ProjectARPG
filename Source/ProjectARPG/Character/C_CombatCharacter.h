@@ -151,9 +151,7 @@ public:
 	TObjectPtr<USceneComponent> m_pTraceEnd;
 
 	UPROPERTY(BlueprintAssignable, Category = "Status")
-	FOnLifeNodeChanged m_OnLifeNodeChanged;
-
-	
+	FOnLifeNodeChanged m_OnLifeNodeChanged;	
 
 	UPROPERTY()
 	TObjectPtr<class AC_PlayerCameraManager> m_CamMgr;
@@ -213,6 +211,8 @@ public:
 	void applyAttack(const FS_AttackData& sData);
 	const FS_AttackData* getAttackData(FName RowName) const;
 	const FS_AttackData* getCurrentAttackData() const;
+
+	void applyHitPushBack(const FVector& From, float Strength);
 
 
 	// °¡µå

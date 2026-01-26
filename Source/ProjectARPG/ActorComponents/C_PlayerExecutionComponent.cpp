@@ -48,6 +48,29 @@ void UC_PlayerExecutionComponent::updateExecutionTarget()
 	findNewExecutionTarget();
 }
 
+void UC_PlayerExecutionComponent::alignExecutionTransform(FS_ExecutionContext& Context)
+{
+	ACharacter* Player = Cast<ACharacter>(Context.Instigator);
+	ACharacter* Enemy = Cast<ACharacter>(Context.Victim);
+
+	if (!Player || !Enemy)
+		return;
+
+	// °Å¸® °è»ê (Ä¸½¶ ±â¹Ý)
+	const float Dist =
+		Player->GetSimpleCollisionRadius() +
+		Enemy->GetSimpleCollisionRadius() +
+		10.f;
+
+	const FVector Forward = Player->GetActorForwardVector();
+	const FVector PlayerLoc = Player->GetActorLocation();
+
+	const FVector EnemyLoc = PlayerLoc + Forward * Dist;
+
+	// À§Ä¡ ½º³À
+	Enemy->SetActorLocation(EnemyLoc);
+}
+
 bool UC_PlayerExecutionComponent::isValidCurrentTarget() const
 {
 	if (!m_CurrentTargetActor.IsValid() || !m_CurrentTarget)
@@ -203,6 +226,8 @@ void UC_PlayerExecutionComponent::forceExecute(APawn* ExecutionInstigator, APawn
 	Context.Instigator = Player;
 	Context.Victim = Victim;
 
+	alignExecutionTransform(Context);
+
 	Player->playPlayerExecutionMontage(Context);
 	Target->onExecutionStarted(Player, Context);
 
@@ -229,6 +254,8 @@ void UC_PlayerExecutionComponent::performExecution(APawn* Instigator, APawn* Vic
 
 	Context.Instigator = Player;
 	Context.Victim = Victim;
+
+	alignExecutionTransform(Context);
 
 	Player->playPlayerExecutionMontage(Context);
 	Target->onExecutionStarted(Player, Context);
