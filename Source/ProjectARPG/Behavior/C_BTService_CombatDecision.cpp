@@ -34,19 +34,6 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 		return;
 	}
 
-	if (pEnemy->isGuard())
-	{
-		// 가드 해제 가능하면 다음 행동으로 넘김
-		if (pEnemy->canReleaseGuard())
-		{
-			BB->SetValueAsEnum(
-				AC_EnemyController::IntentKey,
-				(uint8)E_CombatIntent::None);
-		}
-
-		return;
-	}
-
 	AActor* Target =
 		Cast<AActor>(BB->GetValueAsObject("TargetActor"));
 
@@ -108,8 +95,28 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 
 	if (LastIntent == E_CombatIntent::Guard)
 	{
-		GuardW *= 0.2f;
-		AttackW *= 1.2f;
+		GuardW *= 0.f;
+		AttackW *= 1.4f;
+	}
+
+	if (pEnemy->isGuard())
+	{
+		if (pEnemy->canReleaseGuard())
+		{
+			pEnemy->endGuard();
+
+			BB->SetValueAsEnum(
+				AC_EnemyController::IntentKey,
+				(uint8)E_CombatIntent::None);
+			return;
+		}
+		else
+		{
+			BB->SetValueAsEnum(
+				AC_EnemyController::IntentKey,
+				(uint8)E_CombatIntent::None);
+			return;
+		}
 	}
 
 	if (UC_AIAttackComponent* AIAtk =
@@ -120,11 +127,6 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 			AttackW = 0.f;
 			RepoW *= 1.2f;
 		}
-	}
-
-	if (Dist > Profile.fPreferredRange * 1.1f)
-	{
-		RepoW = 0.f;
 	}
 
 	const float Sum = AttackW + GuardW + RepoW;
@@ -138,8 +140,6 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 		(Pick < AttackW + GuardW) ? E_CombatIntent::Guard :
 		E_CombatIntent::Reposition;
 
-
-
 	BB->SetValueAsEnum(
 		AC_EnemyController::IntentKey,
 		(uint8)Intent);
@@ -147,5 +147,14 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	BB->SetValueAsEnum(
 		AC_EnemyController::LastIntentKey,
 		(uint8)Intent);
+
+	if (Dist < Profile.fPreferredRange &&
+		pEnemy->getPlayerAttackChain() == 0)
+	{
+		BB->SetValueAsEnum(
+			AC_EnemyController::IntentKey,
+			(uint8)E_CombatIntent::Attack);
+		return;
+	}
 	
 }

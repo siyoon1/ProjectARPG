@@ -10,6 +10,9 @@
 #include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
 #include "ProjectARPG/ActorComponents/C_AttackComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
+#include "Kismet/GameplayStatics.h"
 
 
 AC_CombatCharacter::AC_CombatCharacter()
@@ -44,6 +47,14 @@ void AC_CombatCharacter::BeginPlay()
 
 	if (m_ParryCom)
 		m_ParryCom->m_OnParryWindowEnded.AddDynamic(this, &AC_CombatCharacter::onParryWindowEnded);
+
+	if (m_AttackComp)
+	{
+		m_AttackComp->m_OnAttackParried.AddDynamic(
+			this,
+			&AC_CombatCharacter::onAttackParried
+		);
+	}
 }
 
 
@@ -118,6 +129,32 @@ void AC_CombatCharacter::endHitStop()
 void AC_CombatCharacter::setRuntimeParryDir(E_ParryDirection eDir)
 {
 	m_RuntimeParryDir = eDir;
+}
+
+void AC_CombatCharacter::onAttackParried(AC_CombatCharacter* Attacker, AC_CombatCharacter* Defender, FVector HitPoint)
+{
+
+	if (!m_ParryVFX)
+		return; 
+
+	FVector Dir = (Defender->GetActorLocation() - Attacker->GetActorLocation()).GetSafeNormal();
+	FRotator FXRot = Dir.Rotation();
+
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(),
+		m_ParryVFX,
+		HitPoint,
+		FXRot,
+		FVector(1.f),
+		true,
+		true
+	);
+
+	UGameplayStatics::PlaySoundAtLocation(
+		this,
+		m_ParrySound,
+		HitPoint
+	);
 }
 
 void AC_CombatCharacter::applyHitFeedback(E_HitResult HitResult, AActor* Attacker)
@@ -299,11 +336,12 @@ const FS_AttackData* AC_CombatCharacter::getCurrentAttackData() const
 
 bool AC_CombatCharacter::startGuard()
 {
-	if (!canAct())
+	if (m_ActionState == E_ActionState::Stunned ||
+		m_ActionState == E_ActionState::Dead)
 		return false;
 
 	
-	enterCombatMode(E_CombatMode::Guarding, E_ActionState::Locked);
+	enterCombatMode(E_CombatMode::Guarding, E_ActionState::Free);
 	m_bIsGuarding = true;
 	m_fGuardStartTime = GetWorld()->GetTimeSeconds();
 

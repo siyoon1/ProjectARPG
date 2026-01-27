@@ -91,7 +91,7 @@ void UC_AttackComponent::tickTrace()
 	}
 }
 
-void UC_AttackComponent::applyHit(AActor* HitActor)
+void UC_AttackComponent::applyHit(AActor* HitActor, const FHitResult& Hit)
 {
 	if (!m_Owner || !m_CurrentAttackData)
 		return;
@@ -111,6 +111,14 @@ void UC_AttackComponent::applyHit(AActor* HitActor)
 		if (ParryResult.Result == E_ParryResult::Parried)
 		{
 			m_bPostureBrokenByParry = true;
+
+			const FVector ParryPoint = Hit.ImpactPoint;
+
+			m_OnAttackParried.Broadcast(
+				m_Owner,
+				Target,
+				ParryPoint
+			);
 
 			UE_LOG(LogTemp, Warning, TEXT("[AttackComponent] Parried by %s"),
 				*Target->GetName());
@@ -186,7 +194,7 @@ void UC_AttackComponent::sweepAttack(const FVector& Start, const FVector& End)
 				continue;
 
 			m_HitActors.Add(HitActor);
-			applyHit(HitActor);
+			applyHit(HitActor, Hit);
 
 			DrawDebugSphere(
 				GetWorld(),

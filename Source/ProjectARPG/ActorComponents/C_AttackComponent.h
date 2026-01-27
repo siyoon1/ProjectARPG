@@ -7,6 +7,13 @@
 #include "ProjectARPG/Data/C_AttackData.h"
 #include "C_AttackComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
+	FOnAttackParried,
+	AC_CombatCharacter*, Attacker,
+	AC_CombatCharacter*, Defender,
+	FVector, HitPoint
+);
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTARPG_API UC_AttackComponent : public UActorComponent
@@ -33,6 +40,10 @@ protected:
 
 	float m_BladeLength = 0.f;
 
+public:
+	UPROPERTY(BlueprintAssignable)
+	FOnAttackParried m_OnAttackParried;
+
 public:	
 	// Sets default values for this component's properties
 	UC_AttackComponent();
@@ -58,7 +69,7 @@ public:
 	inline bool isParryBroken() const { return m_bPostureBrokenByParry; }
 
 private:
-	void applyHit(AActor* HitActor);
+	void applyHit(AActor* HitActor, const FHitResult& Hit);
 
 	// Sweep °øÅë
 	void sweepAttack(const FVector& Start, const FVector& End);

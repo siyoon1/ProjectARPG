@@ -564,7 +564,7 @@ void AC_PlayerCharacter::onParrySuccess_Implementation(AActor* ParryTarget, E_Pa
 		applyHitStop(0.9f, 0.2f);
 		m_CamMgr->playHitCameraShake(0.5f);
 	}
-		
+
 }
 
 void AC_PlayerCharacter::playPlayerExecutionMontage(const FS_ExecutionContext& Context)

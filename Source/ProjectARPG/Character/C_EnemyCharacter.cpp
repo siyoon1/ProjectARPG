@@ -158,11 +158,11 @@ void AC_EnemyCharacter::endGuard()
 
 	Super::endGuard();
 
+	m_EnemyActionState = E_EnemyActionState::Idle;
+
 	if (m_bCounterWindowOpen && isBoss())
 	{
 		m_bCounterWindowOpen = false;
-
-		m_EnemyActionState = E_EnemyActionState::Idle;
 
 		if (m_AIAttackComp)
 		{
@@ -196,7 +196,8 @@ bool AC_EnemyCharacter::canReleaseGuard() const
 	if (m_bCounterWindowOpen)
 		return true;
 
-	return false;
+	const float GuardHoldTime = 0.6f;
+	return GetWorld()->GetTimeSeconds() - m_fGuardStartTime >= GuardHoldTime;
 }
 
 

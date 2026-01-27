@@ -45,6 +45,16 @@ bool UC_AIAttackComponent::tryExecuteAttack(float fDist)
 	if (!decideNextAttack(fDist, AttackRow))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] decideNextAttack FAILED"));
+
+		if (fDist < 0.4f)
+		{
+			m_OwnerEnemy->playStepBack(); // ¹ÐÂø ½Ã °Å¸® ¹ú¸®±â
+		}
+		else
+		{
+			m_OwnerEnemy->finishAction(0.3f);
+		}
+
 		return false;
 	}
 
@@ -55,6 +65,11 @@ bool UC_AIAttackComponent::tryExecuteAttack(float fDist)
 
 void UC_AIAttackComponent::getAttackCandidates(float fDist, TArray<FName>& OutCandidates) const
 {
+	float EffectiveDist = fDist;
+
+	if (EffectiveDist < 0.3f)
+		EffectiveDist = 0.3f;
+
 	UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] getAttackCandidates Dist=%.1f"), fDist);
 
 	OutCandidates.Empty();
@@ -79,7 +94,7 @@ void UC_AIAttackComponent::getAttackCandidates(float fDist, TArray<FName>& OutCa
 		if (!canUseAttack(Row.Key))
 			continue;
 
-		if (!isAttackInRange(*Data, fDist))
+		if (!isAttackInRange(*Data, EffectiveDist))
 			continue;
 
 		OutCandidates.Add(Row.Key);
@@ -150,13 +165,15 @@ bool UC_AIAttackComponent::canUseAttack(FName Row) const
 bool UC_AIAttackComponent::isAttackInRange(const FS_AttackData& Data, float fDist) const
 {
 	return fDist >= Data.AI.MinRange &&
-		fDist <= Data.AI.MaxRange;
+		fDist <= FMath::Max(Data.AI.MaxRange, Data.AI.MinRange + 0.1f);
 }
 
 bool UC_AIAttackComponent::hasExecutableAttack(float Dist) const
 {
+	float EffectiveDist = FMath::Max(Dist, 0.3f);
+
 	TArray<FName> Candidates;
-	getAttackCandidates(Dist, Candidates);
+	getAttackCandidates(EffectiveDist, Candidates);
 	return Candidates.Num() > 0;
 }
 

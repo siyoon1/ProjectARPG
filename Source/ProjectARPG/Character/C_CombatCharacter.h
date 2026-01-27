@@ -77,6 +77,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<class UC_ParryComponent> m_ParryCom;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ParryVFX", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UNiagaraSystem> m_ParryVFX;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ParryVFX", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USoundBase> m_ParrySound;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	E_ActionState m_ActionState = E_ActionState::Free;
 
@@ -239,8 +245,6 @@ public:
 	UFUNCTION()
 	void onParryWindowEnded();
 
-	
-
 
 	UFUNCTION(BlueprintCallable)
 	float getHp() const;
@@ -253,6 +257,11 @@ public:
 
 
 	void setRuntimeParryDir(E_ParryDirection eDir);
+
+	UFUNCTION()
+	void onAttackParried(AC_CombatCharacter* Attacker,
+		AC_CombatCharacter* Defender,
+		FVector HitPoint);
 
 private:
 	void applyHitFeedback(E_HitResult HitResult, AActor* Attacker);
