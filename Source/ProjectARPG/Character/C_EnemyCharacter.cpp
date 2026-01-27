@@ -37,6 +37,8 @@ void AC_EnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	m_CurrentLifeNodes = m_MaxLifeNodes;
+
 	m_DetectCom = GetComponentByClass<UC_DetectComponent>();
 
 	m_pPlayer = Cast< AC_CombatCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
@@ -71,24 +73,25 @@ void AC_EnemyCharacter::BeginPlay()
 
 }
 
-bool AC_EnemyCharacter::guardForDuration(float fTime)
+void AC_EnemyCharacter::Tick(float DeltaTime)
 {
-	if (!canDecideAction())
-		return false;
+	Super::Tick(DeltaTime);
 
-	beginAction();
+	if (isBoss() && m_bIsGuarding)
+	{
+		const float Elapsed =
+			GetWorld()->GetTimeSeconds() - m_fGuardStartTime;
 
-	setGuard(true);
+		if (Elapsed > m_GuardMaxTime + 0.5f)
+		{
+			UE_LOG(LogTemp, Warning,
+				TEXT("[GuardFailSafe] Force end guard : %s"), *GetName());
 
-	GetWorldTimerManager().SetTimer(
-		m_guardHandle,
-		this,
-		&AC_EnemyCharacter::endGuard,
-		fTime,
-		false
-	);
+			endGuard();
+			m_EnemyActionState = E_EnemyActionState::Idle;
+		}
+	}
 
-	return true;
 }
 
 void AC_EnemyCharacter::applyCombatProfile()
@@ -135,10 +138,11 @@ void AC_EnemyCharacter::applyExecutionFacing(const FS_ExecutionContext& Context)
 
 bool AC_EnemyCharacter::startGuard()
 {
-	if (!canDecideAction())
+	if (isGuard())
+	{
+		finishAction(0.2f);
 		return false;
-
-	beginAction();
+	}
 
 	if (!Super::startGuard())
 		return false;
@@ -154,6 +158,23 @@ void AC_EnemyCharacter::endGuard()
 
 	Super::endGuard();
 
+	if (m_bCounterWindowOpen && isBoss())
+	{
+		m_bCounterWindowOpen = false;
+
+		m_EnemyActionState = E_EnemyActionState::Idle;
+
+		if (m_AIAttackComp)
+		{
+			const float Dist = getDistToTarget();
+			if (m_AIAttackComp->tryExecuteAttack(Dist))
+			{
+				beginAction();
+				return;
+			}
+		}
+	}
+
 	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
 	finishAction(Cooldown);
 }
@@ -168,8 +189,14 @@ bool AC_EnemyCharacter::canReleaseGuard() const
 	if (Elapsed >= m_CurrentCombatProfile.fGuardMaxTime)
 		return true;
 
-	// 중간 구간: AI 판단 여지
-	return FMath::RandRange(0.f, 1.f) < 0.02f;
+	if (m_PlayerAttackChain >= 2)
+		return true;
+
+	// 카운터 윈도우 열리면 바로 반격
+	if (m_bCounterWindowOpen)
+		return true;
+
+	return false;
 }
 
 
@@ -274,11 +301,7 @@ bool AC_EnemyCharacter::playAttack(const FS_AttackData* AttackData)
 }
 
 
-void AC_EnemyCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 
-}
 
 const FS_AttackRuntimeState* AC_EnemyCharacter::getAttackRuntimeState(FName Row) const
 {
@@ -295,6 +318,13 @@ void AC_EnemyCharacter::markAttackUsed(FName Row, float Cooldown)
 bool AC_EnemyCharacter::playStepBack()
 {
 	if (!canDecideAction())
+		return false;
+
+	const float Dist = getDistToTarget();
+	const float MaxSafeDist =
+		m_CurrentCombatProfile.fPreferredRange * 1.1f;
+
+	if (Dist >= MaxSafeDist)
 		return false;
 
 	beginAction();
@@ -349,6 +379,11 @@ void AC_EnemyCharacter::onCombatStarted()
 
 	setInCombat(true);
 	showHpBar(true);
+
+	if (m_eEnemyTier >= E_EnemyTier::MiniBoss)
+	{
+		m_onBossStateChanged.Broadcast(this, true);
+	}
 }
 
 void AC_EnemyCharacter::onCombatEnded()
@@ -357,6 +392,11 @@ void AC_EnemyCharacter::onCombatEnded()
 
 	setInCombat(false);
 	showHpBar(false);
+
+	if (m_eEnemyTier >= E_EnemyTier::MiniBoss)
+	{
+		m_onBossStateChanged.Broadcast(this, false);
+	}
 }
 
 float AC_EnemyCharacter::getNextActionTime() const
@@ -429,7 +469,59 @@ void AC_EnemyCharacter::onExecutionStarted(APawn* ExecutionInstigator, const FS_
 
 void AC_EnemyCharacter::onExecutionFinished(APawn* ExecutionInstigator)
 {
-	onDeath();
+	if (isDead())
+		return;
+
+	if (m_CurrentLifeNodes > 0 && m_eEnemyTier >= E_EnemyTier::MiniBoss)
+	{
+		m_CurrentLifeNodes--;
+
+		m_OnLifeNodeChanged.Broadcast(m_CurrentLifeNodes, m_MaxLifeNodes);
+
+		if (m_CurrentLifeNodes <= 0)
+		{
+			onDeath();
+			return;
+		}
+
+		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+		{
+			MoveComp->SetMovementMode(MOVE_Walking);
+		}
+
+		if (AAIController* AICon = Cast<AAIController>(GetController()))
+		{
+			if (AICon->BrainComponent)
+			{
+				AICon->BrainComponent->RestartLogic();
+			}
+		}
+
+		m_bIsPostureBroken = false;
+
+		GetWorldTimerManager().ClearTimer(m_timerHandle_PostureBroken);
+
+
+		enterCombatMode(E_CombatMode::None, E_ActionState::Free);
+
+		if (m_StatComp)
+			m_StatComp->initStat();
+
+		if (isGuard())
+		{
+			Super::endGuard();
+		}
+
+		m_EnemyActionState = E_EnemyActionState::Idle;
+
+		m_DetectCom->forceDetect(ExecutionInstigator);
+	}
+	else
+	{
+		onDeath();
+	}
+
+	
 }
 
 void AC_EnemyCharacter::setExecutionHintVisible(bool bVisible)
@@ -504,6 +596,11 @@ void AC_EnemyCharacter::setInCombat(bool bCombat)
 	}
 }
 
+float AC_EnemyCharacter::getGuardPostureMultiplier() const
+{
+	return isBoss() ? 1.2f : 0.7f;
+}
+
 bool AC_EnemyCharacter::isGuard() const
 {
 	return Super::isGuard();
@@ -576,4 +673,41 @@ void AC_EnemyCharacter::onLockOnEnded(AActor* Target)
 
 	if (m_wLockOnCom)
 		m_wLockOnCom->SetVisibility(false);
+}
+
+int32 AC_EnemyCharacter::getPlayerAttackChain() const
+{
+	return m_PlayerAttackChain;
+}
+
+const bool AC_EnemyCharacter::isCounterWindowOpen() const
+{
+	return m_bCounterWindowOpen;
+}
+
+void AC_EnemyCharacter::openCounterWindow()
+{
+	if (m_bCounterWindowOpen)
+		return;
+
+	m_bCounterWindowOpen = true;
+
+	if (isBoss() && isGuard())
+	{
+		endGuard();
+		return;
+	}
+
+	GetWorldTimerManager().SetTimer(
+		m_CounterWindowTimer,
+		this,
+		&AC_EnemyCharacter::closeCounterWindow,
+		m_CounterWindowTime,
+		false
+	);
+}
+
+void AC_EnemyCharacter::closeCounterWindow()
+{
+	m_bCounterWindowOpen = false;
 }

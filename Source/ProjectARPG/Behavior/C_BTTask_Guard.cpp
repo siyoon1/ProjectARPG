@@ -15,66 +15,71 @@ UC_BTTask_Guard::UC_BTTask_Guard()
 
 EBTNodeResult::Type UC_BTTask_Guard::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-    Super::ExecuteTask(OwnerComp, NodeMemory);
+	Super::ExecuteTask(OwnerComp, NodeMemory);
 
-    CachedOwnerComp = &OwnerComp;
+	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+	if (!BB)
+		return EBTNodeResult::Failed;
 
-    UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-    if (!BB)
-        return EBTNodeResult::Failed;
+	AAIController* AICon = OwnerComp.GetAIOwner();
+	if (!AICon)
+		return EBTNodeResult::Failed;
 
-    AAIController* AICon = OwnerComp.GetAIOwner();
-    if (!AICon)
-        return EBTNodeResult::Failed;
+	AC_EnemyCharacter* Enemy =
+		Cast<AC_EnemyCharacter>(AICon->GetPawn());
+	if (!Enemy)
+		return EBTNodeResult::Failed;
 
-    AC_EnemyCharacter* Enemy =
-        Cast<AC_EnemyCharacter>(AICon->GetPawn());
-    if (!Enemy)
-        return EBTNodeResult::Failed;
+	// 이미 Guard 중이면 그대로 유지
+	if (!Enemy->isGuard())
+	{
+		if (!Enemy->startGuard())
+			return EBTNodeResult::Failed;
+	}
 
-    UE_LOG(LogTemp, Warning,
-        TEXT("[GuardTask] ExecuteTask start, isGuard=%d"),
-        Enemy->isGuard());
-
-    if (!Enemy->isGuard())
-    {
-        if (!Enemy->startGuard())
-            return EBTNodeResult::Failed;
-    }
-
-    UE_LOG(LogTemp, Warning,
-        TEXT("[GuardTask] startGuard SUCCESS"));
-
-    return EBTNodeResult::InProgress;
+	return EBTNodeResult::InProgress;
 }
 
-void UC_BTTask_Guard::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+void UC_BTTask_Guard::TickTask(
+	UBehaviorTreeComponent& OwnerComp,
+	uint8* NodeMemory,
+	float DeltaSeconds)
 {
-    AAIController* AICon = OwnerComp.GetAIOwner();
-    if (!AICon)
-        return;
+	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+	if (!BB)
+		return;
 
-    AC_EnemyCharacter* Enemy =
-        Cast<AC_EnemyCharacter>(AICon->GetPawn());
-    if (!Enemy)
-        return;
+	AAIController* AICon = OwnerComp.GetAIOwner();
+	if (!AICon)
+		return;
 
+	AC_EnemyCharacter* Enemy =
+		Cast<AC_EnemyCharacter>(AICon->GetPawn());
+	if (!Enemy)
+		return;
 
+	// Intent가 Guard가 아니면 즉시 종료
+	const E_CombatIntent CurrentIntent =
+		(E_CombatIntent)BB->GetValueAsEnum(
+			AC_EnemyController::IntentKey);
 
-    if (!Enemy->canReleaseGuard())
-        return;
+	if (CurrentIntent != E_CombatIntent::Guard)
+	{
+		if (Enemy->isGuard())
+		{
+			Enemy->endGuard();
+		}
 
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
+	}
 
-    Enemy->endGuard();
+	// Enemy 내부 판단으로 Guard 해제
+	if (!Enemy->canReleaseGuard())
+		return;
 
-    if (UBlackboardComponent* BB =
-        OwnerComp.GetBlackboardComponent())
-    {
-        BB->SetValueAsBool(
-            AC_EnemyController::IntentLockedKey,
-            false);
-    }
+	Enemy->endGuard();
 
-    FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+	FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 }
 

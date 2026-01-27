@@ -99,6 +99,7 @@ protected:
 	float m_fTraceRadius = 40.f;
 
 	bool m_bIsTracing = false;
+	
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "trace", meta = (AllowPrivateAccess = "true"))
 	float m_fAttackDamage = 0.f;
@@ -109,6 +110,7 @@ protected:
 	bool m_bCurrentAttackUnblockable = false;
 	bool m_bCurrentAttackCanParry = false;
 	float m_fGuardPushBack = 0.f;
+	float m_fGuardStartTime = 0.f;
 
 	// 생명력 점 (보스용)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -215,6 +217,8 @@ public:
 	bool isGuardingFront(AActor* pAttacker) const;
 	void setGuard(bool bSet);
 	bool isGuard() const;
+
+	virtual float getGuardPostureMultiplier() const;
 
 	
 

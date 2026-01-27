@@ -23,7 +23,6 @@ void AC_CombatCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	m_CurrentLifeNodes = m_MaxLifeNodes;
 
 	if (!m_pTraceStart)
 	{
@@ -306,6 +305,7 @@ bool AC_CombatCharacter::startGuard()
 	
 	enterCombatMode(E_CombatMode::Guarding, E_ActionState::Locked);
 	m_bIsGuarding = true;
+	m_fGuardStartTime = GetWorld()->GetTimeSeconds();
 
 	return true;
 }
@@ -347,6 +347,11 @@ bool AC_CombatCharacter::isGuard() const
 	return m_bIsGuarding;
 }
 
+float AC_CombatCharacter::getGuardPostureMultiplier() const
+{
+	return 0.7f;
+}
+
 bool AC_CombatCharacter::canAct() const
 {
 	return m_ActionState == E_ActionState::Free;
@@ -363,28 +368,6 @@ bool AC_CombatCharacter::isInvincibleAgainst(AActor* pAttacker) const
 
 	return false;
 }
-
-	/*if (isDead())
-		return;
-
-	m_CurrentLifeNodes--;
-
-	m_OnLifeNodeChanged.Broadcast(m_CurrentLifeNodes, m_MaxLifeNodes);
-
-	if (m_CurrentLifeNodes <= 0)
-	{
-		onDeath();
-		return;
-	}
-
-	m_bExecutionAvailable = false;
-	m_bIsPostureBroken = false;
-
-	GetWorldTimerManager().ClearTimer(m_timerHandle_PostureBroken);
-
-
-	m_eState = E_CombatState::Idle;*/
-
 
 float AC_CombatCharacter::getHp() const
 {
@@ -405,12 +388,13 @@ void AC_CombatCharacter::takeDamage_Implementation(float Damage, float PostureDa
 
 	float FinalDamage = Damage;
 	float FinalPostureDamage = PostureDamage;
+	
 
 	switch (HitResult)
 	{
 	case E_HitResult::Guarded:
 		FinalDamage *= 0.2f;
-		FinalPostureDamage *= 0.7f;
+		FinalPostureDamage *= getGuardPostureMultiplier();
 		break;
 
 	case E_HitResult::PostureBroken:

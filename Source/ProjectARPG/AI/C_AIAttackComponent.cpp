@@ -153,6 +153,13 @@ bool UC_AIAttackComponent::isAttackInRange(const FS_AttackData& Data, float fDis
 		fDist <= Data.AI.MaxRange;
 }
 
+bool UC_AIAttackComponent::hasExecutableAttack(float Dist) const
+{
+	TArray<FName> Candidates;
+	getAttackCandidates(Dist, Candidates);
+	return Candidates.Num() > 0;
+}
+
 bool UC_AIAttackComponent::executeAttack(FName Row)
 {
 	if (!m_OwnerEnemy)

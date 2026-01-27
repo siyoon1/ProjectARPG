@@ -105,11 +105,18 @@ private:
 
 	bool m_bCanBeExecuted = false;
 	bool m_bInCombat = false;
-	float m_fGuardStartTime = 0.f;
 	float m_nextActionTime = 0.f;
+	float m_GuardMaxTime = 5.f;
+
+	int32 m_PlayerAttackChain = 0;
+	float m_LastPlayerAttackTime = 0.f;
+	float m_AttackChainResetTime = 1.f;
+	bool m_bCounterWindowOpen = false;
+	float m_CounterWindowTime = 0.4f;
 
 	FTimerHandle m_guardHandle;
 	FTimerHandle m_actionCooldownHandle;
+	FTimerHandle m_CounterWindowTimer;
 
 protected:
 	E_CombatIntent m_CombatIntent;
@@ -195,6 +202,8 @@ public:
 
 	void setInCombat(bool bCombat);
 
+	float getGuardPostureMultiplier() const override;
+
 	
 
 	//행동 실행 API
@@ -218,10 +227,6 @@ public:
 	bool startGuard() override;
 	void endGuard() override;
 	bool canReleaseGuard() const;
-	
-
-	bool guardForDuration(float fTime);
-
 
 	UFUNCTION(BlueprintCallable)
 	bool isGuard() const;
@@ -249,4 +254,9 @@ public:
 	void onLockOnStarted(AActor* Target);
 	UFUNCTION()
 	void onLockOnEnded(AActor* Target);
+
+	int32 getPlayerAttackChain() const;
+	const bool isCounterWindowOpen() const;
+	void openCounterWindow();
+	void closeCounterWindow();
 };

@@ -720,12 +720,18 @@ void AC_PlayerCharacter::applyLockOnRotation(float DeltaTime)
 		return;
 	}
 
-	const FRotator NewRot = FMath::RInterpTo(
-		Controller->GetControlRotation(),
-		TargetRot,
+	FRotator Current = Controller->GetControlRotation();
+
+	FRotator NewRot;
+	NewRot.Yaw = FMath::RInterpTo(
+		FRotator(0.f, Current.Yaw, 0.f),
+		FRotator(0.f, TargetRot.Yaw, 0.f),
 		DeltaTime,
-		3.f
-	);
+		6.f
+	).Yaw;
+
+	NewRot.Pitch = Current.Pitch; // ? ÀÚÀ¯
+	NewRot.Roll = 0.f;
 
 	Controller->SetControlRotation(NewRot);
 }

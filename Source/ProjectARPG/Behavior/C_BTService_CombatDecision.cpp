@@ -25,21 +25,31 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	if (!BB)
 		return;
 
-	if (BB->GetValueAsBool(AC_EnemyController::IntentLockedKey))
+	if (pEnemy->isCounterWindowOpen() &&
+		pEnemy->canDecideAction())
+	{
+		BB->SetValueAsEnum(
+			AC_EnemyController::IntentKey,
+			(uint8)E_CombatIntent::Attack);
 		return;
+	}
 
-	if (!pEnemy->canDecideAction())
+	if (pEnemy->isGuard())
+	{
+		// 가드 해제 가능하면 다음 행동으로 넘김
+		if (pEnemy->canReleaseGuard())
+		{
+			BB->SetValueAsEnum(
+				AC_EnemyController::IntentKey,
+				(uint8)E_CombatIntent::None);
+		}
+
 		return;
+	}
 
 	AActor* Target =
 		Cast<AActor>(BB->GetValueAsObject("TargetActor"));
 
-	if (BB->GetValueAsBool(AC_EnemyController::IntentLockedKey))
-	{
-		UE_LOG(LogTemp, Warning,
-			TEXT("[CombatDecision] IntentLocked = true, skip decide"));
-		return;
-	}
 
 	if (!Target)
 	{
@@ -70,13 +80,27 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	// 거리 기반 보정
 	if (Dist < Profile.fPreferredRange * 0.8f)
 	{
-		AttackW *= 1.2f;
-		GuardW *= 0.8f;
+		AttackW *= 1.3f;
+		GuardW *= 0.6f;
 	}
 	else if (Dist > Profile.fPreferredRange * 1.1f)
 	{
-		AttackW *= 0.7f;
-		RepoW *= 1.3f;
+		AttackW *= 0.6f;
+		RepoW *= 1.4f;
+	}
+
+	const int32 AttackChain = pEnemy->getPlayerAttackChain();
+
+	if (AttackChain >= 2)
+	{
+		GuardW *= 0.7f;
+		RepoW *= 1.2f;
+	}
+
+	if (AttackChain >= 3)
+	{
+		AttackW *= 1.6f;
+		GuardW *= 0.3f;
 	}
 
 	const E_CombatIntent LastIntent =
@@ -84,28 +108,36 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 
 	if (LastIntent == E_CombatIntent::Guard)
 	{
-		AttackW = 1.3f;
 		GuardW *= 0.2f;
-		RepoW *= 1.2f;
+		AttackW *= 1.2f;
+	}
+
+	if (UC_AIAttackComponent* AIAtk =
+		pEnemy->getEnemyAttackComponent())
+	{
+		if (!AIAtk->hasExecutableAttack(Dist))
+		{
+			AttackW = 0.f;
+			RepoW *= 1.2f;
+		}
+	}
+
+	if (Dist > Profile.fPreferredRange * 1.1f)
+	{
+		RepoW = 0.f;
 	}
 
 	const float Sum = AttackW + GuardW + RepoW;
+	if (Sum <= KINDA_SMALL_NUMBER)
+		return;
+
 	const float Pick = FMath::FRandRange(0.f, Sum);
 
-	E_CombatIntent Intent;
+	E_CombatIntent Intent =
+		(Pick < AttackW) ? E_CombatIntent::Attack :
+		(Pick < AttackW + GuardW) ? E_CombatIntent::Guard :
+		E_CombatIntent::Reposition;
 
-	
-
-	if (Pick < AttackW)
-		Intent = E_CombatIntent::Attack;
-	else if (Pick < AttackW + GuardW)
-		Intent = E_CombatIntent::Guard;
-	else
-		Intent = E_CombatIntent::Reposition;
-
-	UE_LOG(LogTemp, Warning,
-		TEXT("[CombatDecision] Dist=%.1f A=%.2f G=%.2f R=%.2f Pick=%.2f -> Intent=%d"),
-		Dist, AttackW, GuardW, RepoW, Pick, (int32)Intent);
 
 
 	BB->SetValueAsEnum(

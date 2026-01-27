@@ -13,7 +13,7 @@ void UC_CombatAnim::playHitMontage(E_Direction eDir)
     switch (eDir)
     {
     case E_Direction::Forward:
-        pMontageToPlay = m_pHitLeftMontage;
+        pMontageToPlay = m_pHitForwardMontage;
         break;
 
     case E_Direction::Left:

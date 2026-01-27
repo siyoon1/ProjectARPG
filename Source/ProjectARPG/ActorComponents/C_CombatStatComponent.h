@@ -95,9 +95,10 @@ protected:
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	void initStat();
 
 private:
-	void initStat();
+	
 	void tickPostureRecovery(float DeltaTime);
 	void breakPosture();
 

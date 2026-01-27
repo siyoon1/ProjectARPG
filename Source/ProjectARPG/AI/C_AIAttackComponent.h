@@ -37,6 +37,8 @@ public:
 	bool canUseAttack(FName Row) const;
 	bool isAttackInRange(const FS_AttackData& Data, float fDist) const;
 
+	bool hasExecutableAttack(float Dist) const;
+
 private:
 	bool executeAttack(FName Row);
 	bool decideNextAttack(float fDist, FName& OutAttackRow) const;

@@ -42,14 +42,9 @@ EBTNodeResult::Type UC_BTTask_StepBack::ExecuteTask(UBehaviorTreeComponent& Owne
 
     if (!Enemy->playStepBack())
     {
-        BB->SetValueAsEnum(AC_EnemyController::IntentKey, (uint8)E_CombatIntent::None);
-        BB->SetValueAsBool(AC_EnemyController::IntentLockedKey, false);
+        Enemy->m_onStepBackFinished.RemoveAll(this);
         return EBTNodeResult::Failed;
     }
-
-    BB->SetValueAsBool(
-        AC_EnemyController::IntentLockedKey,
-        true);
 
     return EBTNodeResult::InProgress;
 }
@@ -66,15 +61,6 @@ void UC_BTTask_StepBack::onStepBackFinished()
         {
             Enemy->m_onStepBackFinished.RemoveAll(this);
         }
-    }
-
-    // ?? Intent 잠금 해제만 수행
-    if (UBlackboardComponent* BB =
-        CachedOwnerComp->GetBlackboardComponent())
-    {
-        BB->SetValueAsBool(
-            AC_EnemyController::IntentLockedKey,
-            false);
     }
 
     FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);

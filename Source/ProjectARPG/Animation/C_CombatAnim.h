@@ -18,6 +18,9 @@ class PROJECTARPG_API UC_CombatAnim : public UAnimInstance
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> m_pHitForwardMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> m_pHitLeftMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)

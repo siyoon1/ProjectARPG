@@ -103,9 +103,6 @@ void UC_AttackComponent::applyHit(AActor* HitActor)
 	if (Target && Target->isInvincibleAgainst(m_Owner))
 		return;
 
-	if (!Target->getParryComponent())
-		return;
-
 	if (Target->getParryComponent())
 	{
 		FS_ParryResult ParryResult =

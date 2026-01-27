@@ -49,15 +49,9 @@ EBTNodeResult::Type UC_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerC
     // 공격 시도
     if (!EnemyAttackComp->tryExecuteAttack(Dist))
     {
-        BB->SetValueAsBool(
-            AC_EnemyController::IntentLockedKey,
-            false);
+        Enemy->m_onAttackFinished.RemoveAll(this);
         return EBTNodeResult::Failed;
     }
-
-    BB->SetValueAsBool(
-        AC_EnemyController::IntentLockedKey,
-        true);
 
     return EBTNodeResult::InProgress;
 }
@@ -67,9 +61,6 @@ void UC_BTTask_Attack::onAttackEnded()
     if (!CachedOwnerComp)
         return;
 
-    UBlackboardComponent* BB =
-        CachedOwnerComp->GetBlackboardComponent();
-
     if (AAIController* AICon = CachedOwnerComp->GetAIOwner())
     {
         if (AC_EnemyCharacter* Enemy =
@@ -78,10 +69,6 @@ void UC_BTTask_Attack::onAttackEnded()
             Enemy->m_onAttackFinished.RemoveAll(this);
         }
     }
-
-    BB->SetValueAsBool(
-        AC_EnemyController::IntentLockedKey,
-        false);
 
     FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 }
