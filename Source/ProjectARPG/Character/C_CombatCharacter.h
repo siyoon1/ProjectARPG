@@ -103,10 +103,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "trace", meta = (AllowPrivateAccess = "true"))
 	float m_fTraceRadius = 40.f;
-
-	bool m_bIsTracing = false;
 	
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "trace", meta = (AllowPrivateAccess = "true"))
 	float m_fAttackDamage = 0.f;
 
@@ -125,8 +122,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 m_CurrentLifeNodes = 1;
 
-	FVector m_vLastTraceStart{};
-	FVector m_vLastTraceEnd{};
 	TArray<AActor*> m_HitActors{};
 
 	bool m_bIsPostureBroken = false;
