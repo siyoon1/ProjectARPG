@@ -86,15 +86,12 @@ struct FS_AttackAIData
 	UPROPERTY(EditAnywhere)
 	float MaxRange = 250.f;
 
-	// 선호 거리 (가중치 계산용, 없어도 됨)
 	UPROPERTY(EditAnywhere)
 	float IdealRange = 150.f;
 
-	// 공격 선택 기본 가중치
 	UPROPERTY(EditAnywhere)
 	float BaseWeight = 1.f;
 
-	// 최소 재사용 시간 (쿨타임 개념)
 	UPROPERTY(EditAnywhere)
 	float MinReuseTime = 0.f;
 };
