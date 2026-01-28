@@ -100,45 +100,53 @@ void UC_AttackComponent::applyHit(AActor* HitActor, const FHitResult& Hit)
 		return;
 
 	AC_CombatCharacter* Target = Cast<AC_CombatCharacter>(HitActor);
-	if (Target && Target->isInvincibleAgainst(m_Owner))
+
+	if (!Target)
 		return;
 
-	if (Target->getParryComponent())
+	if (Target->isInvincibleAgainst(m_Owner))
+		return;
+
+	UC_ParryComponent* ParryComp = Target->getParryComponent();
+	if (!ParryComp)
+		return;
+	
+
+
+	FS_ParryResult ParryResult =
+		ParryComp->evaluateParry(*m_CurrentAttackData, m_Owner);
+
+	if (ParryResult.Result == E_ParryResult::Parried)
 	{
-		FS_ParryResult ParryResult =
-			Target->getParryComponent()->evaluateParry(*m_CurrentAttackData, m_Owner);
+		m_bPostureBrokenByParry = true;
 
-		if (ParryResult.Result == E_ParryResult::Parried)
+		const FVector ParryPoint = Hit.ImpactPoint;
+
+		m_OnAttackParried.Broadcast(
+			m_Owner,
+			Target,
+			ParryPoint
+		);
+
+		UE_LOG(LogTemp, Warning, TEXT("[AttackComponent] Parried by %s"),
+			*Target->GetName());
+
+		// 공격자 반응
+		IC_ParryReaction::Execute_onParried(m_Owner, Target);
+
+		// 방어자 성공 반응
+		IC_ParryReaction::Execute_onParrySuccess(Target, m_Owner, ParryResult.Direction);
+
+		// 공격자 체간 피해
+		if (AC_CombatCharacter* AttackerChar = m_Owner)
 		{
-			m_bPostureBrokenByParry = true;
-
-			const FVector ParryPoint = Hit.ImpactPoint;
-
-			m_OnAttackParried.Broadcast(
-				m_Owner,
-				Target,
-				ParryPoint
-			);
-
-			UE_LOG(LogTemp, Warning, TEXT("[AttackComponent] Parried by %s"),
-				*Target->GetName());
-
-			// 공격자 반응
-			IC_ParryReaction::Execute_onParried(m_Owner, Target);
-
-			// 방어자 성공 반응
-			IC_ParryReaction::Execute_onParrySuccess(Target, m_Owner, ParryResult.Direction);
-
-			// 공격자 체간 피해
-			if (AC_CombatCharacter* AttackerChar = m_Owner)
-			{
-				AttackerChar->getStatComp()->applyPostureDamage(ParryResult.PostureDamageToAttacker,
-					E_PostureBreakCause::Parry, Target);
-			}
-
-			return;
+			AttackerChar->getStatComp()->applyPostureDamage(ParryResult.PostureDamageToAttacker,
+				E_PostureBreakCause::Parry, Target);
 		}
+
+		return;
 	}
+	
 
 	const bool bGuarded =
 		Target->isGuard() &&
