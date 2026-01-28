@@ -23,6 +23,8 @@ class PROJECTARPG_API UC_AttackComponent : public UActorComponent
 private:
 	bool m_bPostureBrokenByParry = false;
 
+	E_ParryDirection m_CurrentParryDirection = E_ParryDirection::None;
+
 protected:
 	UPROPERTY()
 	class AC_CombatCharacter* m_Owner;
@@ -63,6 +65,8 @@ public:
 	void startTrace();
 	void stopTrace();
 	void tickTrace();
+
+	void overrideParryDirection(E_ParryDirection Dir);
 
 	inline bool isAttacking() const { return m_CurrentAttackData != nullptr; }
 

@@ -41,6 +41,7 @@ void UC_AttackComponent::startAttack(const FS_AttackData& AttackData)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[AttackComponent] startAttack"));
 	m_CurrentAttackData = &AttackData;
+	m_CurrentParryDirection = m_CurrentAttackData->Combat.ParryDirection;
 	m_HitActors.Empty();
 }
 
@@ -89,6 +90,14 @@ void UC_AttackComponent::tickTrace()
 		break;
 
 	}
+}
+
+void UC_AttackComponent::overrideParryDirection(E_ParryDirection Dir)
+{
+	if (!m_CurrentAttackData)
+		return;
+
+	m_CurrentParryDirection = Dir;
 }
 
 void UC_AttackComponent::applyHit(AActor* HitActor, const FHitResult& Hit)

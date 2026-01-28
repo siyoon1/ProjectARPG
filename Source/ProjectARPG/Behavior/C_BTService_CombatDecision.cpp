@@ -6,6 +6,9 @@
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "ProjectARPG/AI/C_AIAttackComponent.h"
+#include "ProjectARPG/AI/C_NormalCombatDecision.h"
+#include "ProjectARPG/AI/C_BossCombatDecision.h"
+#include "ProjectARPG/Interface/C_CombatDecisionStrategy.h"
 
 void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
@@ -25,136 +28,23 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	if (!BB)
 		return;
 
-	if (pEnemy->isCounterWindowOpen() &&
-		pEnemy->canDecideAction())
+	UObject* DecisionObj = nullptr;
+
+	if (pEnemy->isBoss())
 	{
-		BB->SetValueAsEnum(
-			AC_EnemyController::IntentKey,
-			(uint8)E_CombatIntent::Attack);
-		return;
+		DecisionObj = NewObject<UC_BossCombatDecision>(this);
+	}
+	else
+	{
+		DecisionObj = NewObject<UC_NormalCombatDecision>(this);
 	}
 
-	AActor* Target =
-		Cast<AActor>(BB->GetValueAsObject("TargetActor"));
+	IC_CombatDecisionStrategy* Decision =
+		Cast<IC_CombatDecisionStrategy>(DecisionObj);
 
-
-	if (!Target)
+	if (Decision)
 	{
-		BB->SetValueAsEnum(
-			AC_EnemyController::IntentKey,
-			(uint8)E_CombatIntent::None);
-		return;
-	}
-
-	const float Dist = BB->GetValueAsFloat(AC_EnemyController::DistKey);
-
-
-	const FS_EnemyCombatProfile& Profile = pEnemy->getCombatProfile();
-
-	if (Dist > Profile.fPreferredRange * 1.3f)
-	{
-		BB->SetValueAsEnum(
-			AC_EnemyController::IntentKey,
-			(uint8)E_CombatIntent::Chase);
-		return;
-	}
-
-
-	float AttackW = Profile.fAttackProbability;
-	float GuardW = Profile.fGuardProbability;
-	float RepoW = 0.3f;
-
-	// 거리 기반 보정
-	if (Dist < Profile.fPreferredRange * 0.8f)
-	{
-		AttackW *= 1.3f;
-		GuardW *= 0.6f;
-	}
-	else if (Dist > Profile.fPreferredRange * 1.1f)
-	{
-		AttackW *= 0.6f;
-		RepoW *= 1.4f;
-	}
-
-	const int32 AttackChain = pEnemy->getPlayerAttackChain();
-
-	if (AttackChain >= 2)
-	{
-		GuardW *= 0.7f;
-		RepoW *= 1.2f;
-	}
-
-	if (AttackChain >= 3)
-	{
-		AttackW *= 1.6f;
-		GuardW *= 0.3f;
-	}
-
-	const E_CombatIntent LastIntent =
-		(E_CombatIntent)BB->GetValueAsEnum(AC_EnemyController::LastIntentKey);
-
-	if (LastIntent == E_CombatIntent::Guard)
-	{
-		GuardW *= 0.f;
-		AttackW *= 1.4f;
-	}
-
-	if (pEnemy->isGuard())
-	{
-		if (pEnemy->canReleaseGuard())
-		{
-			pEnemy->endGuard();
-
-			BB->SetValueAsEnum(
-				AC_EnemyController::IntentKey,
-				(uint8)E_CombatIntent::None);
-			return;
-		}
-		else
-		{
-			BB->SetValueAsEnum(
-				AC_EnemyController::IntentKey,
-				(uint8)E_CombatIntent::None);
-			return;
-		}
-	}
-
-	if (UC_AIAttackComponent* AIAtk =
-		pEnemy->getEnemyAttackComponent())
-	{
-		if (!AIAtk->hasExecutableAttack(Dist))
-		{
-			AttackW = 0.f;
-			RepoW *= 1.2f;
-		}
-	}
-
-	const float Sum = AttackW + GuardW + RepoW;
-	if (Sum <= KINDA_SMALL_NUMBER)
-		return;
-
-	const float Pick = FMath::FRandRange(0.f, Sum);
-
-	E_CombatIntent Intent =
-		(Pick < AttackW) ? E_CombatIntent::Attack :
-		(Pick < AttackW + GuardW) ? E_CombatIntent::Guard :
-		E_CombatIntent::Reposition;
-
-	BB->SetValueAsEnum(
-		AC_EnemyController::IntentKey,
-		(uint8)Intent);
-
-	BB->SetValueAsEnum(
-		AC_EnemyController::LastIntentKey,
-		(uint8)Intent);
-
-	if (Dist < Profile.fPreferredRange &&
-		pEnemy->getPlayerAttackChain() == 0)
-	{
-		BB->SetValueAsEnum(
-			AC_EnemyController::IntentKey,
-			(uint8)E_CombatIntent::Attack);
-		return;
+		Decision->Decide(pEnemy, BB);
 	}
 	
 }
