@@ -21,6 +21,7 @@
 #include "ProjectARPG/Data/C_PlayerExecutionData.h"
 #include "ProjectARPG/ActorComponents/C_AttackComponent.h"
 #include "ProjectARPG/ActorComponents/C_LockOnComponent.h"
+#include "ProjectARPG/Inventory/C_QuickSlotComponent.h"
 
 
 
@@ -37,6 +38,8 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 
 	m_ExecutionComp = CreateDefaultSubobject<UC_PlayerExecutionComponent>(TEXT("ExecutionComp"));
 	m_LockOnComp = CreateDefaultSubobject<UC_LockOnComponent>(TEXT("LockOnComp"));
+	m_QuickSlotComp = CreateDefaultSubobject<UC_QuickSlotComponent>(TEXT("QuickSlotComp"));
+	
 
 	m_pExecutionDetectSphere = nullptr;
 
@@ -790,6 +793,14 @@ void AC_PlayerCharacter::requestExecution_Implementation(AActor* Target)
 
 	if (m_ExecutionComp)
 		m_ExecutionComp->forceExecute(this, VictimPawn, E_ExecutionType::PostureBreak);
+}
+
+bool AC_PlayerCharacter::registerItemToQuickSlot(FName ItemID)
+{
+	if (!m_QuickSlotComp)
+		return false;
+
+	return m_QuickSlotComp->assignItemToQuickSlot(ItemID, 0);
 }
 
 void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)

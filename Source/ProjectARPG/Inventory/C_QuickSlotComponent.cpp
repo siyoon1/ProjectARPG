@@ -4,14 +4,10 @@
 #include "C_QuickSlotComponent.h"
 #include "ProjectARPG/Inventory/C_Inventory.h"
 
-// Sets default values for this component's properties
 UC_QuickSlotComponent::UC_QuickSlotComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
 }
 
 
@@ -20,7 +16,19 @@ void UC_QuickSlotComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
+	m_QuickSlots.SetNum(m_MaxQuickSlotCount);
+
+	for (int32 i = 0; i < m_QuickSlots.Num(); ++i)
+	{
+		m_QuickSlots[i].slotIndex = i;
+		m_QuickSlots[i].ItemID = NAME_None;
+	}
+
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (OwnerPawn)
+	{
+		m_Inventory = OwnerPawn->FindComponentByClass<UC_Inventory>();
+	}
 	
 }
 
@@ -30,22 +38,20 @@ void UC_QuickSlotComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
 }
 
 bool UC_QuickSlotComponent::assignItemToQuickSlot(FName ItemID, int32 nSlotIndex)
 {
 	if (!m_Inventory)
 		return false;
-	
-	if (nSlotIndex < 0 || nSlotIndex >= m_MaxQuickSlotCount)
+
+	if (!m_QuickSlots.IsValidIndex(nSlotIndex))
 		return false;
 
 	if (!m_Inventory->hasItem(ItemID, 1))
 		return false;
 
 	m_QuickSlots[nSlotIndex].ItemID = ItemID;
-
 	m_QuickSlots[nSlotIndex].slotIndex = nSlotIndex;
 
 	return true;

@@ -67,9 +67,6 @@ private:
 	UPROPERTY()
 	class UC_MoveActionComponent* m_pMoveActionCom{};
 
-	UPROPERTY()
-	class AC_EnemyCharacter* m_pCurrentExecutionTarget = nullptr;
-
 	//À§Á¬ °ü·Ã
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> m_GrappleWidgetClass{};
@@ -117,6 +114,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UC_LockOnComponent> m_LockOnComp{};
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UC_QuickSlotComponent> m_QuickSlotComp{};
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Execution")
@@ -253,6 +253,8 @@ public:
 	UFUNCTION()
 	void requestExecution_Implementation(AActor* Target);
 
+	UFUNCTION(BlueprintCallable)
+	bool registerItemToQuickSlot(FName ItemID);
 
 
 	
