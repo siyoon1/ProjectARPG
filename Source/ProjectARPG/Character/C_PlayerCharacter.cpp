@@ -313,6 +313,11 @@ void AC_PlayerCharacter::grapple(const FInputActionValue& sValue)
 		m_pGrappleCom->tryStartGrapple();
 }
 
+void AC_PlayerCharacter::useQuickSlot(const FInputActionValue& sValue)
+{
+
+}
+
 FName AC_PlayerCharacter::getComboAttackRow(int32 ComboIndex) const
 {
 	switch (ComboIndex)
@@ -830,5 +835,6 @@ void AC_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		pEinputCom->BindAction(m_pCrouchAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::crouch);
 		pEinputCom->BindAction(m_pInteractAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::interact);
 		pEinputCom->BindAction(m_pGrappleAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::grapple);
+		pEinputCom->BindAction(m_pQuickSlotAction, ETriggerEvent::Started, this, &AC_PlayerCharacter::useQuickSlot);
 	}
 }

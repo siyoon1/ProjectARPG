@@ -55,6 +55,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> m_pGrappleAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EnhancedInput", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> m_pQuickSlotAction;
+
 	UPROPERTY()
 	class USphereComponent* m_pExecutionDetectSphere{};
 
@@ -187,6 +190,7 @@ protected:
 	void crouch(const FInputActionValue& sValue);
 	void interact(const FInputActionValue& sValue);
 	void grapple(const FInputActionValue& sValue);
+	void useQuickSlot(const FInputActionValue& sValue);
 
 	FName getComboAttackRow(int32 ComboIndex) const;
 
