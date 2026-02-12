@@ -61,4 +61,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FName getItemID() const;
 
+	UFUNCTION(BlueprintNativeEvent)
+	bool use(class AC_CombatCharacter* User);
+	virtual bool use_Implementation(AC_CombatCharacter* User);
+
 };

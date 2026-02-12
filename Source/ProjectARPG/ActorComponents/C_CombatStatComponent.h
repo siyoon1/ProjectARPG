@@ -81,6 +81,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	inline float getMaxPosture() const { return m_MaxPosture; }
 
+	UFUNCTION(BlueprintCallable)
+	void recoverHp(float Hp);
+
 	inline bool isPostureBroken() const { return m_bPostureBroken; }
 
 	inline const E_PostureBreakCause getBreakCause() const { return m_LastBreakCause; }

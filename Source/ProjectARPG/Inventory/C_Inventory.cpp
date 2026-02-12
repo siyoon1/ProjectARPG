@@ -188,6 +188,19 @@ TArray<FS_InventorySlot>& UC_Inventory::getSlots()
 	return m_Slots;
 }
 
+UC_ItemObject* UC_Inventory::findItemObject(FName ItemID)
+{
+	for (FS_InventorySlot& Slot : m_Slots)
+	{
+		if (Slot.Item && Slot.Item->getItemID() == ItemID)
+		{
+			return Slot.Item;
+		}
+	}
+
+	return nullptr;
+}
+
 bool UC_Inventory::hasItem(FName ItemID, int32 nCount)
 {
 	if (nCount < 0)
@@ -212,5 +225,18 @@ bool UC_Inventory::hasItem(FName ItemID, int32 nCount)
 	}
 
 	return false;
+}
+
+int32 UC_Inventory::getItemCount(FName ItemID)
+{
+	for (FS_InventorySlot& Slot : m_Slots)
+	{
+		if (Slot.Item && Slot.Item->getItemID() == ItemID)
+		{
+			return Slot.nCount;
+		}
+	}
+
+	return 0;
 }
 

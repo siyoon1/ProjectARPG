@@ -6,6 +6,11 @@
 #include "Components/ActorComponent.h"
 #include "C_QuickSlotComponent.generated.h"
 
+class UC_ItemObject;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuickSlotChange, UC_ItemObject*, Item, int32, Count);
+
+
 
 USTRUCT(BlueprintType)
 struct FS_QuickSlot
@@ -33,6 +38,10 @@ private:
 	TArray<FS_QuickSlot> m_QuickSlots;
 
 	class UC_Inventory* m_Inventory;
+
+public:
+	UPROPERTY(BlueprintAssignable)
+	FOnQuickSlotChange m_OnQuickSlotChange;
 
 public:	
 	// Sets default values for this component's properties

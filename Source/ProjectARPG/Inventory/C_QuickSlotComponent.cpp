@@ -3,6 +3,7 @@
 
 #include "C_QuickSlotComponent.h"
 #include "ProjectARPG/Inventory/C_Inventory.h"
+#include "ProjectARPG/Character/C_CombatCharacter.h"
 
 UC_QuickSlotComponent::UC_QuickSlotComponent()
 {
@@ -70,10 +71,29 @@ void UC_QuickSlotComponent::useQuickSlot(int32 nSlotIndex)
 	if (ItemID.IsNone())
 		return;
 
-	if (!m_Inventory->removeItem(ItemID, 1))
+	// 아이템 객체 찾기
+	UC_ItemObject* Item = m_Inventory->findItemObject(ItemID);
+	if (!Item)
 		return;
 
-	//아이템 효과 실행
+	AC_CombatCharacter* User = Cast<AC_CombatCharacter>(GetOwner());
+	if (!User)
+		return;
+
+	// 사용 시도
+	if (Item->use(User))
+	{
+		// 성공했을 때만 제거
+		m_Inventory->removeItem(ItemID, 1);
+
+		// 다 떨어졌으면 슬롯 비우기
+		if (!m_Inventory->hasItem(ItemID, 1))
+		{
+			m_QuickSlots[nSlotIndex].ItemID = NAME_None;
+		}
+	}
+
+	m_OnQuickSlotChange.Broadcast(Item, m_Inventory->getItemCount(ItemID));
 	
 }
 

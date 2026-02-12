@@ -315,7 +315,13 @@ void AC_PlayerCharacter::grapple(const FInputActionValue& sValue)
 
 void AC_PlayerCharacter::useQuickSlot(const FInputActionValue& sValue)
 {
+	if (!m_QuickSlotComp)
+		return;
 
+	// 지금은 0번 슬롯만 사용
+	m_QuickSlotComp->useQuickSlot(0);
+
+	UE_LOG(LogTemp, Error, TEXT("useQuickSlot!!"));
 }
 
 FName AC_PlayerCharacter::getComboAttackRow(int32 ComboIndex) const

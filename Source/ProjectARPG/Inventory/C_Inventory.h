@@ -68,7 +68,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	TArray<FS_InventorySlot>& getSlots();
 
+	UC_ItemObject* findItemObject(FName ItemID);
+
 	bool hasItem(FName ItemID, int32 nCount);
+
+	int32 getItemCount(FName ItemID);
 
 	
 };

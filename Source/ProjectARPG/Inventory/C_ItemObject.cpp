@@ -23,3 +23,8 @@ FName UC_ItemObject::getItemID() const
 {
     return m_ItemData ? m_ItemData->ItemID : NAME_None;
 }
+
+bool UC_ItemObject::use_Implementation(AC_CombatCharacter* User)
+{
+    return false;
+}
