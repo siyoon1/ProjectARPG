@@ -22,6 +22,9 @@ public:
 	const struct FS_ItemData* findItemData(FName ItemID) const;
 
 	UFUNCTION(BlueprintCallable)
+	bool findItemData_BP(FName ItemID, FS_ItemData& OutData) const;
+
+	UFUNCTION(BlueprintCallable)
 	UC_ItemObject* createItemObject(FName ItemID, UObject* Owner);
 	
 };

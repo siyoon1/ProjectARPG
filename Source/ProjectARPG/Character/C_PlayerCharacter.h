@@ -121,6 +121,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UC_QuickSlotComponent> m_QuickSlotComp{};
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr <class UC_CurrencyComponent> m_CurrencyComp{};
+
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Execution")
 	class UC_PlayerExecutionData* m_PlayerExecutionData;

@@ -17,11 +17,17 @@ class PROJECTARPG_API AC_NPCCharacter : public AC_BaseCharacter, public IC_Inter
 
 private:
 	UPROPERTY()
-	class UWidgetComponent* m_InteractWidgetComp;
+	class UWidgetComponent* m_InteractWidgetComp{};
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UC_ShopComponent* m_ShopComp{};
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dialogue", meta = (AllowPrivateAccess = "true"))
 	TArray<FText> m_DialogueLine;
+
+public:
+	AC_NPCCharacter();
 
 protected:
 	void BeginPlay() override;

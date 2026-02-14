@@ -6,16 +6,22 @@
 #include "Components/ActorComponent.h"
 #include "C_ShopComponent.generated.h"
 
+
+class UC_ItemObject;
+
 USTRUCT(BlueprintType)
 struct FS_ShopItem
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FName ItemID;
 
-	UPROPERTY(BlueprintReadOnly)
-	int32 Pirce;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 Price;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 Count;
 };
 
 
@@ -44,8 +50,11 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable)
-	bool buyItem(FName ItemID, int32 nCount, class UC_Inventory* PlayerInventory);
+	bool buyItem(FName ItemID, int32 nCount, class UC_Inventory* PlayerInventory, class UC_CurrencyComponent* CurrencyComp);
 
 	UFUNCTION(BlueprintCallable)
-	bool sellItem(FName ItemID, int32 nCount, class UC_Inventory* PlayerInventory);
+	bool sellItem(FName ItemID, int32 nCount, class UC_Inventory* PlayerInventory, class UC_CurrencyComponent* CurrencyComp);
+
+	UFUNCTION(BlueprintCallable)
+	const TArray<FS_ShopItem>& getShopItems() const { return m_ItemsForSale; }
 };

@@ -22,6 +22,7 @@
 #include "ProjectARPG/ActorComponents/C_AttackComponent.h"
 #include "ProjectARPG/ActorComponents/C_LockOnComponent.h"
 #include "ProjectARPG/Inventory/C_QuickSlotComponent.h"
+#include "ProjectARPG/ActorComponents/C_CurrencyComponent.h"
 
 
 
@@ -39,6 +40,7 @@ AC_PlayerCharacter::AC_PlayerCharacter()
 	m_ExecutionComp = CreateDefaultSubobject<UC_PlayerExecutionComponent>(TEXT("ExecutionComp"));
 	m_LockOnComp = CreateDefaultSubobject<UC_LockOnComponent>(TEXT("LockOnComp"));
 	m_QuickSlotComp = CreateDefaultSubobject<UC_QuickSlotComponent>(TEXT("QuickSlotComp"));
+	m_CurrencyComp = CreateDefaultSubobject<UC_CurrencyComponent>(TEXT("CurrencyComp"));
 	
 
 	m_pExecutionDetectSphere = nullptr;

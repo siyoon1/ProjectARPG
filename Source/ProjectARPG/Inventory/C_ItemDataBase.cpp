@@ -12,6 +12,21 @@ const FS_ItemData* UC_ItemDataBase::findItemData(FName ItemID) const
 	return m_ItemDataTable->FindRow<FS_ItemData>(ItemID, TEXT("findItemData"));
 }
 
+bool UC_ItemDataBase::findItemData_BP(FName ItemID, FS_ItemData& OutData) const
+{
+	if (!m_ItemDataTable)
+		return false;
+
+	const FS_ItemData* Data =
+		m_ItemDataTable->FindRow<FS_ItemData>(ItemID, TEXT("findItemData"));
+
+	if (!Data)
+		return false;
+
+	OutData = *Data;
+	return true;
+}
+
 UC_ItemObject* UC_ItemDataBase::createItemObject(FName ItemID, UObject* Owner)
 {
 	if (!Owner)

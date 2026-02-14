@@ -3,6 +3,12 @@
 
 #include "C_NPCCharacter.h"
 #include "Components/WidgetComponent.h"
+#include "ProjectARPG/Inventory/C_ShopComponent.h"
+
+AC_NPCCharacter::AC_NPCCharacter()
+{
+	m_ShopComp = CreateDefaultSubobject<UC_ShopComponent>(TEXT("ShopComp"));
+}
 
 void AC_NPCCharacter::BeginPlay()
 {

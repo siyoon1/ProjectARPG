@@ -3,6 +3,7 @@
 
 #include "C_ShopComponent.h"
 #include "ProjectARPG/Inventory/C_Inventory.h"
+#include "ProjectARPG/ActorComponents/C_CurrencyComponent.h"
 
 // Sets default values for this component's properties
 UC_ShopComponent::UC_ShopComponent()
@@ -44,33 +45,33 @@ void UC_ShopComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	// ...
 }
 
-bool UC_ShopComponent::buyItem(FName ItemID, int32 nCount, UC_Inventory* PlayerInventory)
+bool UC_ShopComponent::buyItem(FName ItemID, int32 nCount, UC_Inventory* PlayerInventory, UC_CurrencyComponent* CurrencyComp)
 {
-	if (!PlayerInventory || nCount < 0)
+	if (!PlayerInventory || !CurrencyComp || nCount <= 0)
 		return false;
 
 	const FS_ShopItem* ShopItem = findShopItem(ItemID);
-
 	if (!ShopItem)
 		return false;
 
-	int32 nTotalPrice = ShopItem->Pirce * nCount;
+	int32 nTotalPrice = ShopItem->Price * nCount;
 
-	if (!PlayerInventory->hasItem("Gold", nTotalPrice))
-		return false;
-
-	if (!PlayerInventory->removeItem("Gold", nTotalPrice))
+	if (!CurrencyComp->spendGold(nTotalPrice))
 		return false;
 
 	if (!PlayerInventory->addItemByID(ItemID, nCount))
+	{
+		// 실패 시 롤백
+		CurrencyComp->addGold(nTotalPrice);
 		return false;
+	}
 
 	return true;
 }
 
-bool UC_ShopComponent::sellItem(FName ItemID, int32 nCount, UC_Inventory* PlayerInventory)
+bool UC_ShopComponent::sellItem(FName ItemID, int32 nCount, UC_Inventory* PlayerInventory, UC_CurrencyComponent* CurrencyComp)
 {
-	if (!PlayerInventory || nCount < 0)
+	if (!PlayerInventory || !CurrencyComp || nCount <= 0)
 		return false;
 
 	if (!PlayerInventory->hasItem(ItemID, nCount))
@@ -80,10 +81,12 @@ bool UC_ShopComponent::sellItem(FName ItemID, int32 nCount, UC_Inventory* Player
 	if (!ShopItem)
 		return false;
 
-	int32 nTotalGold = (ShopItem->Pirce / 2) * nCount;
+	int32 nTotalGold = (ShopItem->Price / 2) * nCount;
 
-	PlayerInventory->removeItem(ItemID, nCount);
-	PlayerInventory->addItemByID("Gold", nTotalGold);
+	if (!PlayerInventory->removeItem(ItemID, nCount))
+		return false;
+
+	CurrencyComp->addGold(nTotalGold);
 
 	return true;
 }
