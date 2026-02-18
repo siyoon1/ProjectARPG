@@ -91,3 +91,8 @@ bool UC_ShopComponent::sellItem(FName ItemID, int32 nCount, UC_Inventory* Player
 	return true;
 }
 
+int32 UC_ShopComponent::subItemCount(int32 Index, int32 Count)
+{
+	return m_ItemsForSale[Index].Count -= Count;
+}
+

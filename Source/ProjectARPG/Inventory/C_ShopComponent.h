@@ -57,4 +57,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	const TArray<FS_ShopItem>& getShopItems() const { return m_ItemsForSale; }
+
+	UFUNCTION(BlueprintCallable)
+	int32 subItemCount(int32 Index, int32 Count);
 };
