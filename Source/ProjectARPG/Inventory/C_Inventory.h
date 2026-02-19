@@ -74,5 +74,8 @@ public:
 
 	int32 getItemCount(FName ItemID);
 
+	UFUNCTION(BlueprintCallable)
+	const TArray<FS_InventorySlot>& getInventoryItems() const { return m_Slots; }
+
 	
 };
