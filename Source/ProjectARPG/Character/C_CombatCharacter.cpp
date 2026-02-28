@@ -197,6 +197,14 @@ void AC_CombatCharacter::onHitConfirmed(E_HitResult Result, AActor* Attacker)
 	case E_HitResult::Normal:
 	case E_HitResult::PostureBroken:
 	{
+		if (m_HitSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				this,
+				m_HitSound,
+				GetActorLocation()
+			);
+		}
 		E_Direction HitDir = getHitDirection(Attacker);
 		playHitMontage(HitDir);
 		break;
@@ -204,6 +212,14 @@ void AC_CombatCharacter::onHitConfirmed(E_HitResult Result, AActor* Attacker)
 
 	case E_HitResult::Guarded:
 	
+		if (m_GuardSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				this,
+				m_GuardSound,
+				GetActorLocation()
+			);
+		}
 		break;
 	}
 

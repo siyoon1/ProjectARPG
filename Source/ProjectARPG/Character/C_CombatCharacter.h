@@ -92,6 +92,12 @@ protected:
 	// 현재 상태
 	E_CombatState m_eState = E_CombatState::Idle;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	USoundBase* m_HitSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	USoundBase* m_GuardSound;
+
 	// 공격 데이터
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack")
 	UDataTable* m_pAttackDataTable{};
@@ -227,6 +233,8 @@ public:
 
 	// 죽음
 	virtual void onDeath();
+
+	UFUNCTION(BlueprintCallable)
 	bool isDead() const;
 
 	// 패링

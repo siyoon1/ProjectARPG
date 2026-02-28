@@ -7,6 +7,8 @@
 #include "ProjectARPG/Interface/C_ExecutionRequester.h"
 #include "C_PlayerCharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDead);
+
 /**
  * 
  */
@@ -131,6 +133,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	class UAnimMontage* m_ParrySuccessMontage;
 
+	UPROPERTY(BlueprintAssignable)
+	FOnPlayerDead m_OnPlayerDead;
+
 public:
 	AC_PlayerCharacter();
 
@@ -196,6 +201,8 @@ protected:
 	void useQuickSlot(const FInputActionValue& sValue);
 
 	FName getComboAttackRow(int32 ComboIndex) const;
+
+	virtual void onDeath() override;
 
 public:
 	void onActionFinished();

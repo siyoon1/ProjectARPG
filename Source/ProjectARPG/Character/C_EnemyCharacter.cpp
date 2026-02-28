@@ -637,6 +637,7 @@ void AC_EnemyCharacter::onDeath()
 		pAiCon->BrainComponent->StopLogic(TEXT("Dead"));
 	}
 
+	setActionState(E_ActionState::Dead);
 	showExecutionVFX(false);
 
 
