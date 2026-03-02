@@ -6,7 +6,7 @@
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
-void UC_BossCombatDecision::Decide(AC_EnemyCharacter* Enemy, UBlackboardComponent* BB)
+void UC_BossCombatDecision::calculateScores(AC_EnemyCharacter* Enemy, UBlackboardComponent* BB)
 {
 	if (!Enemy || !BB)
 		return;

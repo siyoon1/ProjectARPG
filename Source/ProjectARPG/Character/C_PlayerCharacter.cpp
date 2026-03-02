@@ -574,6 +574,8 @@ void AC_PlayerCharacter::onParried_Implementation(AActor* ParryOwner)
 
 void AC_PlayerCharacter::onParrySuccess_Implementation(AActor* ParryTarget, E_ParryDirection Direction)
 {
+	UE_LOG(LogTemp, Warning, TEXT("=== Parry Success Called ==="));
+
 	enterCombatMode(E_CombatMode::None, E_ActionState::Free);
 	setCombatState(E_CombatState::Idle);
 
@@ -588,6 +590,11 @@ void AC_PlayerCharacter::onParrySuccess_Implementation(AActor* ParryTarget, E_Pa
 		m_CamMgr->playHitCameraShake(0.5f);
 	}
 
+	FVector BackDir = -GetActorForwardVector();
+	BackDir.Z = 0.f;
+	BackDir.Normalize();
+
+	LaunchCharacter(BackDir * 500.f, true, false);
 }
 
 void AC_PlayerCharacter::playPlayerExecutionMontage(const FS_ExecutionContext& Context)

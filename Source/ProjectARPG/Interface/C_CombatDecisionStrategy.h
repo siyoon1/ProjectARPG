@@ -22,6 +22,6 @@ class PROJECTARPG_API IC_CombatDecisionStrategy
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void Decide(class AC_EnemyCharacter* Enemy,
+	virtual void calculateScores(class AC_EnemyCharacter* Enemy,
 		class UBlackboardComponent* BB) = 0;
 };

@@ -5,147 +5,112 @@
 #include "ProjectARPG/AI/C_EnemyController.h"
 #include "ProjectARPG/Character/C_EnemyCharacter.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
 #include "ProjectARPG/AI/C_AIAttackComponent.h"
 
-void UC_NormalCombatDecision::Decide(AC_EnemyCharacter* Enemy, UBlackboardComponent* BB)
+void UC_NormalCombatDecision::calculateScores(AC_EnemyCharacter* Enemy, UBlackboardComponent* BB)
 {
     if (!Enemy || !BB)
         return;
 
-    if (Enemy->isCounterWindowOpen() &&
-        Enemy->canDecideAction())
-    {
-        BB->SetValueAsEnum(
-            AC_EnemyController::IntentKey,
-            (uint8)E_CombatIntent::Attack);
+    if (!Enemy->canDecideAction())
         return;
+
+    const float Dist = BB->GetValueAsFloat(AC_EnemyController::DistKey);
+    const FS_EnemyCombatTendency& Tendency = Enemy->getCombatTendency();
+
+    float AttackScore = 0.f;
+    float GuardScore = 0.f;
+    float RepositionScore = 0.f;
+    float ChaseScore = 0.f;
+
+    const float SafeRange = FMath::Max(Tendency.PreferredRange, 1.f);
+    const float ChaseStart = SafeRange * 1.3f;
+    const float RepositionStart = SafeRange * 0.55f;
+
+    UC_AIAttackComponent* AttackComp = Enemy->getEnemyAttackComponent();
+    const bool bCanAttack = (AttackComp && AttackComp->hasExecutableAttack(Dist));
+
+    // -----------------------------
+    // 1?? Chase (거리 멀면 무조건 추격)
+    // -----------------------------
+    if (Dist > ChaseStart)
+    {
+        ChaseScore = 2.0f;
+        AttackScore = 0.f;
+        GuardScore *= 0.5f;
+    }
+    else
+    {
+        // -----------------------------
+        // 2?? Attack
+        // -----------------------------
+        if (bCanAttack)
+        {
+            // 거리 기반 공격 우선순위
+            float RangeFactor = 1.f - FMath::Clamp(FMath::Abs(Dist - SafeRange) / SafeRange, 0.f, 1.f);
+            AttackScore = Tendency.Aggressiveness * 0.7f + RangeFactor * 0.3f;
+
+            // 최근 공격 감쇠
+            if (Enemy->getLastAction() == E_EnemyActionType::Attack)
+            {
+                AttackScore *= 0.85f;
+            }
+        }
+        else
+        {
+            AttackScore = 0.f;
+        }
+
+        if (!bCanAttack && Dist < SafeRange * 0.6f)
+        {
+            // 공격 후보 없어도 백스텝 선택이 자연스럽도록 RepositionScore 강화
+            RepositionScore = FMath::Max(RepositionScore, Tendency.RepositionBias);
+        }
+
+        // -----------------------------
+        // 3?? Guard
+        // -----------------------------
+        float ChainFactor = FMath::Clamp(Enemy->getPlayerAttackChain() / 3.f, 0.f, 1.f);
+        GuardScore = Tendency.DefenseBias * (0.4f + ChainFactor * 0.8f);
+
+        if (Enemy->getLastAction() == E_EnemyActionType::Guard)
+        {
+            GuardScore *= 0.7f;
+        }
+
+        // 공격 불가 시 근거리에서는 가드 감점
+        if (!bCanAttack && Dist < SafeRange * 0.6f)
+        {
+            GuardScore *= 0.7f;
+        }
+
+        // -----------------------------
+        // 4?? Reposition (너무 가까우면 백스텝)
+        // -----------------------------
+        if (Dist < RepositionStart)
+        {
+            RepositionScore = Tendency.RepositionBias * (1.f - Dist / RepositionStart);
+
+            // 공격 불가면 보너스
+            if (!bCanAttack)
+            {
+                RepositionScore += 0.5f;
+            }
+        }
+
+        if (Enemy->getLastAction() == E_EnemyActionType::Reposition)
+        {
+            RepositionScore = 0.f;  // 연속 백스텝 방지
+        }
     }
 
-    AActor* Target =
-        Cast<AActor>(BB->GetValueAsObject("TargetActor"));
-
-    if (!Target)
-    {
-        BB->SetValueAsEnum(
-            AC_EnemyController::IntentKey,
-            (uint8)E_CombatIntent::None);
-        return;
-    }
-
-    const float Dist =
-        BB->GetValueAsFloat(AC_EnemyController::DistKey);
-
-    const FS_EnemyCombatProfile& Profile =
-        Enemy->getCombatProfile();
-
-	if (Dist > Profile.fPreferredRange * 1.3f)
-	{
-		BB->SetValueAsEnum(
-			AC_EnemyController::IntentKey,
-			(uint8)E_CombatIntent::Chase);
-		return;
-	}
-
-
-	float AttackW = Profile.fAttackProbability;
-	float GuardW = Profile.fGuardProbability;
-	float RepoW = 0.3f;
-
-	// 거리 기반 보정
-	if (Dist < Profile.fPreferredRange * 0.8f)
-	{
-		AttackW *= 1.3f;
-		GuardW *= 0.6f;
-	}
-	else if (Dist > Profile.fPreferredRange * 1.1f)
-	{
-		AttackW *= 0.6f;
-		RepoW *= 1.4f;
-	}
-
-	const int32 AttackChain = Enemy->getPlayerAttackChain();
-
-	if (AttackChain >= 2)
-	{
-		GuardW *= 0.7f;
-		RepoW *= 1.2f;
-	}
-
-	if (AttackChain >= 3)
-	{
-		AttackW *= 1.6f;
-		GuardW *= 0.3f;
-	}
-
-	const E_CombatIntent LastIntent =
-		(E_CombatIntent)BB->GetValueAsEnum(AC_EnemyController::LastIntentKey);
-
-	if (LastIntent == E_CombatIntent::Guard)
-	{
-		GuardW *= 0.f;
-		AttackW *= 1.4f;
-	}
-
-	if (Enemy->isGuard())
-	{
-		if (Enemy->canReleaseGuard())
-		{
-			Enemy->endGuard();
-
-			BB->SetValueAsEnum(
-				AC_EnemyController::IntentKey,
-				(uint8)E_CombatIntent::None);
-			return;
-		}
-		else
-		{
-			BB->SetValueAsEnum(
-				AC_EnemyController::IntentKey,
-				(uint8)E_CombatIntent::None);
-			return;
-		}
-	}
-
-	if (UC_AIAttackComponent* AIAtk =
-		Enemy->getEnemyAttackComponent())
-	{
-		// 충분히 가까울 때만
-		if (Dist < Enemy->getCombatProfile().fPreferredRange * 0.6f)
-		{
-			Enemy->playStepBack();
-
-			BB->SetValueAsEnum(
-				AC_EnemyController::IntentKey,
-				(uint8)E_CombatIntent::None);
-			return;
-		}
-	}
-
-	const float Sum = AttackW + GuardW + RepoW;
-	if (Sum <= KINDA_SMALL_NUMBER)
-		return;
-
-	const float Pick = FMath::FRandRange(0.f, Sum);
-
-	E_CombatIntent Intent =
-		(Pick < AttackW) ? E_CombatIntent::Attack :
-		(Pick < AttackW + GuardW) ? E_CombatIntent::Guard :
-		E_CombatIntent::Reposition;
-
-	BB->SetValueAsEnum(
-		AC_EnemyController::IntentKey,
-		(uint8)Intent);
-
-	BB->SetValueAsEnum(
-		AC_EnemyController::LastIntentKey,
-		(uint8)Intent);
-
-	if (Dist < Profile.fPreferredRange &&
-		Enemy->getPlayerAttackChain() == 0)
-	{
-		BB->SetValueAsEnum(
-			AC_EnemyController::IntentKey,
-			(uint8)E_CombatIntent::Attack);
-		return;
-	}
+    // -----------------------------
+    // Blackboard 저장 (Notify Observer = Both)
+    // -----------------------------
+    BB->SetValueAsFloat(AC_EnemyController::AttackScoreKey, AttackScore);
+    BB->SetValueAsFloat(AC_EnemyController::GuardScoreKey, GuardScore);
+    BB->SetValueAsFloat(AC_EnemyController::RepositionScoreKey, RepositionScore);
+    BB->SetValueAsFloat(AC_EnemyController::ChaseScorekey, ChaseScore);
 }
+

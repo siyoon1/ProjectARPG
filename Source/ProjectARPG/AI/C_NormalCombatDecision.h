@@ -16,7 +16,7 @@ class PROJECTARPG_API UC_NormalCombatDecision : public UObject, public IC_Combat
 	GENERATED_BODY()
 
 public:
-	virtual void Decide(AC_EnemyCharacter* Enemy,
+	virtual void calculateScores(AC_EnemyCharacter* Enemy,
 		UBlackboardComponent* BB) override;
 	
 };

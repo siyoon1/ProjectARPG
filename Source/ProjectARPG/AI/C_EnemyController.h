@@ -33,6 +33,8 @@ public:
 	static const FName PatrolPosKey;
 	static const FName DistKey;
 	static const FName AttackMoveLocationKey;
-	static const FName IntentKey;
-	static const FName LastIntentKey;
+	static const FName AttackScoreKey;
+	static const FName GuardScoreKey;
+	static const FName RepositionScoreKey;
+	static const FName ChaseScorekey;
 };
