@@ -341,7 +341,7 @@ FName AC_PlayerCharacter::getComboAttackRow(int32 ComboIndex) const
 
 void AC_PlayerCharacter::onDeath()
 {
-	Super::onDeath();
+	enterCombatMode(E_CombatMode::None, E_ActionState::Dead);
 
 	m_OnPlayerDead.Broadcast();
 }
