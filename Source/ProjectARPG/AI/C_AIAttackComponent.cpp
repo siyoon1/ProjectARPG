@@ -37,27 +37,23 @@ bool UC_AIAttackComponent::tryExecuteAttack(float fDist)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] tryExecuteAttack Dist=%.1f"), fDist);
 
-
 	if (!m_OwnerEnemy)
 		return false;
+
+	// 너무 가까우면 공격 시도 자체 안 함
+	if (fDist < 60.f)
+	{
+		return false;
+	}
 
 	FName AttackRow;
 	if (!decideNextAttack(fDist, AttackRow))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] decideNextAttack FAILED"));
 
-		if (fDist < 0.4f)
-		{
-			m_OwnerEnemy->playStepBack(); // 밀착 시 거리 벌리기
-		}
-		else
-		{
-			m_OwnerEnemy->finishAction(0.3f);
-		}
-
+		m_OwnerEnemy->finishAction(0.3f);
 		return false;
 	}
-
 
 	UE_LOG(LogTemp, Warning, TEXT("[EnemyAttack] Selected AttackRow = %s"), *AttackRow.ToString());
 	return executeAttack(AttackRow);

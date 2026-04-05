@@ -459,6 +459,12 @@ void AC_CombatCharacter::takeDamage_Implementation(float Damage, float PostureDa
 	}
 
 	m_StatComp->applyDamage(FinalDamage, FinalPostureDamage);
+
+	UE_LOG(LogTemp, Error, TEXT("%.2f"), m_StatComp->getCurrentHp());
+	if (m_StatComp->getCurrentHp() <= 0.f)
+	{
+		onDeath();
+	}
 	
 }
 
@@ -555,6 +561,8 @@ void AC_CombatCharacter::onDeath()
 	enterCombatMode(E_CombatMode::None, E_ActionState::Dead);
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	UE_LOG(LogTemp, Error, TEXT("Current ActionState :  %d"), m_ActionState);
 	 
 }
 

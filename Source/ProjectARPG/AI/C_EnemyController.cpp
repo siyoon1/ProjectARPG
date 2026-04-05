@@ -12,8 +12,10 @@ const FName AC_EnemyController::StartPosKey = TEXT("StartPos");
 const FName AC_EnemyController::PatrolPosKey = TEXT("PatrolPos");
 const FName AC_EnemyController::DistKey = TEXT("DistanceToTarget");
 const FName AC_EnemyController::AttackMoveLocationKey = TEXT("AttackMovePos");
-const FName AC_EnemyController::IntentKey = TEXT("Intent");
-const FName AC_EnemyController::LastIntentKey = TEXT("LastIntent");
+const FName AC_EnemyController::AttackScoreKey = TEXT("AttackScore");
+const FName AC_EnemyController::GuardScoreKey = TEXT("GuardScore");
+const FName AC_EnemyController::RepositionScoreKey = TEXT("RepositionScore");
+const FName AC_EnemyController::ChaseScorekey = TEXT("ChaseScore");
 
 AC_EnemyController::AC_EnemyController()
 {

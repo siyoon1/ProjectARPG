@@ -3,6 +3,7 @@
 
 #include "C_CombatStatComponent.h"
 #include "ProjectARPG/Sturcts/FS_PostureStats.h"
+#include "ProjectARPG/Character/C_CombatCharacter.h"
 
 // Sets default values for this component's properties
 UC_CombatStatComponent::UC_CombatStatComponent()
@@ -43,6 +44,12 @@ void UC_CombatStatComponent::applyDamage(float HpDamage, float PostureDamage)
 	{
 		m_CurrentHp = FMath::Clamp(m_CurrentHp - HpDamage, 0.f, m_MaxHp);
 		m_OnHpChanged.Broadcast(m_CurrentHp, m_MaxHp);
+	}
+	else
+	{
+		AC_CombatCharacter* Owner = Cast<AC_CombatCharacter>(GetOwner());
+
+		Owner->onDeath();
 	}
 
 	if (PostureDamage > 0.f)

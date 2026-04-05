@@ -14,6 +14,8 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
+	UE_LOG(LogTemp, Warning, TEXT("CombatDecision Tick"));
+
 	AAIController* AICon = OwnerComp.GetAIOwner();
 
 	if (!AICon)
@@ -28,23 +30,14 @@ void UC_BTService_CombatDecision::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	if (!BB)
 		return;
 
-	UObject* DecisionObj = nullptr;
-
-	if (pEnemy->isBoss())
-	{
-		DecisionObj = NewObject<UC_BossCombatDecision>(this);
-	}
-	else
-	{
-		DecisionObj = NewObject<UC_NormalCombatDecision>(this);
-	}
-
 	IC_CombatDecisionStrategy* Decision =
-		Cast<IC_CombatDecisionStrategy>(DecisionObj);
+		pEnemy->isBoss() ?
+		Cast<IC_CombatDecisionStrategy>(pEnemy->getBossCombatDecision()) :
+		Cast<IC_CombatDecisionStrategy>(pEnemy->getNormalCombatDecision());
 
 	if (Decision)
 	{
-		Decision->Decide(pEnemy, BB);
+		Decision->calculateScores(pEnemy, BB);
 	}
 	
 }

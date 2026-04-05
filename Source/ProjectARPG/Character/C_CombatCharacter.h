@@ -232,6 +232,7 @@ public:
 	virtual bool isInvincibleAgainst(AActor* pAttacker) const;
 
 	// Á×À½
+	UFUNCTION()
 	virtual void onDeath();
 
 	UFUNCTION(BlueprintCallable)

@@ -40,37 +40,46 @@ enum class E_EnemyActionState : uint8
 	Cooldown    
 };
 
+UENUM(BlueprintType)
+enum class E_EnemyActionType : uint8
+{
+	None,
+	Attack,
+	Guard,
+	Reposition,
+	Chase
+};
+
 USTRUCT(BlueprintType)
-struct FS_EnemyCombatProfile
+struct FS_EnemyCombatTendency
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	float fAttackProbability = 0.7f;
+	float Aggressiveness;// 공격 성향
+	UPROPERTY(EditAnywhere)
+	float DefenseBias;   // 방어 성향
+	UPROPERTY(EditAnywhere)
+	float RepositionBias; // 거리조절 성향
+	UPROPERTY(EditAnywhere)
+	float ComboPressure;  // 연속 압박 성향
+	UPROPERTY(EditAnywhere)
+	float PreferredRange;
+};
+
+USTRUCT(BlueprintType)
+struct FS_EnemyCombatConfig
+{
+	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	float fGuardProbability = 0.3f;
+	float ActionInterval = 0.3f;
 
 	UPROPERTY(EditAnywhere)
-	float fThrustWeight = 0.2f;
+	float GuardMinTime = 0.5f;
 
 	UPROPERTY(EditAnywhere)
-	float fHeavyWeight = 0.3f;
-
-	UPROPERTY(EditAnywhere)
-	float fActionInterval = 0.25f;
-
-	UPROPERTY(EditAnywhere)
-	float fGuardMinTime = 0.6f;
-
-	UPROPERTY(EditAnywhere)
-	float fGuardMaxTime = 1.8f;
-
-	UPROPERTY(EditAnywhere)
-	float fGuardReleaseDelay = 0.3f;
-
-	UPROPERTY(EditAnywhere)
-	float fPreferredRange = 180.f;
+	float GuardMaxTime = 1.5f;
 };
 
 /**
@@ -97,7 +106,14 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UC_DetectComponent> m_DetectCom;
 
-	
+	UPROPERTY()
+	TObjectPtr<class UC_NormalCombatDecision> m_NormalDecision;
+
+	UPROPERTY()
+	TObjectPtr<class UC_BossCombatDecision> m_BossDecision;
+
+	E_EnemyActionType m_CurrentAction = E_EnemyActionType::None;
+	E_EnemyActionType m_LastAction = E_EnemyActionType::None;
 
 
 	UPROPERTY()
@@ -128,10 +144,11 @@ protected:
 	UPROPERTY()
 	E_EnemyActionState m_EnemyActionState = E_EnemyActionState::Idle;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	TMap<E_EnemyTier, FS_EnemyCombatProfile> m_CombatProfiles;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	FS_EnemyCombatTendency m_CombatTendency;
 
-	FS_EnemyCombatProfile m_CurrentCombatProfile;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	FS_EnemyCombatConfig m_CombatConfig;
 
 	
 public:
@@ -147,7 +164,6 @@ public:
 	
 
 private:
-	void applyCombatProfile();
 	float getDistToTarget() const;
 	void applyExecutionFacing(const struct FS_ExecutionContext& Context);
 
@@ -166,6 +182,16 @@ public:
 		return m_AIAttackComp;
 	}
 
+	inline UC_NormalCombatDecision* getNormalCombatDecision() const
+	{
+		return m_NormalDecision;
+	}
+
+	inline UC_BossCombatDecision* getBossCombatDecision() const
+	{
+		return m_BossDecision;
+	}
+
 	// Runtime 사용 조회
 	const FS_AttackRuntimeState* getAttackRuntimeState(FName Row) const;
 
@@ -180,7 +206,21 @@ public:
 	void onCombatStarted();
 	void onCombatEnded();
 	float getNextActionTime() const;
-	FS_EnemyCombatProfile& getCombatProfile();
+
+	inline const FS_EnemyCombatTendency& getCombatTendency() const
+	{
+		return m_CombatTendency;
+	}
+
+	inline const FS_EnemyCombatConfig& getCombatConfig() const
+	{
+		return m_CombatConfig;
+	}
+
+	inline E_EnemyActionType getLastAction() const
+	{
+		return m_LastAction;
+	}
 
 	//인살 관련
 	virtual bool canBeExecuted(E_ExecutionType Type) const override;

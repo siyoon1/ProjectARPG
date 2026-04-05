@@ -18,6 +18,8 @@
 #include "ProjectARPG/Interface/C_ExecutionRequester.h"
 #include "ProjectARPG/ActorComponents/C_LockOnComponent.h"
 #include "Components/BillboardComponent.h"
+#include "ProjectARPG/AI/C_NormalCombatDecision.h"
+#include "ProjectARPG/AI/C_BossCombatDecision.h"
 
 
 AC_EnemyCharacter::AC_EnemyCharacter()
@@ -37,6 +39,9 @@ void AC_EnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	m_NormalDecision = NewObject<UC_NormalCombatDecision>(this);
+	m_BossDecision = NewObject<UC_BossCombatDecision>(this);
+
 	m_CurrentLifeNodes = m_MaxLifeNodes;
 
 	m_DetectCom = GetComponentByClass<UC_DetectComponent>();
@@ -48,8 +53,6 @@ void AC_EnemyCharacter::BeginPlay()
 
 	if (m_wHpBarCom)
 		m_wHpBarCom->SetVisibility(false);
-
-	applyCombatProfile();
 
 	setExecutionHintVisible(false);
 
@@ -82,7 +85,7 @@ void AC_EnemyCharacter::Tick(float DeltaTime)
 		const float Elapsed =
 			GetWorld()->GetTimeSeconds() - m_fGuardStartTime;
 
-		if (Elapsed > m_GuardMaxTime + 0.5f)
+		if (Elapsed > m_CombatConfig.GuardMaxTime + 0.5f)
 		{
 			UE_LOG(LogTemp, Warning,
 				TEXT("[GuardFailSafe] Force end guard : %s"), *GetName());
@@ -91,17 +94,6 @@ void AC_EnemyCharacter::Tick(float DeltaTime)
 			m_EnemyActionState = E_EnemyActionState::Idle;
 		}
 	}
-
-}
-
-void AC_EnemyCharacter::applyCombatProfile()
-{
-	const FS_EnemyCombatProfile* profile = m_CombatProfiles.Find(m_eEnemyTier);
-
-	if (!profile)
-		return;
-
-	m_CurrentCombatProfile = *profile;
 
 }
 
@@ -175,18 +167,21 @@ void AC_EnemyCharacter::endGuard()
 		}
 	}
 
-	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
+	const float Cooldown = m_CombatConfig.ActionInterval;
 	finishAction(Cooldown);
+
+	m_LastAction = E_EnemyActionType::Guard;
+	m_CurrentAction = E_EnemyActionType::None;
 }
 
 bool AC_EnemyCharacter::canReleaseGuard() const
 {
 	const float Elapsed = GetWorld()->GetTimeSeconds() - m_fGuardStartTime;
 
-	if (Elapsed < m_CurrentCombatProfile.fGuardMinTime)
+	if (Elapsed < m_CombatConfig.GuardMinTime)
 		return false;
 
-	if (Elapsed >= m_CurrentCombatProfile.fGuardMaxTime)
+	if (Elapsed >= m_CombatConfig.GuardMaxTime)
 		return true;
 
 	if (m_PlayerAttackChain >= 2)
@@ -323,7 +318,7 @@ bool AC_EnemyCharacter::playStepBack()
 
 	const float Dist = getDistToTarget();
 	const float MaxSafeDist =
-		m_CurrentCombatProfile.fPreferredRange * 1.1f;
+		m_CombatTendency.PreferredRange * 1.1f;
 
 	if (Dist >= MaxSafeDist)
 		return false;
@@ -340,7 +335,7 @@ bool AC_EnemyCharacter::playStepBack()
 
 void AC_EnemyCharacter::endStepBack()
 {
-	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
+	const float Cooldown = m_CombatConfig.ActionInterval;
 	finishAction(Cooldown);
 
 	m_onStepBackFinished.Broadcast();
@@ -349,8 +344,11 @@ void AC_EnemyCharacter::endStepBack()
 
 void AC_EnemyCharacter::endAttack()
 {
-	const float Cooldown = m_CurrentCombatProfile.fActionInterval;
+	const float Cooldown = m_CombatConfig.ActionInterval;
 	finishAction(Cooldown);
+
+	m_LastAction = E_EnemyActionType::Attack;
+	m_CurrentAction = E_EnemyActionType::None;
 
 	m_onAttackFinished.Broadcast();
 }
@@ -403,11 +401,6 @@ void AC_EnemyCharacter::onCombatEnded()
 float AC_EnemyCharacter::getNextActionTime() const
 {
 	return m_nextActionTime;
-}
-
-FS_EnemyCombatProfile& AC_EnemyCharacter::getCombatProfile()
-{
-	return m_CurrentCombatProfile;
 }
 
 bool AC_EnemyCharacter::canBeExecuted(E_ExecutionType Type) const
@@ -639,6 +632,7 @@ void AC_EnemyCharacter::onDeath()
 
 	setActionState(E_ActionState::Dead);
 	showExecutionVFX(false);
+	m_wHpBarCom->DestroyComponent();
 
 
 }
