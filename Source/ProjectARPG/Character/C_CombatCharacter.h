@@ -254,6 +254,9 @@ public:
 	float getHp() const;
 
 	UFUNCTION(BlueprintCallable)
+	float getMaxHp() const;
+
+	UFUNCTION(BlueprintCallable)
 	float getPosture() const;
 
 	UFUNCTION()

@@ -95,6 +95,12 @@ void UC_CombatStatComponent::recoverHp(float Hp)
 	m_OnHpChanged.Broadcast(m_CurrentHp, m_MaxHp);
 }
 
+void UC_CombatStatComponent::recoverPosture(float Posture)
+{
+	m_CurrentPosture = FMath::Clamp(m_CurrentPosture + Posture, 0.f, m_MaxPosture);
+	m_OnPostureChanged.Broadcast(m_CurrentPosture, m_MaxPosture);
+}
+
 
 void UC_CombatStatComponent::initStat()
 {

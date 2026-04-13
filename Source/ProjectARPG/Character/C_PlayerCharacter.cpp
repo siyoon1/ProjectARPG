@@ -23,6 +23,7 @@
 #include "ProjectARPG/ActorComponents/C_LockOnComponent.h"
 #include "ProjectARPG/Inventory/C_QuickSlotComponent.h"
 #include "ProjectARPG/ActorComponents/C_CurrencyComponent.h"
+#include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
 
 
 
@@ -553,13 +554,12 @@ USphereComponent* AC_PlayerCharacter::getExecutionSphere() const
 
 void AC_PlayerCharacter::restoreHP()
 {
-	//m_fCurrentHp = m_fMaxHp;
+	getStatComp()->recoverHp(getStatComp()->getMaxHp());
 }
 
 void AC_PlayerCharacter::resetPosture()
 {
-	//if (m_fCurrentPosture > 0)
-		//m_fCurrentPosture = m_fMaxPosture;
+	getStatComp()->recoverPosture(getStatComp()->getMaxPosture());
 }
 
 void AC_PlayerCharacter::onParried_Implementation(AActor* ParryOwner)

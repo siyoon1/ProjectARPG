@@ -428,6 +428,10 @@ float AC_CombatCharacter::getHp() const
 	return m_StatComp->getCurrentHp();
 }
 
+float AC_CombatCharacter::getMaxHp() const
+{
+	return m_StatComp->getMaxHp();
+}
 
 float AC_CombatCharacter::getPosture() const
 {

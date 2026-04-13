@@ -56,6 +56,8 @@ void AC_BonfireActor::interact_Implementation(AActor* Interactor)
 	healPlayer(Player);
 	saveGame();
 
+	UE_LOG(LogTemp, Error, TEXT("save!!!"));
+
 	// ÈÞ½Ä
 }
 

@@ -84,6 +84,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void recoverHp(float Hp);
 
+	UFUNCTION(BlueprintCallable)
+	void recoverPosture(float Posture);
+
 	inline bool isPostureBroken() const { return m_bPostureBroken; }
 
 	inline const E_PostureBreakCause getBreakCause() const { return m_LastBreakCause; }
