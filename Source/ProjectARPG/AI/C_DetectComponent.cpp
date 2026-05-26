@@ -48,6 +48,22 @@ void UC_DetectComponent::detectTarget()
 	AActor* PrevTarget = m_DetectedTarget;
 	m_DetectedTarget = nullptr;
 
+	if (PrevTarget)
+	{
+		AC_PlayerCharacter* PrevPlayer =
+			Cast<AC_PlayerCharacter>(PrevTarget);
+
+		if (PrevPlayer && !PrevPlayer->isTargetable())
+		{
+			onTargetLost();
+
+			m_DetectedTarget = nullptr;
+			m_TargetLostElapsed = 0.f;
+
+			return;
+		}
+	}
+
 	AActor* pOwner = GetOwner();
 	if (!pOwner)
 		return;
@@ -105,7 +121,7 @@ void UC_DetectComponent::detectTarget()
 	{
 		AC_PlayerCharacter* pPlayer = Cast<AC_PlayerCharacter>(Object.GetActor());
 
-		if (!pPlayer)
+		if (!pPlayer || !pPlayer->isTargetable())
 			continue;
 
 		// 거리 체크
@@ -138,6 +154,13 @@ void UC_DetectComponent::detectTarget()
 	{
 		onTargetLost();
 	}
+}
+
+void UC_DetectComponent::resetDetect()
+{
+	m_bIsDetecting = false;
+	m_DetectedTarget = nullptr;
+	m_TargetLostElapsed = 0.f;
 }
 
 bool UC_DetectComponent::checkDist(AC_PlayerCharacter* pPlayer)
@@ -219,7 +242,8 @@ void UC_DetectComponent::onTargetDetected(AActor* NewTarget)
 
 	if (AAIController* AICon = Cast<AAIController>(m_pEnemy->GetController()))
 	{
-		AICon->StopMovement();
+		AICon->GetBlackboardComponent()->
+			SetValueAsObject("TargetActor", NewTarget);
 	}
 
 	if (m_pEnemy)
@@ -231,6 +255,17 @@ void UC_DetectComponent::onTargetDetected(AActor* NewTarget)
 void UC_DetectComponent::onTargetLost()
 {
 	m_bIsDetecting = false;
+
+	AC_EnemyController* AICon =
+		Cast<AC_EnemyController>(
+			m_pEnemy->GetController()
+		);
+
+	if (AICon)
+	{
+		AICon->GetBlackboardComponent()->
+			ClearValue("TargetActor");
+	}
 
 	if (m_pEnemy)
 	{

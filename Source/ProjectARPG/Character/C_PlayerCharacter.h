@@ -270,6 +270,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool registerItemToQuickSlot(FName ItemID);
 
+	bool isTargetable() const;
+
+	UFUNCTION(BlueprintCallable)
+	void revivePlayer(class AC_BonfireActor* Bonfire);
+
 
 	
 

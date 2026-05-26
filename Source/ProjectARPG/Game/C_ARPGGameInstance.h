@@ -45,5 +45,7 @@ public:
 
 	
 	void collectPlayerData(AC_PlayerCharacter* Player);
+
+	UFUNCTION(BlueprintCallable)
 	void respawnPlayer(AC_PlayerCharacter* Player);
 };

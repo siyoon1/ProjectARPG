@@ -396,6 +396,8 @@ void AC_EnemyCharacter::onCombatEnded()
 	{
 		m_onBossStateChanged.Broadcast(this, false);
 	}
+
+	m_DetectCom->resetDetect();
 }
 
 float AC_EnemyCharacter::getNextActionTime() const

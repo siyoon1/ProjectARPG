@@ -24,7 +24,8 @@
 #include "ProjectARPG/Inventory/C_QuickSlotComponent.h"
 #include "ProjectARPG/ActorComponents/C_CurrencyComponent.h"
 #include "ProjectARPG/ActorComponents/C_CombatStatComponent.h"
-
+#include "ProjectARPG/Actor/C_BonfireActor.h"
+#include "Components/ArrowComponent.h"
 
 
 AC_PlayerCharacter::AC_PlayerCharacter()
@@ -342,9 +343,20 @@ FName AC_PlayerCharacter::getComboAttackRow(int32 ComboIndex) const
 
 void AC_PlayerCharacter::onDeath()
 {
+	if (m_ActionState == E_ActionState::Dead)
+		return;
+
+	if (m_LockOnComp->isLockOn())
+		m_LockOnComp->clearLockOn();
+
 	enterCombatMode(E_CombatMode::None, E_ActionState::Dead);
 
+	GetCharacterMovement()->DisableMovement();
+
+	DisableInput(Cast<APlayerController>(GetController()));
+
 	m_OnPlayerDead.Broadcast();
+
 }
 
 void AC_PlayerCharacter::guardEnd(const FInputActionValue& sValue)
@@ -828,6 +840,52 @@ bool AC_PlayerCharacter::registerItemToQuickSlot(FName ItemID)
 		return false;
 
 	return m_QuickSlotComp->assignItemToQuickSlot(ItemID, 0);
+}
+
+bool AC_PlayerCharacter::isTargetable() const
+{
+	return !isDead();
+}
+
+void AC_PlayerCharacter::revivePlayer(AC_BonfireActor* Bonfire)
+{
+	if (!Bonfire)
+		return;
+
+	enterCombatMode(E_CombatMode::None, E_ActionState::Free);
+
+	restoreHP();
+	resetPosture();
+
+	GetMesh()->SetAnimationMode(
+		EAnimationMode::AnimationBlueprint
+	);
+
+	SetActorLocation(
+		Bonfire->GetActorLocation() + Bonfire->GetActorForwardVector() * 180.f
+	);
+
+	SetActorRotation(
+		Bonfire->GetActorRotation()
+	);
+
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+	APlayerController* PC =
+		Cast<APlayerController>(GetController());
+
+	if (PC)
+	{
+		EnableInput(PC);
+	}
+
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+
+	if (AnimInst)
+	{
+		AnimInst->StopAllMontages(0.2f);
+	}
+
 }
 
 void AC_PlayerCharacter::sprintReleased(const FInputActionInstance& sInst)

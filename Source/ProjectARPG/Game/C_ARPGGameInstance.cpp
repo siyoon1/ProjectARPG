@@ -102,8 +102,7 @@ void UC_ARPGGameInstance::respawnPlayer(AC_PlayerCharacter* Player)
 	{
 		if (iter->getBonfireID() == m_LastBonfireID)
 		{
-			Player->SetActorLocation(iter->GetActorLocation());
-			Player->SetActorRotation(iter->GetActorRotation());
+			Player->revivePlayer(*iter);
 			break;
 		}
 	}

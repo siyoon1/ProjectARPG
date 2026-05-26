@@ -4,6 +4,7 @@
 #include "C_BonfireActor.h"
 #include "ProjectARPG/Game/C_ARPGGameInstance.h"
 #include "ProjectARPG/Character/C_PlayerCharacter.h"
+#include "Components/ArrowComponent.h"
 
 void AC_BonfireActor::activateBonfire()
 {
@@ -28,7 +29,6 @@ AC_BonfireActor::AC_BonfireActor()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
 }
 
 // Called when the game starts or when spawned

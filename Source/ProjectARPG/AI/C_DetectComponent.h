@@ -41,6 +41,8 @@ private:
 private:
 	void detectTarget();
 
+	
+
 	bool checkDist(AC_PlayerCharacter* pPlayer);
 	bool checkFOV(AC_PlayerCharacter* pPlayer);
 	bool checkLineOfSight(AC_PlayerCharacter* pPlayer);
@@ -66,4 +68,6 @@ public:
 	inline AActor* getDetectedTarget() const { return m_DetectedTarget; }
 
 	void forceDetect(AActor* pTarget);
+
+	void resetDetect();
 };
