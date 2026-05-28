@@ -213,7 +213,7 @@ void UC_AttackComponent::sweepAttack(const FVector& Start, const FVector& End)
 			m_HitActors.Add(HitActor);
 			applyHit(HitActor, Hit);
 
-			DrawDebugSphere(
+			/*DrawDebugSphere(
 				GetWorld(),
 				Hit.ImpactPoint,
 				TraceRadius,
@@ -221,13 +221,13 @@ void UC_AttackComponent::sweepAttack(const FVector& Start, const FVector& End)
 				FColor::Red,
 				false,
 				0.05f
-			);
+			);*/
 		}
 
 
 	}	
 
-	DrawDebugLine(
+	/*DrawDebugLine(
 		GetWorld(),
 		Start,
 		End,
@@ -236,7 +236,7 @@ void UC_AttackComponent::sweepAttack(const FVector& Start, const FVector& End)
 		0.05f,
 		0,
 		2.f
-	);
+	);*/
 
 
 }
