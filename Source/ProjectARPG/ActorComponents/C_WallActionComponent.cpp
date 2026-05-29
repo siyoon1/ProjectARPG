@@ -269,9 +269,9 @@ FVector UC_WallActionComponent::calcClimbLocation()
 	FinalPos.Z += HalfHeight;
 
 	// Debug
-	DrawDebugLine(GetWorld(), SweepStart, SweepEnd, FColor::Yellow, false, 2.f, 0, 2.f);
-	DrawDebugLine(GetWorld(), TopStart, TopEnd, FColor::Cyan, false, 2.f, 0, 2.f);
-	DrawDebugSphere(GetWorld(), FinalPos, 10.f, 12, FColor::Green, false, 2.f);
+	//DrawDebugLine(GetWorld(), SweepStart, SweepEnd, FColor::Yellow, false, 2.f, 0, 2.f);
+	//DrawDebugLine(GetWorld(), TopStart, TopEnd, FColor::Cyan, false, 2.f, 0, 2.f);
+	//DrawDebugSphere(GetWorld(), FinalPos, 10.f, 12, FColor::Green, false, 2.f);
 
 	return FinalPos;
 }

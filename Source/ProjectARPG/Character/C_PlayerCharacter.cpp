@@ -514,7 +514,7 @@ AActor* AC_PlayerCharacter::getCurrentEnemy()
 		}
 	}
 
-	DrawDebugLine(GetWorld(), vStart, vEnd, FColor::Red, false, 1.f, 0, 2.f);
+	//DrawDebugLine(GetWorld(), vStart, vEnd, FColor::Red, false, 1.f, 0, 2.f);
 
 	return nullptr;
 }
